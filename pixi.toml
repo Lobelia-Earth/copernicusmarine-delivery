@@ -1,0 +1,27 @@
+[workspace]
+authors = ["lobelia <support@lobelia.earth>"]
+channels = ["conda-forge"]
+name = "pusher" # to be changes
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+click = ">=8.4.0,<9"
+pydantic = ">=2.13.4,<3"
+
+[feature.dev.dependencies]
+pytest = "*"
+ruff = "*"
+pyright = "*"
+
+[feature.dev.tasks]
+format = "ruff format .; ruff check --fix ."
+format-check = "ruff format --check .; ruff check ."
+type-check = "pyright"
+test = "pytest"
+
+[environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
