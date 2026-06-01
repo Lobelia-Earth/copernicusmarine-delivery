@@ -1,7 +1,3 @@
-"""Click-based command line interface for the pusher package."""
-
-from pathlib import Path
-
 import click
 
 from pusher.core_functions import upload as _upload
@@ -13,19 +9,23 @@ def cli() -> None:
 
 
 @cli.command()
-@click.argument(
-    "source",
-    type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
+@click.option(
+    "--source",
+    type=str,
+    multiple=True,
 )
 @click.option(
-    "--destination",
-    "-d",
-    required=True,
-    help="Destination identifier to upload to.",
+    "--dataset-id",
+    type=str,
 )
-def upload(source: Path, destination: str) -> None:
-    """Upload SOURCE to the given destination."""
-    _upload(source=source, destination=destination)
+@click.option(
+    "--product-id",
+    type=str,
+)
+def upload(source: list[str], dataset_id: str, product_id: str) -> None:
+    """Upload SOURCE to the given dataset."""
+    manifest = _upload(product_id=product_id, dataset_id=dataset_id, files=source)
+    print(manifest.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":

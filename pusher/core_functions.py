@@ -1,11 +1,14 @@
-"""Core functions for the pusher package."""
+from pusher.manifests_helper import create_manifest
+from pusher.models import Manifest
 
-from pathlib import Path
 
-
-def upload(source: Path, destination: str) -> None:
-    """Upload the given source path to the given destination.
-
-    This is a placeholder implementation.
-    """
-    raise NotImplementedError("upload() is not implemented yet")
+def upload(product_id: str, dataset_id: str, files: list[str]) -> Manifest:
+    manifest = create_manifest(
+        producer_id="TODO",
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operation_files_mapping={"upload": files},
+    )
+    # TODO: Implement the actual upload logic here.
+    # TODO: upload manifest to S3
+    return manifest
