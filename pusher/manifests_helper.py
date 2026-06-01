@@ -3,24 +3,25 @@ from datetime import datetime, timezone
 from random import randint
 from typing import Literal
 
-from pusher.models import Manifest, ManifestFile
+from pusher.models import Manifest, ManifestFile, Operation
 
 
 def create_manifest(
     producer_id: str,
     product_id: str,
     dataset_id: str,
-    operation: Literal["upload", "delete"],
-    files: list[str],
+    operation_files_mapping: dict[Literal["upload", "delete"], list[str]],
 ) -> Manifest:
-    manifest_files = create_manifest_files(files, operation)
+    all_operations: list[Operation] = []
+    for operation, files in operation_files_mapping.items():
+        manifest_files = create_manifest_files(files, operation)
+        all_operations.append(Operation(operation=operation, files=manifest_files))
     return Manifest(
         manifest_id=create_manifest_id(dataset_id),
         producer_id=producer_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operation=operation,
-        files=manifest_files,
+        operations=all_operations,
         creation_time=datetime.now(timezone.utc).isoformat(),
     )
 
@@ -50,7 +51,6 @@ def create_manifest_files(
         manifest_file = ManifestFile(
             s3_path=file_,
             file_size=file_size,
-            local_file_path=file_ if operation == "upload" else None,
             checksum="TODO",
         )
         manifest_files.append(manifest_file)

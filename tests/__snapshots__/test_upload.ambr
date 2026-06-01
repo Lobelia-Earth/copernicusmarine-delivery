@@ -3,22 +3,24 @@
   dict({
     'creation_time': '2012-01-14T12:00:01+00:00',
     'dataset_id': 'dataset1',
-    'files': list([
+    'manifest_id': '20120114T120001-dataset1-2824',
+    'operations': list([
       dict({
-        'checksum': 'TODO',
-        'file_size': 0,
-        'local_file_path': 'tests/resources/file1.txt',
-        's3_path': 'tests/resources/file1.txt',
-      }),
-      dict({
-        'checksum': 'TODO',
-        'file_size': 0,
-        'local_file_path': 'tests/resources/file2.txt',
-        's3_path': 'tests/resources/file2.txt',
+        'files': list([
+          dict({
+            'checksum': 'TODO',
+            'file_size': 0,
+            's3_path': 'tests/resources/file1.txt',
+          }),
+          dict({
+            'checksum': 'TODO',
+            'file_size': 0,
+            's3_path': 'tests/resources/file2.txt',
+          }),
+        ]),
+        'operation': 'upload',
       }),
     ]),
-    'manifest_id': '20120114T120001-dataset1-2824',
-    'operation': 'upload',
     'producer_id': 'TODO',
     'product_id': 'product1',
   })

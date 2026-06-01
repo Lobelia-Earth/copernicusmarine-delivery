@@ -7,8 +7,7 @@ def upload(product_id: str, dataset_id: str, files: list[str]) -> Manifest:
         producer_id="TODO",
         product_id=product_id,
         dataset_id=dataset_id,
-        operation="upload",
-        files=files,
+        operation_files_mapping={"upload": files},
     )
     # TODO: Implement the actual upload logic here.
     # TODO: upload manifest to S3

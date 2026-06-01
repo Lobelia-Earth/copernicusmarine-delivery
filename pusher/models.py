@@ -8,10 +8,13 @@ class ManifestFile(BaseModel):
     s3_path: str
     #: Estimation of the size of the file in MB.
     file_size: int | None
-    #: Path to the file to be uploaded.
-    local_file_path: str | None
     #: checksum of the file to be uploaded.
     checksum: str
+
+
+class Operation(BaseModel):
+    operation: Literal["upload", "delete"]
+    files: list[ManifestFile]
 
 
 class Manifest(BaseModel):
@@ -20,7 +23,7 @@ class Manifest(BaseModel):
     producer_id: str
     product_id: str
     dataset_id: str
-    operation: Literal["upload", "delete"]
-    files: list[ManifestFile]
+    operations: list[Operation]
+
     #: ISO 8601 formatted timestamp in UTC
     creation_time: str

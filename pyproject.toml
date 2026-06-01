@@ -37,7 +37,8 @@ freezegun = ">=1.5.5,<2"
 format = "ruff format .; ruff check --fix ."
 format-check = "ruff format --check .; ruff check ."
 type-check = "pyright"
-test = "pytest --snapshot-update"
+test-local = "pytest --snapshot-update"
+test = "pytest"
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
