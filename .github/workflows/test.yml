@@ -8,13 +8,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      ministack:
+        image: ministackorg/ministack:latest
+        ports:
+          - 4566:4566
+    env:
+      S3_ENDPOINT_URL: http://localhost:4566
+      ACCESS_KEY_ID: test
+      SECRET_ACCESS_KEY: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
         with:
           environments: dev
           cache: true
-
-      - name: Run tests
-        run: pixi run test
+      - name: Wait for ministack
+        run: until curl -s http://localhost:4566 > /dev/null; do sleep 1; done
+      - run: pixi run -e dev test
