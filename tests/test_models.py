@@ -31,7 +31,7 @@ def test_operation_upload():
 
 def test_operation_invalid_literal():
     with pytest.raises(ValidationError):
-        Operation(operation="copy", files=[])
+        Operation(operation="copy", files=[])  # type: ignore
 
 
 def test_manifest_round_trip():
