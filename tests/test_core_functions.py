@@ -4,8 +4,15 @@ from pathlib import Path
 import pytest
 from freezegun import freeze_time
 
-from pusher.domain.core_functions import get_bucket_keys_from_local_files, get_manifest_destination_key
-from pusher.domain.manifests_helper import create_manifest, create_manifest_files, create_manifest_id
+from pusher.domain.core_functions import (
+    get_bucket_keys_from_local_files,
+    get_manifest_destination_key,
+)
+from pusher.domain.manifests_helper import (
+    create_manifest,
+    create_manifest_files,
+    create_manifest_id,
+)
 from pusher.domain.models import S3File
 
 
@@ -20,7 +27,9 @@ def test_get_bucket_keys_from_local_files():
         dataset_id="dataset1",
     )
     assert result == {
-        Path("path/to/file.nc"): "data/20240315T000000-dataset1-1234/product1/dataset1/2024/03/file.nc"
+        Path(
+            "path/to/file.nc"
+        ): "data/20240315T000000-dataset1-1234/product1/dataset1/2024/03/file.nc"
     }
 
 
@@ -64,13 +73,19 @@ def test_create_manifest_files_upload(tmp_path):
 
 
 def test_create_manifest_files_delete():
-    files = [S3File(local_path="/irrelevant", s3_path="data/key/file.nc", e_tag="abc-1")]
+    files = [
+        S3File(local_path="/irrelevant", s3_path="data/key/file.nc", e_tag="abc-1")
+    ]
     result = create_manifest_files(files, "delete")
     assert result[0].file_size is None
 
 
 def test_create_manifest_files_upload_missing_file():
-    files = [S3File(local_path="/nonexistent/file.nc", s3_path="data/key/file.nc", e_tag="abc-1")]
+    files = [
+        S3File(
+            local_path="/nonexistent/file.nc", s3_path="data/key/file.nc", e_tag="abc-1"
+        )
+    ]
     with pytest.raises(AssertionError):
         create_manifest_files(files, "upload")
 

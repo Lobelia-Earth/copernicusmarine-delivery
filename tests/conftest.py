@@ -5,7 +5,6 @@ import boto3
 import pytest
 
 from pusher.config.settings import Settings
-from pusher.infrastructure.obstore_s3_client import ObstoreS3Client, ObstoreS3ClientConnection
 from pusher.services.ingestion_bucket_service import IngestionBucketService
 
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
@@ -47,7 +46,9 @@ def ingestion_bucket(s3_client) -> Generator[str, None]:
 
 
 @pytest.fixture
-def test_ingestion_bucket_service(ingestion_bucket: str, ministack_endpoint: str) -> IngestionBucketService:
+def test_ingestion_bucket_service(
+    ingestion_bucket: str, ministack_endpoint: str
+) -> IngestionBucketService:
     return IngestionBucketService.from_s3_credentials(
         pushing_entity_id=_PUSHING_ENTITY_ID,
         access_key_id="test",
