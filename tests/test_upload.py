@@ -11,7 +11,7 @@ PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 # TODO: work on the test files to be more representative
 # of the actual use case.
 @freeze_time("2012-01-14 12:00:01")
-def test_manifest(snapshot, tmp_path):
+def test_manifest(snapshot, tmp_path, glo_mercator_bucket):
     random.seed(42)
 
     response = upload(

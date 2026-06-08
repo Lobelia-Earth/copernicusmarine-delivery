@@ -39,10 +39,7 @@ def s3_client(ministack_endpoint: str):
 def ingestion_bucket(s3_client) -> Generator[str, None]:
     s3_client.create_bucket(Bucket=_BUCKET_NAME)
     yield _BUCKET_NAME
-    objects = s3_client.list_objects_v2(Bucket=_BUCKET_NAME).get("Contents", [])
-    for obj in objects:
-        s3_client.delete_object(Bucket=_BUCKET_NAME, Key=obj["Key"])
-    s3_client.delete_bucket(Bucket=_BUCKET_NAME)
+    _cleanup_bucket(s3_client, _BUCKET_NAME)
 
 
 @pytest.fixture
@@ -55,3 +52,17 @@ def test_ingestion_bucket_service(
         secret_access_key="test",
         endpoint_url=ministack_endpoint,
     )
+
+
+def _cleanup_bucket(s3_client, bucket: str) -> None:
+    for obj in s3_client.list_objects_v2(Bucket=bucket).get("Contents", []):
+        s3_client.delete_object(Bucket=bucket, Key=obj["Key"])
+    s3_client.delete_bucket(Bucket=bucket)
+
+
+@pytest.fixture
+def glo_mercator_bucket(s3_client) -> Generator[str, None]:
+    bucket = "mdl-ing-glo-mercator-toulouse-fr"
+    s3_client.create_bucket(Bucket=bucket)
+    yield bucket
+    _cleanup_bucket(s3_client, bucket)
