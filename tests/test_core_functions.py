@@ -51,7 +51,7 @@ def test_get_bucket_keys_multiple_files():
 @freeze_time("2024-03-15")
 def test_get_manifest_destination_key():
     key = get_manifest_destination_key(date.today(), "20240315T000000-dataset1-1234")
-    assert key == "manifests/new/2024/03/15/20240315T000000-dataset1-1234.json"
+    assert key == "manifests/new/20240315T000000-dataset1-1234.json"
 
 
 @freeze_time("2024-03-15 12:00:01")

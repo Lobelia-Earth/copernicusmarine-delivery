@@ -32,12 +32,7 @@ def get_bucket_keys_from_local_files(
 
 
 def get_manifest_destination_key(today: date, manifest_id: str) -> str:
-    return NEW_MANIFESTS_PREFIX.format(
-        YYYY=today.year,
-        MM=f"{today.month:02}",
-        DD=f"{today.day:02}",
-        manifest_id=manifest_id,
-    )
+    return NEW_MANIFESTS_PREFIX.format(manifest_id=manifest_id)
 
 
 def upload(
