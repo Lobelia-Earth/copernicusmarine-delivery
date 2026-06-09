@@ -6,7 +6,8 @@ from typing import Any, TYPE_CHECKING, cast
 
 from obstore.store import S3Store
 
-from .s3_client import S3Client, S3ClientConnection
+from pusher.domain.exceptions import ConnectionRefusedException, NoSuchBucketException
+from pusher.infrastructure.s3_client import S3Client, S3ClientConnection
 
 
 if TYPE_CHECKING:
@@ -27,12 +28,6 @@ _RETRY_CONFIG = {
 }
 
 _CLIENT_OPTIONS = {"allow_http": True} if ENVIRONMENT == "dev" else {}
-
-
-class NoSuchBucketException(Exception): ...
-
-
-class ConnectionRefusedException(Exception): ...
 
 
 class ObstoreS3ClientConnection(S3ClientConnection):

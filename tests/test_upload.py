@@ -20,7 +20,7 @@ def test_manifest(snapshot, tmp_path, glo_mercator_bucket):
         dataset_id="dataset1",
         product_id="product1",
     )
-    result = response.model_dump()
+    result = response.model_dump(exclude_none=True)
     for op in result.get("operations", []):
         op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
     assert result == snapshot

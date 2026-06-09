@@ -20,5 +20,5 @@ logHandler = logging.StreamHandler()
 logHandler.setLevel(level)
 logHandler.setFormatter(CustomFormatter())
 
-logger = logging.getLogger("ocean-platform-ingest")
+logger = logging.getLogger("marine-producer-toolbox")
 logger.addHandler(logHandler)

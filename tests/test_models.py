@@ -35,17 +35,19 @@ def test_operation_invalid_literal():
 
 
 def test_manifest_round_trip():
+    manifest_id = "20240101T000000-dataset1-1234"
+    operations = []
     manifest = Manifest(
-        manifest_id="20240101T000000-dataset1-1234",
+        manifest_id=manifest_id,
         pushing_entity_id="TEST-FR",
         product_id="product1",
         dataset_id="dataset1",
-        operations=[],
+        operations=operations,
         creation_time="2024-01-01T00:00:00+00:00",
     )
     dumped = manifest.model_dump()
-    assert dumped["manifest_id"] == "20240101T000000-dataset1-1234"
-    assert dumped["operations"] == []
+    assert dumped["manifest_id"] == manifest_id
+    assert dumped["operations"] == operations
 
 
 def test_response_upload_no_errors():

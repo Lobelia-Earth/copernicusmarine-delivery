@@ -83,8 +83,10 @@ def upload(
 
     if not upload_multiple_files_result.success:
         logger.error("Manifest won't be created as there were no successful uploads")
-        # TODO handle errors gracefully with ResponseUpload.
-        raise Exception("Manifest won't be created as there were no successful uploads")
+        return ResponseUpload(
+            files_errored=[f.local_path for f in upload_multiple_files_result.error],
+            error="No successful uploads - manifest was not created.",
+        )
 
     manifest = create_manifest(
         pushing_entity_id=pushing_entity_id,

@@ -5,6 +5,8 @@ import sys
 from pusher.config.logger import logger
 from pusher.config.settings import Settings
 from pusher.domain.core_functions import upload as _upload
+from pusher.domain.exceptions import ConnectionRefusedException, NoSuchBucketException
+from pusher.domain.models import ResponseUpload
 from pusher.services.ingestion_bucket_service import IngestionBucketService
 
 
@@ -35,7 +37,18 @@ def upload(
     source: list[str], pushing_entity_id: str, dataset_id: str, product_id: str
 ) -> None:
     """Upload SOURCE to the given dataset."""
+    if not source:
+        logger.warning(
+            ResponseUpload(error="No files added to upload.").model_dump_json(
+                indent=2,
+                exclude_none=True,
+                exclude_unset=True,
+            )
+        )
+        sys.exit(1)
     try:
+        # Both pyright and ty complain about not having the mandatory attributes
+        # which are set by environment.
         settings = Settings()  # type: ignore
     except pydantic_core.ValidationError as e:
         logger.error(f"Some variables might be missing from the environment, see:\n{e}")
@@ -47,10 +60,8 @@ def upload(
             secret_access_key=settings.secret_access_key,
             endpoint_url=settings.ingestion_buckets_endpoint,
         )
-    except Exception:
-        logger.error(
-            f"Something went wrong while trying to connecto to S3 for pushing entity: {pushing_entity_id}. Check for typos or contact MDS Service Desk"
-        )
+    except (ConnectionRefusedException, NoSuchBucketException) as e:
+        logger.error(str(e))
         sys.exit(1)
 
     response = _upload(

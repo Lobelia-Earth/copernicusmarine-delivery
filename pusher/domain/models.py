@@ -49,8 +49,10 @@ class ResponseUpload(BaseModel):
     """Metadata returned when using :func:`~pusher.upload`"""
 
     #: Successful uploaded files
-    files: list[S3File]
+    files: list[S3File] = Field(default_factory=list)
     #: List of files that failed to be uploaded.
-    files_errored: list[str] | None
+    files_errored: list[str] = Field(default_factory=list)
     #: Manifest of such upload
-    manifest: Manifest
+    manifest: Manifest | None = None
+    #: Any error that may prematurely stop the upload.
+    error: str | None = None
