@@ -39,13 +39,15 @@ def test_upload_file_nonexistent_returns_error(
 
 
 def test_upload_multiple_files(
-    service: S3Client, s3_client, ingestion_bucket: str, settings
+    service: S3Client,
+    s3_client,
+    ingestion_bucket: str,
 ):
     mapping = {
         RESOURCES / "file1.txt": "data/test/file1.txt",
         RESOURCES / "file2.txt": "data/test/file2.txt",
     }
-    result = service.upload_multiple_files(mapping, settings.max_concurrent_uploads)
+    result = service.upload_multiple_files(mapping, 10)
     assert len(result.success) == 2
     assert len(result.error) == 0
     for f in result.success:
@@ -53,13 +55,13 @@ def test_upload_multiple_files(
 
 
 def test_upload_multiple_files_partial_failure(
-    service: S3Client, settings, ingestion_bucket: str
+    service: S3Client, ingestion_bucket: str
 ):
     mapping = {
         RESOURCES / "file1.txt": "data/test/file1.txt",
         Path("nonexistent/file.nc"): "data/test/missing.nc",
     }
-    result = service.upload_multiple_files(mapping, settings.max_concurrent_uploads)
+    result = service.upload_multiple_files(mapping, 10)
     assert len(result.success) == 1
     assert len(result.error) == 1
     assert result.success[0].s3_path == "data/test/file1.txt"

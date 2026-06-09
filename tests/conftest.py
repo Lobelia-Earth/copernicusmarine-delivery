@@ -4,7 +4,6 @@ from typing import Generator
 import boto3
 import pytest
 
-from pusher.core_functions.settings import Settings
 from pusher.s3_client import S3Client
 
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
@@ -19,16 +18,6 @@ _BOTO_KWARGS = {
 @pytest.fixture(scope="session")
 def ministack_endpoint() -> str:
     return os.environ.get("S3_ENDPOINT_URL", "http://localhost:4566")
-
-
-@pytest.fixture(scope="session")
-def settings(ministack_endpoint: str) -> Settings:
-    return Settings(  # type: ignore[call-arg]
-        access_key_id="test",
-        secret_access_key="test",
-        ingestion_buckets_endpoint=ministack_endpoint,
-        environment="local",
-    )
 
 
 @pytest.fixture
@@ -76,3 +65,9 @@ def cli_env(ministack_endpoint: str) -> dict:
         "INGESTION_BUCKETS_ENDPOINT": ministack_endpoint,
         "ENVIRONMENT": "local",
     }
+
+
+@pytest.fixture(autouse=False)
+def set_env(monkeypatch, cli_env):
+    for key, value in cli_env.items():
+        monkeypatch.setenv(key, value)

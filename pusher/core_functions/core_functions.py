@@ -1,13 +1,9 @@
 from datetime import date
 from pathlib import Path
 
+from pusher.core_functions import environment_variables
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
 from pusher.core_functions.models import ResponseUpload, S3File
-from pusher.core_functions.settings import (
-    NEW_DATA_BUCKET_PATH,
-    NEW_MANIFESTS_PREFIX,
-    Settings,
-)
 from pusher.logger import logger
 from pusher.s3_client import S3Client
 
@@ -21,7 +17,7 @@ def get_bucket_keys_from_local_files(
     dataset_id: str,
 ) -> dict[Path, str]:
     return {
-        Path(file_path): NEW_DATA_BUCKET_PATH.format(
+        Path(file_path): environment_variables.NEW_DATA_BUCKET_PATH.format(
             manifest_id=manifest_id,
             product_id=product_id,
             dataset_id=dataset_id,
@@ -36,7 +32,7 @@ def get_bucket_keys_from_local_files(
 
 
 def get_manifest_destination_key(today: date, manifest_id: str) -> str:
-    return NEW_MANIFESTS_PREFIX.format(manifest_id=manifest_id)
+    return environment_variables.NEW_MANIFESTS_PREFIX.format(manifest_id=manifest_id)
 
 
 def upload(
@@ -44,7 +40,7 @@ def upload(
     product_id: str,
     dataset_id: str,
     files: list[str],
-    settings: Settings,
+    max_concurrent_uploads: int,
 ) -> ResponseUpload:
     """Try and upload all files given.
     Keep track of errors.
@@ -53,10 +49,10 @@ def upload(
 
     s3_client = S3Client(
         pushing_entity_id=pushing_entity_id,
-        access_key_id=settings.access_key_id,
-        secret_access_key=settings.secret_access_key,
-        endpoint_url=settings.ingestion_buckets_endpoint,
-        environment=settings.environment,
+        access_key_id=environment_variables.ACCESS_KEY_ID,
+        secret_access_key=environment_variables.SECRET_ACCESS_KEY,
+        endpoint_url=environment_variables.INGESTION_BUCKETS_ENDPOINT,
+        environment=environment_variables.ENVIRONMENT,
     )
     manifest_id = create_manifest_id(product_id)
     today = date.today()
@@ -71,7 +67,7 @@ def upload(
 
     upload_multiple_files_result = s3_client.upload_multiple_files(
         bucket_keys_by_local_file_path_mapping,
-        settings.max_concurrent_uploads,
+        max_concurrent_uploads,
     )
 
     if upload_multiple_files_result.error:

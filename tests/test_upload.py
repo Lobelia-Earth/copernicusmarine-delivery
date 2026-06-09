@@ -11,7 +11,7 @@ PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_python_interface(snapshot, glo_mercator_bucket, settings):
+def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
     random.seed(42)
 
     response = upload(
@@ -19,7 +19,7 @@ def test_upload_python_interface(snapshot, glo_mercator_bucket, settings):
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
-        settings=settings,
+        max_concurrent_uploads=10,
     )
     result = response.model_dump(exclude_none=True)
     result["files"] = sorted(result.get("files", []), key=lambda f: f["s3_path"])

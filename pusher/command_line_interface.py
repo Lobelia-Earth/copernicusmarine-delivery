@@ -1,11 +1,9 @@
 import sys
 
 import click
-import pydantic_core
 
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import ResponseUpload
-from pusher.core_functions.settings import Settings
 from pusher.logger import logger
 
 
@@ -32,8 +30,18 @@ def cli() -> None:
     "--pushing-entity-id",
     type=str,
 )
+@click.option(
+    "--max-concurrent-uploads",
+    type=int,
+    default=10,
+    show_default=True,
+)
 def upload(
-    source: list[str], pushing_entity_id: str, dataset_id: str, product_id: str
+    source: list[str],
+    pushing_entity_id: str,
+    dataset_id: str,
+    product_id: str,
+    max_concurrent_uploads: int = 10,
 ) -> None:
     """Upload SOURCE to the given dataset."""
     if not source:
@@ -45,20 +53,13 @@ def upload(
             )
         )
         sys.exit(1)
-    try:
-        # Both pyright and ty complain about not having the mandatory attributes
-        # which are set by environment.
-        settings = Settings()  # type: ignore
-    except pydantic_core.ValidationError as e:
-        logger.error(f"Some variables might be missing from the environment, see:\n{e}")
-        sys.exit(1)
 
     response = _upload(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
-        settings=settings,
+        max_concurrent_uploads=max_concurrent_uploads,
     )
     logger.info(
         response.model_dump_json(
