@@ -29,15 +29,21 @@ class Manifest(BaseModel):
     creation_time: str
 
 
-class S3File(BaseModel):
-    local_path: str
+class S3FileObj(BaseModel):
     s3_path: str
     e_tag: str
 
 
-class ErrorPutFile(BaseModel):
+class S3File(S3FileObj):
     local_path: str
+
+
+class ErrorPutFileObj(BaseModel):
     error: str
+
+
+class ErrorPutFile(ErrorPutFileObj):
+    local_path: str
 
 
 class PutFilesResult(BaseModel):

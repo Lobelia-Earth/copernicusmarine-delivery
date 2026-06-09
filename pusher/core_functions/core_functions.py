@@ -1,11 +1,15 @@
 from datetime import date
 from pathlib import Path
 
-from pusher.config.logger import logger
-from pusher.config.settings import NEW_DATA_BUCKET_PATH, NEW_MANIFESTS_PREFIX, Settings
-from pusher.domain.manifests_helper import create_manifest, create_manifest_id
-from pusher.domain.models import ResponseUpload, S3File
-from pusher.services.ingestion_bucket_service import IngestionBucketService
+from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
+from pusher.core_functions.models import ResponseUpload, S3File
+from pusher.core_functions.settings import (
+    NEW_DATA_BUCKET_PATH,
+    NEW_MANIFESTS_PREFIX,
+    Settings,
+)
+from pusher.logger import logger
+from pusher.s3_client import S3Client
 
 
 def get_bucket_keys_from_local_files(
@@ -40,7 +44,6 @@ def upload(
     product_id: str,
     dataset_id: str,
     files: list[str],
-    ingestion_bucket_service: IngestionBucketService,
     settings: Settings,
 ) -> ResponseUpload:
     """Try and upload all files given.
@@ -48,20 +51,27 @@ def upload(
     Create Manifest with successful ones.
     Use ETag as checksum."""
 
+    s3_client = S3Client(
+        pushing_entity_id=pushing_entity_id,
+        access_key_id=settings.access_key_id,
+        secret_access_key=settings.secret_access_key,
+        endpoint_url=settings.ingestion_buckets_endpoint,
+        environment=settings.environment,
+    )
     manifest_id = create_manifest_id(product_id)
     today = date.today()
     bucket_keys_by_local_file_path_mapping = get_bucket_keys_from_local_files(
         today,
         files,
-        ingestion_bucket_service.bucket_name,
+        s3_client.bucket_name,
         manifest_id,
         product_id,
         dataset_id,
     )
 
-    upload_multiple_files_result = ingestion_bucket_service.put_multiple_files(
+    upload_multiple_files_result = s3_client.upload_multiple_files(
         bucket_keys_by_local_file_path_mapping,
-        settings,
+        settings.max_concurrent_uploads,
     )
 
     if upload_multiple_files_result.error:
@@ -80,7 +90,7 @@ def upload(
         logger.error("Manifest won't be created as there were no successful uploads")
         return ResponseUpload(
             files_errored=[f.local_path for f in upload_multiple_files_result.error],
-            error="No successful uploads - manifest was not created.",
+            error="No successful uploads - no data were sent.",
         )
 
     manifest = create_manifest(
@@ -100,7 +110,9 @@ def upload(
     )
 
     manifest_bucket_path = get_manifest_destination_key(today, manifest.manifest_id)
-    ingestion_bucket_service.put_manifest(manifest.model_dump(), manifest_bucket_path)
+
+    # What if uploading the manifest fails :0! this is the worst of the worst case scenarios!
+    s3_client.upload_file_obj(key=manifest_bucket_path, file=manifest.model_dump())
 
     return ResponseUpload(
         files=upload_multiple_files_result.success,

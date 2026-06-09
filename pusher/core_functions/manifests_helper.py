@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from random import randint
 from typing import Literal
 
-from pusher.domain.models import Manifest, ManifestFile, Operation, S3File
+from pusher.core_functions.models import Manifest, ManifestFile, Operation, S3File
 
 
 def create_manifest(

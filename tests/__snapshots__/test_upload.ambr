@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_manifest
+# name: test_upload_python_interface
   dict({
     'files': list([
       dict({

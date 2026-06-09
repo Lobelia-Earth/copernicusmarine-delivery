@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     )
     access_key_id: str
     secret_access_key: str
-    environment: str = "dev"
+    environment: str = "prod"
     ingestion_buckets_endpoint: str = "http://localhost:4566"
     max_concurrent_uploads: int = 10
 

@@ -1,11 +1,11 @@
-from typing import Generator
 import os
+from typing import Generator
 
 import boto3
 import pytest
 
-from pusher.config.settings import Settings
-from pusher.services.ingestion_bucket_service import IngestionBucketService
+from pusher.core_functions.settings import Settings
+from pusher.s3_client import S3Client
 
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
 _BUCKET_NAME = f"mdl-ing-{_PUSHING_ENTITY_ID.lower()}"
@@ -27,6 +27,7 @@ def settings(ministack_endpoint: str) -> Settings:
         access_key_id="test",
         secret_access_key="test",
         ingestion_buckets_endpoint=ministack_endpoint,
+        environment="local",
     )
 
 
@@ -42,18 +43,6 @@ def ingestion_bucket(s3_client) -> Generator[str, None]:
     _cleanup_bucket(s3_client, _BUCKET_NAME)
 
 
-@pytest.fixture
-def test_ingestion_bucket_service(
-    ingestion_bucket: str, ministack_endpoint: str
-) -> IngestionBucketService:
-    return IngestionBucketService.from_s3_credentials(
-        pushing_entity_id=_PUSHING_ENTITY_ID,
-        access_key_id="test",
-        secret_access_key="test",
-        endpoint_url=ministack_endpoint,
-    )
-
-
 def _cleanup_bucket(s3_client, bucket: str) -> None:
     for obj in s3_client.list_objects_v2(Bucket=bucket).get("Contents", []):
         s3_client.delete_object(Bucket=bucket, Key=obj["Key"])
@@ -66,3 +55,24 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None]:
     s3_client.create_bucket(Bucket=bucket)
     yield bucket
     _cleanup_bucket(s3_client, bucket)
+
+
+@pytest.fixture
+def service(ingestion_bucket: str, ministack_endpoint: str) -> S3Client:
+    return S3Client(
+        pushing_entity_id=_PUSHING_ENTITY_ID,
+        access_key_id="test",
+        secret_access_key="test",
+        endpoint_url=ministack_endpoint,
+        environment="local",
+    )
+
+
+@pytest.fixture
+def cli_env(ministack_endpoint: str) -> dict:
+    return {
+        "ACCESS_KEY_ID": "test",
+        "SECRET_ACCESS_KEY": "test",
+        "INGESTION_BUCKETS_ENDPOINT": ministack_endpoint,
+        "ENVIRONMENT": "local",
+    }

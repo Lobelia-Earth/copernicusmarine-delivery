@@ -47,8 +47,8 @@ test-local = "pytest --snapshot-update"
 test = "pytest"
 
 [tool.ruff.lint]
-select = ["F401"]
-fixable = ["F401"]
+select = ["F401", "I"]
+fixable = ["F401", "I"]
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
