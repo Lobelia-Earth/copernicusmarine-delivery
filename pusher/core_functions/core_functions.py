@@ -76,11 +76,11 @@ def upload(
     )
 
     if upload_multiple_files_result.error:
-        failed = "\n".join(
-            f"  {e.local_path}: {e.error}" for e in upload_multiple_files_result.error
+        failed = "\n,".join(
+            f"{Path(e.local_path).name}" for e in upload_multiple_files_result.error
         )
         logger.error(
-            f"Failed to upload {len(upload_multiple_files_result.error)} file(s):\n{failed}"
+            f"Failed to upload {len(upload_multiple_files_result.error)} file(s):{failed}"
         )
         if upload_multiple_files_result.success:
             logger.warning(
