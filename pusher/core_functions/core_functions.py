@@ -1,3 +1,4 @@
+import json
 from datetime import date
 from pathlib import Path
 
@@ -47,6 +48,11 @@ def upload(
     Create Manifest with successful ones.
     Use ETag as checksum."""
 
+    logger.info(
+        f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
+        f"\n\tFiles: {[Path(file).name for file in files]}"
+    )
+
     s3_client = S3Client(
         pushing_entity_id=pushing_entity_id,
         access_key_id=environment_variables.ACCESS_KEY_ID,
@@ -64,7 +70,6 @@ def upload(
         product_id,
         dataset_id,
     )
-
     upload_multiple_files_result = s3_client.upload_multiple_files(
         bucket_keys_by_local_file_path_mapping,
         max_concurrent_uploads,
@@ -108,10 +113,17 @@ def upload(
     manifest_bucket_path = get_manifest_destination_key(today, manifest.manifest_id)
 
     # What if uploading the manifest fails :0! this is the worst of the worst case scenarios!
-    s3_client.upload_file_obj(key=manifest_bucket_path, file=manifest.model_dump())
+    logger.debug(f"Uploading manifest to {manifest_bucket_path}")
+    upload_file_obj_result = s3_client.upload_fileobj(
+        key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
+    )
 
     return ResponseUpload(
-        files=upload_multiple_files_result.success,
-        files_errored=[file.local_path for file in upload_multiple_files_result.error],
+        files=[
+            Path(file.local_path).name for file in upload_multiple_files_result.success
+        ],
+        files_errored=[
+            Path(file.local_path).name for file in upload_multiple_files_result.error
+        ],
         manifest=manifest,
     )

@@ -22,7 +22,7 @@ def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
         max_concurrent_uploads=10,
     )
     result = response.model_dump(exclude_none=True)
-    result["files"] = sorted(result.get("files", []), key=lambda f: f["s3_path"])
+    result["files"] = sorted(result.get("files", []))
     for op in result.get("manifest", {}).get("operations", []):
         op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
     assert result == snapshot

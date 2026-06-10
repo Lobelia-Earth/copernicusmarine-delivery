@@ -79,14 +79,16 @@ class S3Client:
     def bucket_name(self) -> str:
         return self._bucket_name
 
-    def upload_file_obj(
+    def upload_fileobj(
         self,
         key: str,
         file: bytes,
         use_multipart: bool = True,
         chunk_size: int = CHUNK_SIZE,
     ):
+        """Upload a file object (bytes) to S3."""
         try:
+            logger.debug(f"Starting file_obj upload to {key}")
             put_result = put(
                 store=self._store,
                 path=key,
@@ -95,9 +97,9 @@ class S3Client:
                 chunk_size=chunk_size,
                 max_concurrency=self.max_concurrency,
             )
-
+            logger.debug(f"Uploaded file obj PutResult: {put_result}")
         except Exception as e:
-            pass
+            raise
 
     def upload_file(
         self,
@@ -106,6 +108,8 @@ class S3Client:
         use_multipart: bool = True,
         chunk_size: int = CHUNK_SIZE,
     ) -> S3File | ErrorPutFile:
+        """Upload a local file (by Path) to S3."""
+        logger.debug(f"Starting upload for {file.name}")
         try:
             put_result = put(
                 store=self._store,
@@ -115,6 +119,7 @@ class S3Client:
                 chunk_size=chunk_size,
                 max_concurrency=self.max_concurrency,
             )
+            logger.debug(f"Successfully uploaded file {file.name}")
             return S3File(
                 local_path=file.as_posix(),
                 s3_path=key,
@@ -122,6 +127,7 @@ class S3Client:
             )
 
         except Exception as e:
+            logger.error(f"Something went wrong uploading: {file.name}")
             return ErrorPutFile(
                 local_path=file.as_posix(),
                 error=_extract_error_message(e),
