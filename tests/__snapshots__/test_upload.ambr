@@ -1,27 +1,35 @@
 # serializer version: 1
-# name: test_manifest
+# name: test_upload_python_interface
   dict({
-    'creation_time': '2012-01-14T12:00:01+00:00',
-    'dataset_id': 'dataset1',
-    'manifest_id': '20120114T120001-dataset1-2824',
-    'operations': list([
-      dict({
-        'files': list([
-          dict({
-            'checksum': 'TODO',
-            'file_size': 0,
-            's3_path': 'tests/resources/file1.txt',
-          }),
-          dict({
-            'checksum': 'TODO',
-            'file_size': 0,
-            's3_path': 'tests/resources/file2.txt',
-          }),
-        ]),
-        'operation': 'upload',
-      }),
+    'files': list([
+      'file1.txt',
+      'file2.txt',
     ]),
-    'producer_id': 'TODO',
-    'product_id': 'product1',
+    'files_errored': list([
+    ]),
+    'manifest': dict({
+      'creation_time': '2012-01-14T12:00:01+00:00',
+      'dataset_id': 'dataset1',
+      'manifest_id': '20120114T120001-dataset1-1409',
+      'operations': list([
+        dict({
+          'files': list([
+            dict({
+              'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
+              'file_size': 0,
+              's3_path': 'data/20120114T120001-product1-2824/product1/dataset1/2012/01/file1.txt',
+            }),
+            dict({
+              'checksum': '727a3ead5c2a5492759091a67cb31068-1',
+              'file_size': 0,
+              's3_path': 'data/20120114T120001-product1-2824/product1/dataset1/2012/01/file2.txt',
+            }),
+          ]),
+          'operation': 'upload',
+        }),
+      ]),
+      'product_id': 'product1',
+      'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
+    }),
   })
 # ---

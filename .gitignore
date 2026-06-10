@@ -1,3 +1,5 @@
+test_setup/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -203,6 +205,9 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Zed IDE
+.zed/debug.json
+
 # Ruff stuff:
 .ruff_cache/
 
@@ -222,3 +227,4 @@ __marimo__/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+

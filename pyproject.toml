@@ -6,7 +6,9 @@ authors = [{ name = "lobelia", email = "support@lobelia.earth" }]
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.4.0,<9",
+    "obstore>=0.10.0,<1",
     "pydantic>=2.13.4,<3",
+    "tqdm>=4,<5",
 ]
 
 [project.scripts]
@@ -32,13 +34,20 @@ ruff = "*"
 pyright = "*"
 syrupy = ">=5.1.0,<6"
 freezegun = ">=1.5.5,<2"
+boto3 = ">=1.43.22,<2"
+requests = ">=2.34.2,<3"
+ty = ">=0.0.44,<0.0.45"
 
 [tool.pixi.feature.dev.tasks]
 format = "ruff format .; ruff check --fix ."
 format-check = "ruff format --check .; ruff check ."
-type-check = "pyright"
+type-check = "ty check ."
 test-local = "pytest --snapshot-update"
 test = "pytest"
+
+[tool.ruff.lint]
+select = ["F401", "I"]
+fixable = ["F401", "I"]
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
