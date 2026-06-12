@@ -2,16 +2,19 @@ import json
 from datetime import date
 from pathlib import Path
 
+from cloudpathlib import S3Path
+
 from pusher.core_functions import environment_variables
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
 from pusher.core_functions.models import ResponseUpload, S3File
 from pusher.logger import logger
 from pusher.s3_client import S3Client
+from pusher.validations.file_validator import validate_upload_files
 
 
 def get_bucket_keys_from_local_files(
     today: date,
-    list_of_files: list[str],
+    list_of_files: list[Path | S3Path],
     bucket_name: str,
     manifest_id: str,
     product_id: str,
@@ -24,9 +27,7 @@ def get_bucket_keys_from_local_files(
             dataset_id=dataset_id,
             YYYY=today.year,
             MM=f"{today.month:02}",
-            file_name=file_path.split("/")[
-                -1
-            ],  # FIXME this is too naive. We should run some checks on the files before hand.
+            file_name=file_path.name,
         )
         for file_path in list_of_files
     }
@@ -43,20 +44,39 @@ def upload(
     files: list[str],
     max_concurrent_uploads: int,
 ) -> ResponseUpload:
-    """Try and upload all files given.
-    Keep track of errors.
-    Create Manifest with successful ones.
-    Use ETag as checksum."""
+    """
+    1. Quick-valdiate all files, keep track of invalid files. If no valid files, return early.
+    2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
+    3. Create Manifest with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum."""
 
     logger.info(
         f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
 
+    response = ResponseUpload()
+
+    logger.info("Validating files provided before relase")
+
+    validate_result = validate_upload_files([Path(file) for file in files])
+
+    if validate_result.files_invalid:
+        logger.warning("Some files did not pass the validation")
+        for invalid_file in validate_result.files_invalid:
+            logger.error(f"Invalid file! {invalid_file}")
+        response.files_invalid = validate_result.files_invalid
+    if not validate_result.files_valid:
+        no_valid_files_fatal_error_response = (
+            "No file passed the validation. No manifest will be created."
+        )
+        logger.error(no_valid_files_fatal_error_response)
+        response.fatal_error = no_valid_files_fatal_error_response
+        return response
+
     s3_client = S3Client(
         pushing_entity_id=pushing_entity_id,
-        access_key_id=environment_variables.ACCESS_KEY_ID,
-        secret_access_key=environment_variables.SECRET_ACCESS_KEY,
+        access_key_id=environment_variables.AWS_ACCESS_KEY_ID,
+        secret_access_key=environment_variables.AWS_SECRET_ACCESS_KEY,
         endpoint_url=environment_variables.INGESTION_BUCKETS_ENDPOINT,
         environment=environment_variables.ENVIRONMENT,
     )
@@ -64,7 +84,7 @@ def upload(
     today = date.today()
     bucket_keys_by_local_file_path_mapping = get_bucket_keys_from_local_files(
         today,
-        files,
+        validate_result.files_valid,
         s3_client.bucket_name,
         manifest_id,
         product_id,
@@ -75,24 +95,22 @@ def upload(
         max_concurrent_uploads,
     )
 
-    if upload_multiple_files_result.error:
-        failed = "\n,".join(
-            f"{Path(e.local_path).name}" for e in upload_multiple_files_result.error
-        )
-        logger.error(
-            f"Failed to upload {len(upload_multiple_files_result.error)} file(s):{failed}"
-        )
-        if upload_multiple_files_result.success:
+    if upload_multiple_files_result.errored_files:
+        for errored_file in upload_multiple_files_result.errored_files:
+            logger.error(f"Error uploading: {errored_file}")
+            response.files_failed.append(errored_file)
+        if upload_multiple_files_result.successful_files:
             logger.warning(
-                f"Manifest will include only {len(upload_multiple_files_result.success)} successful upload(s)"
+                f"Manifest will include only {len(upload_multiple_files_result.successful_files)} successful upload(s)"
             )
 
-    if not upload_multiple_files_result.success:
-        logger.error("Manifest won't be created as there were no successful uploads")
-        return ResponseUpload(
-            files_errored=[f.local_path for f in upload_multiple_files_result.error],
-            error="No successful uploads - no data were sent.",
+    if not upload_multiple_files_result.successful_files:
+        no_valid_files_fatal_error_response = (
+            "No successful uploads - no data were sent."
         )
+        logger.error(no_valid_files_fatal_error_response)
+        response.fatal_error = no_valid_files_fatal_error_response
+        return response
 
     manifest = create_manifest(
         pushing_entity_id=pushing_entity_id,
@@ -105,7 +123,7 @@ def upload(
                     s3_path=file.s3_path,
                     e_tag=file.e_tag,
                 )
-                for file in upload_multiple_files_result.success
+                for file in upload_multiple_files_result.successful_files
             ]
         },
     )
@@ -117,13 +135,9 @@ def upload(
     upload_file_obj_result = s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
-
-    return ResponseUpload(
-        files=[
-            Path(file.local_path).name for file in upload_multiple_files_result.success
-        ],
-        files_errored=[
-            Path(file.local_path).name for file in upload_multiple_files_result.error
-        ],
-        manifest=manifest,
-    )
+    breakpoint()
+    response.manifest = manifest
+    response.files_uploaded = [
+        file.local_path.name for file in upload_multiple_files_result.successful_files
+    ]
+    return response

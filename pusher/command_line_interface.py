@@ -46,7 +46,7 @@ def upload(
     """Upload SOURCE to the given dataset."""
     if not source:
         logger.warning(
-            ResponseUpload(error="No files added to upload.").model_dump_json(
+            ResponseUpload(fatal_error="No files added to upload.").model_dump_json(
                 indent=2,
                 exclude_none=True,
                 exclude_unset=True,

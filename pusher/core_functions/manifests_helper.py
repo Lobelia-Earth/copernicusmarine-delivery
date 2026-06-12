@@ -42,6 +42,8 @@ def create_manifest_files(
             file_size = None
         else:
             # TODO: add documented validation here with proper error handling
+            # Should actually remove this from here as it happens after we've tried to upload them
+            #
             assert os.path.exists(file_.local_path), (
                 f"File {file_} does not exist for upload operation"
             )

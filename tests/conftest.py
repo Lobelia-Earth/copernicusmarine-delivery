@@ -60,8 +60,8 @@ def service(ingestion_bucket: str, ministack_endpoint: str) -> S3Client:
 @pytest.fixture
 def cli_env(ministack_endpoint: str) -> dict:
     return {
-        "ACCESS_KEY_ID": "test",
-        "SECRET_ACCESS_KEY": "test",
+        "AWS_ACCESS_KEY_ID": "test",
+        "AWS_SECRET_ACCESS_KEY": "test",
         "INGESTION_BUCKETS_ENDPOINT": ministack_endpoint,
         "ENVIRONMENT": "local",
     }

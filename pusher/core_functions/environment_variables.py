@@ -6,7 +6,7 @@ NEW_DATA_BUCKET_PATH = (
     "data/{manifest_id}/{product_id}/{dataset_id}/{YYYY}/{MM}/{file_name}"
 )
 
-_REQUIRED_ENV_VARS = {"ACCESS_KEY_ID", "SECRET_ACCESS_KEY"}
+_REQUIRED_ENV_VARS = {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"}
 
 _ENV_VARS_WITH_DEFAULTS = {
     "ENVIRONMENT": "prod",

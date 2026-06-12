@@ -15,8 +15,8 @@ jobs:
           - 4566:4566
     env:
       S3_ENDPOINT_URL: http://localhost:4566
-      ACCESS_KEY_ID: test
-      SECRET_ACCESS_KEY: test
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 

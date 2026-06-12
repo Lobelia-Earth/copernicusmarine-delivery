@@ -10,6 +10,7 @@ MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 
+# FIXME these tests fail due to the new validations added
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
     random.seed(42)

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from pusher.core_functions.exceptions import NoSuchBucketException
-from pusher.core_functions.models import ErrorPutFile, S3File
+from pusher.core_functions.models import ErrorFile, S3File
 from pusher.s3_client import S3Client
 
 RESOURCES = Path("tests/resources")
@@ -35,7 +35,7 @@ def test_upload_file_nonexistent_returns_error(
     result = service.upload_file(
         key="data/test/missing.nc", file=Path("nonexistent/file.nc")
     )
-    assert isinstance(result, ErrorPutFile)
+    assert isinstance(result, ErrorFile)
 
 
 def test_upload_multiple_files(
@@ -48,9 +48,9 @@ def test_upload_multiple_files(
         RESOURCES / "file2.txt": "data/test/file2.txt",
     }
     result = service.upload_multiple_files(mapping, 10)
-    assert len(result.success) == 2
-    assert len(result.error) == 0
-    for f in result.success:
+    assert len(result.successful_files) == 2
+    assert len(result.errored_files) == 0
+    for f in result.successful_files:
         s3_client.head_object(Bucket=ingestion_bucket, Key=f.s3_path)
 
 
@@ -62,6 +62,6 @@ def test_upload_multiple_files_partial_failure(
         Path("nonexistent/file.nc"): "data/test/missing.nc",
     }
     result = service.upload_multiple_files(mapping, 10)
-    assert len(result.success) == 1
-    assert len(result.error) == 1
-    assert result.success[0].s3_path == "data/test/file1.txt"
+    assert len(result.successful_files) == 1
+    assert len(result.errored_files) == 1
+    assert result.successful_files[0].s3_path == "data/test/file1.txt"
