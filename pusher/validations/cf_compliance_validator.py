@@ -1,4 +1,5 @@
 """Validate a netCDF (4?) header and its variables for CF Compliance.
+Taken mostly from here: https://cfconventions.org/cf-conventions/cf-conventions.html
 TODO: Do all errors mean it completely fails? How strict should this be?"""
 
 import re
