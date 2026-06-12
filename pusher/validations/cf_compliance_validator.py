@@ -1,3 +1,6 @@
+"""Validate a netCDF (4?) header and its variables for CF Compliance.
+TODO: Do all errors mean it completely fails? How strict should this be?"""
+
 import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
