@@ -5,11 +5,11 @@ from pathlib import Path
 from cloudpathlib import S3Path
 
 from pusher.core_functions import environment_variables
+from pusher.core_functions.delivery_validator import validate_upload_file_requirements
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
 from pusher.core_functions.models import ResponseUpload, S3File
 from pusher.logger import logger
 from pusher.s3_client import S3Client
-from pusher.validations.file_validator import validate_upload_files
 
 
 def get_bucket_keys_from_local_files(
@@ -25,8 +25,6 @@ def get_bucket_keys_from_local_files(
             manifest_id=manifest_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            YYYY=today.year,
-            MM=f"{today.month:02}",
             file_name=file_path.name,
         )
         for file_path in list_of_files
@@ -58,7 +56,7 @@ def upload(
 
     logger.info("Validating files provided before relase")
 
-    validate_result = validate_upload_files([Path(file) for file in files])
+    validate_result = validate_upload_file_requirements([Path(file) for file in files])
 
     if validate_result.files_invalid:
         logger.warning("Some files did not pass the validation")
@@ -135,7 +133,6 @@ def upload(
     upload_file_obj_result = s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
-    breakpoint()
     response.manifest = manifest
     response.files_uploaded = [
         file.local_path.name for file in upload_multiple_files_result.successful_files
