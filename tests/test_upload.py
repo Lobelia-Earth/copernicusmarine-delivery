@@ -29,7 +29,7 @@ def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
 
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_cli(glo_mercator_bucket, cli_env):
+def test_upload_cli(glo_mercator_bucket, cli_env, snapshot):
     random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
@@ -50,6 +50,7 @@ def test_upload_cli(glo_mercator_bucket, cli_env):
         env=cli_env,
     )
     assert result.exit_code == 0
+    assert snapshot == result.output
 
 
 def test_upload_cli_no_source_exits(cli_env):

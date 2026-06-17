@@ -10,23 +10,66 @@ class ManifestFile(BaseModel):
     file_size: int | None
     #: checksum of the file to be uploaded.
     checksum: str
+    #: Status of the file in the OPDV system
+    #: None: The file has not been picked up yet by the OPDV system.
+    #: validated: The file has been validated by the OPDV system. Will be processed.
+    #: pushed or deleted: The file has been processed following the operation.
+    #: backed_up: The file has been backed up.
+    #: error: The file failed to be uploaded.
+    status: Literal["validated", "pushed", "deleted", "backed_up", "error"] | None = (
+        None
+    )
+    #: last updated status timestamp in ISO 8601 format (UTC)
+    status_timestamp: str | None = None
+    #: Optional error message if the file failed to be uploaded.
+    error: str | None = None
 
 
 class Operation(BaseModel):
+    #: Operation type
+    #: upload: The operation is to upload new files to MDS storage.
+    #: delete: The operation is to delete files from MDS storage.
     operation: Literal["upload", "delete"]
+    #: status of the operation in the OPDV system
+    #: None: The operation has not been picked up yet by the OPDV system.
+    #: in_progress: The operation is being processed by the OPDV system.
+    #: done: The operation has been processed successfully by the OPDV system.
+    #: error: The operation failed to be processed by the OPDV system.
+    status: Literal["in_progress", "done", "error"] | None = None
+    #: last updated status timestamp in ISO 8601 format (UTC)
+    status_timestamp: str | None = None
+    #: Optional error message if the operation failed to be processed by the OPDV system.
+    error: str | None = None
+    #: List of files associated with the operation.
     files: list[ManifestFile]
 
 
 class Manifest(BaseModel):
     #: Unique identifier for the manifest. Contains a date that is not in UTC.
     manifest_id: str
+    #: Unique identifier for the pushing entity.
     pushing_entity_id: str
+    #: Unique identifier for the product.
     product_id: str
+    #: Unique identifier for the dataset.
     dataset_id: str
+    #: List of operations associated with the manifest.
+    #: These operations will be done sequentially in the order they are listed.
     operations: list[Operation]
 
     #: ISO 8601 formatted timestamp in UTC
     creation_time: str
+    #: status of the manifest in the OPDV system.
+    #: None: The manifest has not been picked up yet by the OPDV system.
+    #: in_progress: The manifest is being processed by the OPDV system.
+    #: done: The manifest has been processed successfully by the OPDV system.
+    #: partial_error: The manifest has been partially processed by the OPDV system. Some files or operations may have failed.
+    #: error: The manifest failed to be processed by the OPDV system.
+    status: Literal["in_progress", "done", "partial_error", "error"] | None = None
+    #: last updated status timestamp in ISO 8601 format (UTC)
+    status_timestamp: str | None = None
+    #: Optional error message if the manifest failed to be processed by the OPDV system.
+    error: str | None = None
 
 
 class S3FileObj(BaseModel):
@@ -51,6 +94,7 @@ class PutFilesResult(BaseModel):
     error: list[ErrorPutFile] = Field(default_factory=list)
 
 
+# TODO: document. Also, get read of the manifest vocabulary?
 class ResponseUpload(BaseModel):
     """Metadata returned when using :func:`~pusher.upload`"""
 
@@ -58,6 +102,8 @@ class ResponseUpload(BaseModel):
     files: list[str] = Field(default_factory=list)
     #: List of files that failed to be uploaded.
     files_errored: list[str] = Field(default_factory=list)
+    #: Transaction ID.
+    transaction_id: str | None = None
     #: Manifest of such upload
     manifest: Manifest | None = None
     #: Any error that may prematurely stop the upload.
