@@ -125,5 +125,6 @@ def upload(
         files_errored=[
             Path(file.local_path).name for file in upload_multiple_files_result.error
         ],
+        transaction_id=manifest.manifest_id,
         manifest=manifest,
     )
