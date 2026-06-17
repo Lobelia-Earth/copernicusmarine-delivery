@@ -11,13 +11,13 @@ class ManifestFile(BaseModel):
     #: checksum of the file to be uploaded.
     checksum: str
     #: Status of the file in the OPDV system
-    #: None: The file has not been picked up yet by the OPDV system.
+    #: todo: The file has not been picked up yet by the OPDV system.
     #: validated: The file has been validated by the OPDV system. Will be processed.
     #: pushed or deleted: The file has been processed following the operation.
     #: backed_up: The file has been backed up.
     #: error: The file failed to be uploaded.
-    status: Literal["validated", "pushed", "deleted", "backed_up", "error"] | None = (
-        None
+    status: Literal["todo", "validated", "pushed", "deleted", "backed_up", "error"] = (
+        "todo"
     )
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
@@ -31,11 +31,11 @@ class Operation(BaseModel):
     #: delete: The operation is to delete files from MDS storage.
     operation: Literal["upload", "delete"]
     #: status of the operation in the OPDV system
-    #: None: The operation has not been picked up yet by the OPDV system.
+    #: todo: The operation has not been picked up yet by the OPDV system.
     #: in_progress: The operation is being processed by the OPDV system.
     #: done: The operation has been processed successfully by the OPDV system.
     #: error: The operation failed to be processed by the OPDV system.
-    status: Literal["in_progress", "done", "error"] | None = None
+    status: Literal["todo", "in_progress", "done", "error"] = "todo"
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
     #: Optional error message if the operation failed to be processed by the OPDV system.
@@ -60,12 +60,12 @@ class Manifest(BaseModel):
     #: ISO 8601 formatted timestamp in UTC
     creation_time: str
     #: status of the manifest in the OPDV system.
-    #: None: The manifest has not been picked up yet by the OPDV system.
+    #: todo: The manifest has not been picked up yet by the OPDV system.
     #: in_progress: The manifest is being processed by the OPDV system.
     #: done: The manifest has been processed successfully by the OPDV system.
     #: partial_error: The manifest has been partially processed by the OPDV system. Some files or operations may have failed.
     #: error: The manifest failed to be processed by the OPDV system.
-    status: Literal["in_progress", "done", "partial_error", "error"] | None = None
+    status: Literal["todo", "in_progress", "done", "partial_error", "error"] = "todo"
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
     #: Optional error message if the manifest failed to be processed by the OPDV system.
@@ -94,7 +94,7 @@ class PutFilesResult(BaseModel):
     error: list[ErrorPutFile] = Field(default_factory=list)
 
 
-# TODO: document. Also, get read of the manifest vocabulary?
+# TODO: document. Also, get rid of the manifest vocabulary?
 class ResponseUpload(BaseModel):
     """Metadata returned when using :func:`~pusher.upload`"""
 

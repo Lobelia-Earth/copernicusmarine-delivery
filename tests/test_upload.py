@@ -50,7 +50,7 @@ def test_upload_cli(glo_mercator_bucket, cli_env, snapshot):
         env=cli_env,
     )
     assert result.exit_code == 0
-    assert snapshot == result.output
+    assert result.output == snapshot
 
 
 def test_upload_cli_no_source_exits(cli_env):
