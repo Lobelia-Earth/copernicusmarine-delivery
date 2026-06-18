@@ -1,11 +1,9 @@
 from pathlib import Path
-from typing import Any
 
 from cloudpathlib import S3Path
 
-from pusher.core_functions.models import InvalidFile, Manifest, ValidateResult
+from pusher.core_functions.models import InvalidFile, ValidateResult
 from pusher.logger import logger
-from pusher.s3_client import S3Client
 
 SUPPORTED_FILE_EXTENTIONS = {".txt", ".shp", ".zip", ".nc"}
 
