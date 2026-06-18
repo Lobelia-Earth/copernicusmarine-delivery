@@ -134,6 +134,7 @@ def upload(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
     response.manifest = manifest
+    response.transaction_id = manifest.manifest_id
     response.files_uploaded = [
         file.local_path.name for file in upload_multiple_files_result.successful_files
     ]

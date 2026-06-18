@@ -45,11 +45,13 @@ def upload(
 ) -> None:
     """Upload SOURCE to the given dataset."""
     if not source:
-        logger.warning(
-            ResponseUpload(fatal_error="No files added to upload.").model_dump_json(
+        logger.error("No files added to upload.")
+        click.echo(
+            ResponseUpload(error="No files added to upload.").model_dump_json(
                 indent=2,
                 exclude_none=True,
                 exclude_unset=True,
+                exclude_defaults=True,
             )
         )
         sys.exit(1)
@@ -61,11 +63,12 @@ def upload(
         files=source,
         max_concurrent_uploads=max_concurrent_uploads,
     )
-    logger.info(
+    click.echo(
         response.model_dump_json(
             indent=2,
             exclude_none=True,
             exclude_unset=True,
+            exclude_defaults=True,
         )
     )
 

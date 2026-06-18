@@ -26,11 +26,11 @@ def create_manifest(
     )
 
 
-def create_manifest_id(dataset_id: str) -> str:
+def create_manifest_id(product_id: str) -> str:
     timestamp_format = "%Y%m%dT%H%M%S"
     iso_timestamp_with_seconds = datetime.now().strftime(timestamp_format)
     random_number = randint(1000, 9999)
-    return f"{iso_timestamp_with_seconds}-{dataset_id}-{random_number}"
+    return f"{iso_timestamp_with_seconds}-{product_id}-{random_number}"
 
 
 def create_manifest_files(
@@ -42,11 +42,9 @@ def create_manifest_files(
             file_size = None
         else:
             # TODO: add documented validation here with proper error handling
-            # Should actually remove this from here as it happens after we've tried to upload them
-            #
-            assert os.path.exists(file_.local_path), (
-                f"File {file_} does not exist for upload operation"
-            )
+            assert os.path.exists(
+                file_.local_path
+            ), f"File {file_} does not exist for upload operation"
             assert os.path.getsize(file_.local_path) > 0, f"File {file_} seems empty"
             file_size = os.path.getsize(file_.local_path) // (1024 * 1024)  # Size in MB
 
