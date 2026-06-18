@@ -34,8 +34,9 @@ class Operation(BaseModel):
     #: todo: The operation has not been picked up yet by the OPDV system.
     #: in_progress: The operation is being processed by the OPDV system.
     #: done: The operation has been processed successfully by the OPDV system.
+    #: partial_error: The operation has been partially processed by the OPDV system. Some files may have failed.
     #: error: The operation failed to be processed by the OPDV system.
-    status: Literal["todo", "in_progress", "done", "error"] = "todo"
+    status: Literal["todo", "in_progress", "done", "partial_error", "error"] = "todo"
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
     #: Optional error message if the operation failed to be processed by the OPDV system.
