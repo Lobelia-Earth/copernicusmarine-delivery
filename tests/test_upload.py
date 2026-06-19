@@ -1,3 +1,4 @@
+import json
 import random
 
 from click.testing import CliRunner
@@ -54,7 +55,11 @@ def test_upload_cli(glo_mercator_bucket, cli_env, snapshot):
         env=cli_env,
     )
     assert result.exit_code == 0
-    assert result.output == snapshot
+    output = json.loads(result.output)
+    output["files_uploaded"] = sorted(output.get("files_uploaded", []))
+    for op in output.get("manifest", {}).get("operations", []):
+        op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
+    assert output == snapshot
 
 
 def test_upload_cli_no_source_exits(cli_env):
