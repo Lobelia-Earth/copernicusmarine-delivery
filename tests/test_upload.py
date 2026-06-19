@@ -24,6 +24,9 @@ def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
     )
     result = response.model_dump(exclude_none=True)
     result["files"] = sorted(result.get("files", []))
+    result["files_uploaded"] = sorted(result.get("files_uploaded", []))
+    result["files_failed"] = sorted(result.get("files_failed", []))
+    result["files_invalid"] = sorted(result.get("files_invalid", []))
     for op in result.get("manifest", {}).get("operations", []):
         op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
     assert result == snapshot
