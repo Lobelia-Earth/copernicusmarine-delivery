@@ -118,7 +118,7 @@ class ResponseUpload(BaseModel):
     files_uploaded: list[str] = Field(default_factory=list)
     # Potential user errors (user must fix)
     files_invalid: list[InvalidFile] = Field(default_factory=list)
-    # Potential I/O errors, might be on user side, not necessarily user failt
+    # Potential I/O errors, might be on the user side, not necessarily user fault
     files_failed: list[ErrorFile] = Field(default_factory=list)
     #: Transaction ID.
     transaction_id: str | None = None
