@@ -72,7 +72,7 @@ def test_get_bucket_keys_from_local_files():
     assert result == {
         Path(
             "path/to/file.nc"
-        ): "data/20240315T000000-dataset1-1234/product1/dataset1/2024/03/file.nc"
+        ): "data/20240315T000000-dataset1-1234/product1/dataset1/file.nc"
     }
 
 

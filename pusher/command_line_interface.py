@@ -47,7 +47,7 @@ def upload(
     if not source:
         logger.error("No files added to upload.")
         click.echo(
-            ResponseUpload(error="No files added to upload.").model_dump_json(
+            ResponseUpload(fatal_error="No files added to upload.").model_dump_json(
                 indent=2,
                 exclude_none=True,
                 exclude_unset=True,
