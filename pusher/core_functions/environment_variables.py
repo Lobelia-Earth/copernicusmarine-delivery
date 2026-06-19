@@ -4,7 +4,7 @@ import os
 NEW_MANIFESTS_PREFIX = "manifests/new/{manifest_id}.json"
 NEW_DATA_BUCKET_PATH = "data/{manifest_id}/{product_id}/{dataset_id}/{file_name}"
 
-_REQUIRED_ENV_VARS = {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"}
+_REQUIRED_ENV_VARS = {"OPDV_ACCESS_KEY_ID", "OPDV_SECRET_ACCESS_KEY"}
 
 _ENV_VARS_WITH_DEFAULTS = {
     "ENVIRONMENT": "prod",

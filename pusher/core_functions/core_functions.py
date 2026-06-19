@@ -73,8 +73,8 @@ def upload(
 
     s3_client = S3Client(
         pushing_entity_id=pushing_entity_id,
-        access_key_id=environment_variables.AWS_ACCESS_KEY_ID,
-        secret_access_key=environment_variables.AWS_SECRET_ACCESS_KEY,
+        access_key_id=environment_variables.OPDV_ACCESS_KEY_ID,
+        secret_access_key=environment_variables.OPDV_SECRET_ACCESS_KEY,
         endpoint_url=environment_variables.INGESTION_BUCKETS_ENDPOINT,
         environment=environment_variables.ENVIRONMENT,
     )
