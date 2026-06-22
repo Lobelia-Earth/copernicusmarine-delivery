@@ -20,9 +20,9 @@ class ManifestFile(BaseModel):
     #: pushed or deleted: The file has been processed following the operation.
     #: backed_up: The file has been backed up.
     #: error: The file failed to be uploaded.
-    status: Literal["todo", "validated", "pushed", "deleted", "backed_up", "error"] = (
-        "todo"
-    )
+    status: Literal[
+        "todo", "validated", "published", "deleted", "backed_up", "error"
+    ] = "todo"
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
     #: Optional error message if the file failed to be uploaded.
