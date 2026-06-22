@@ -2,11 +2,9 @@ import os
 
 ## Constants to be decided where they'll go or how they'll be set
 NEW_MANIFESTS_PREFIX = "manifests/new/{manifest_id}.json"
-NEW_DATA_BUCKET_PATH = (
-    "data/{manifest_id}/{product_id}/{dataset_id}/{YYYY}/{MM}/{file_name}"
-)
+NEW_DATA_BUCKET_PATH = "data/{manifest_id}/{product_id}/{dataset_id}/{file_name}"
 
-_REQUIRED_ENV_VARS = {"ACCESS_KEY_ID", "SECRET_ACCESS_KEY"}
+_REQUIRED_ENV_VARS = {"OPDV_ACCESS_KEY_ID", "OPDV_SECRET_ACCESS_KEY"}
 
 _ENV_VARS_WITH_DEFAULTS = {
     "ENVIRONMENT": "prod",

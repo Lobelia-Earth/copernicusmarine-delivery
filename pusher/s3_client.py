@@ -10,7 +10,7 @@ from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
 )
-from pusher.core_functions.models import ErrorPutFile, PutFilesResult, S3File
+from pusher.core_functions.models import ErrorFile, PutFilesResult, S3File
 from pusher.logger import logger
 
 CHUNK_SIZE = 16 * 1024 * 1024  # 16 MB
@@ -107,7 +107,7 @@ class S3Client:
         file: Path,
         use_multipart: bool = True,
         chunk_size: int = CHUNK_SIZE,
-    ) -> S3File | ErrorPutFile:
+    ) -> S3File | ErrorFile:
         """Upload a local file (by Path) to S3."""
         logger.debug(f"Starting upload for {file.name}")
         try:
@@ -121,16 +121,16 @@ class S3Client:
             )
             logger.debug(f"Successfully uploaded file {file.name}")
             return S3File(
-                local_path=file.as_posix(),
+                local_path=file,
                 s3_path=key,
                 e_tag=put_result["e_tag"].strip('"'),  # type: ignore
             )
 
         except Exception as e:
             logger.error(f"Something went wrong uploading: {file.name}")
-            return ErrorPutFile(
-                local_path=file.as_posix(),
-                error=_extract_error_message(e),
+            return ErrorFile(
+                path=file,
+                reason=_extract_error_message(e),
             )
 
     def upload_multiple_files(
@@ -161,4 +161,6 @@ class S3Client:
                     logger.info(f"Uploaded file {i + 1}/{total}")
                 else:
                     error_results.append(result)
-        return PutFilesResult(success=success_results, error=error_results)
+        return PutFilesResult(
+            successful_files=success_results, errored_files=error_results
+        )

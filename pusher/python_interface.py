@@ -11,7 +11,7 @@ def upload(
 ) -> ResponseUpload:
     """Upload ``source`` to the given dataset and product."""
     if not sources:
-        return ResponseUpload(error="No files added to upload.")
+        return ResponseUpload(fatal_error="No files added to upload.")
     response = _upload(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,

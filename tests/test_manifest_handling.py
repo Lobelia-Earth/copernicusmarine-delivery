@@ -51,9 +51,9 @@ def test_manifest_round_trip():
 
 
 def test_response_upload_error_no_manifest():
-    response = ResponseUpload(error="No successful uploads - no data were sent.")
-    assert response.manifest is None
-    assert response.files == []
+    response = ResponseUpload(fatal_error="No successful uploads - no data were sent.")
+    assert response.delivery is None
+    assert response.files_uploaded == []
 
 
 # --- Path generation ---
@@ -63,7 +63,7 @@ def test_response_upload_error_no_manifest():
 def test_get_bucket_keys_from_local_files():
     result = get_bucket_keys_from_local_files(
         today=date.today(),
-        list_of_files=["path/to/file.nc"],
+        list_of_files=[Path("path/to/file.nc")],
         bucket_name="mdl-ing-test",
         manifest_id="20240315T000000-dataset1-1234",
         product_id="product1",
@@ -72,7 +72,7 @@ def test_get_bucket_keys_from_local_files():
     assert result == {
         Path(
             "path/to/file.nc"
-        ): "data/20240315T000000-dataset1-1234/product1/dataset1/2024/03/file.nc"
+        ): "data/20240315T000000-dataset1-1234/product1/dataset1/file.nc"
     }
 
 
@@ -96,7 +96,7 @@ def test_create_manifest_id_format():
 def test_create_manifest_files_upload(tmp_path):
     f = tmp_path / "file.nc"
     f.write_bytes(b"x" * 1024)
-    files = [S3File(local_path=str(f), s3_path="data/key/file.nc", e_tag="abc-1")]
+    files = [S3File(local_path=f, s3_path="data/key/file.nc", e_tag="abc-1")]
     result = create_manifest_files(files, "upload")
     assert result[0].checksum == "abc-1"
     assert result[0].file_size == 0  # < 1 MB rounds to 0
@@ -104,7 +104,9 @@ def test_create_manifest_files_upload(tmp_path):
 
 def test_create_manifest_files_delete():
     files = [
-        S3File(local_path="/irrelevant", s3_path="data/key/file.nc", e_tag="abc-1")
+        S3File(
+            local_path=Path("/irrelevant"), s3_path="data/key/file.nc", e_tag="abc-1"
+        )
     ]
     result = create_manifest_files(files, "delete")
     assert result[0].file_size is None
@@ -113,7 +115,9 @@ def test_create_manifest_files_delete():
 def test_create_manifest_files_upload_missing_file():
     files = [
         S3File(
-            local_path="/nonexistent/file.nc", s3_path="data/key/file.nc", e_tag="abc-1"
+            local_path=Path("/nonexistent/file.nc"),
+            s3_path="data/key/file.nc",
+            e_tag="abc-1",
         )
     ]
     with pytest.raises(AssertionError):
@@ -124,7 +128,7 @@ def test_create_manifest_files_upload_missing_file():
 def test_create_manifest(tmp_path):
     f = tmp_path / "file.nc"
     f.write_bytes(b"x" * 1024)
-    files = [S3File(local_path=str(f), s3_path="data/key/file.nc", e_tag="abc-1")]
+    files = [S3File(local_path=f, s3_path="data/key/file.nc", e_tag="abc-1")]
     manifest = create_manifest(
         pushing_entity_id="TEST-FR",
         product_id="product1",
