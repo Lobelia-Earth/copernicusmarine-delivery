@@ -2,6 +2,7 @@ import sys
 
 import click
 
+from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import ResponseUpload
 from pusher.logger import logger
@@ -46,7 +47,7 @@ def cli() -> None:
     type=int,
     default=10,
     show_default=True,
-),
+)
 def upload(
     source: list[str],
     pushing_entity_id: str,
@@ -98,7 +99,7 @@ def upload(
     type=int,
     default=10,
     show_default=True,
-),
+)
 def delete(
     source: list[str],
     pushing_entity_id: str,

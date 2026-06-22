@@ -29,12 +29,12 @@ def get_upload_bucket_keys_from_local_files(
     }
 
 def get_delete_s3_files_from_local_files(
-    list_of_files: list[Path | S3Path],
+    list_of_files: list[Path],
     product_id: str,
     dataset_id: str
-) -> list[S3File]:
+) -> list[str]:
     return [
-        S3File()
+        f"native/{product_id}/{dataset_id}/YYYY/MM/{file.name}"
         for file in list_of_files
     ]
 
