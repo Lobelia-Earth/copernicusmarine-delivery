@@ -6,7 +6,7 @@ from freezegun import freeze_time
 from pydantic import ValidationError
 
 from pusher.core_functions.core_functions import (
-    get_bucket_keys_from_local_files,
+    get_upload_bucket_keys_from_local_files,
     get_manifest_destination_key,
 )
 from pusher.core_functions.manifests_helper import (
@@ -61,7 +61,7 @@ def test_response_upload_error_no_manifest():
 
 @freeze_time("2024-03-15")
 def test_get_bucket_keys_from_local_files():
-    result = get_bucket_keys_from_local_files(
+    result = get_upload_bucket_keys_from_local_files(
         today=date.today(),
         list_of_files=[Path("path/to/file.nc")],
         bucket_name="mdl-ing-test",
