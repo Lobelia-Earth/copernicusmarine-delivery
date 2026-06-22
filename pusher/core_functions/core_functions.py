@@ -131,7 +131,7 @@ def upload(
     upload_file_obj_result = s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
-    response.manifest = manifest
+    response.delivery = manifest
     response.transaction_id = manifest.manifest_id
     response.files_uploaded = [
         file.local_path.name for file in upload_multiple_files_result.successful_files

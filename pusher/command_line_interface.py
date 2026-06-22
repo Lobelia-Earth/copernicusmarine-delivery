@@ -36,7 +36,11 @@ def cli() -> None:
     default=10,
     show_default=True,
 )
-@click.option("--save-delivery-json", is_flag=True)
+@click.option(
+    "--save-delivery-json",
+    is_flag=True,
+    help="Output delivery document to a json file.",
+)
 def upload(
     source: list[str],
     pushing_entity_id: str,
@@ -68,18 +72,24 @@ def upload(
     click.echo(
         response.model_dump_json(
             indent=2,
-            exclude={"manifest"},
+            exclude={"delivery"},
             exclude_none=True,
             exclude_unset=True,
             exclude_defaults=True,
         )
     )
-    if save_delivery_json:
-        assert response.manifest
-        manifest_output_file_name = f"{response.manifest.manifest_id}.json"
+    if save_delivery_json and response.delivery:
+        manifest_output_file_name = f"{response.delivery.manifest_id}.json"
         logger.info(f"Writing delivery result to {manifest_output_file_name}")
         with open(manifest_output_file_name, "w") as output_file:
-            output_file.write(response.manifest.model_dump_json(indent=2))
+            output_file.write(
+                response.delivery.model_dump_json(
+                    indent=2,
+                    exclude_none=True,
+                    exclude_unset=True,
+                    exclude_defaults=True,
+                )
+            )
 
 
 if __name__ == "__main__":
