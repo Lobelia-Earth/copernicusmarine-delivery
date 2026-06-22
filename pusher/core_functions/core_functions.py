@@ -5,7 +5,13 @@ from pathlib import Path
 from pusher.core_functions import environment_variables
 from pusher.core_functions.delivery_validator import validate_upload_file_requirements
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
-from pusher.core_functions.models import ResponseUpload, S3File
+from pusher.core_functions.models import (
+    RequestDelete,
+    RequestUpload,
+    ResponseDelete,
+    ResponseUpload,
+    S3Path,
+)
 from pusher.logger import logger
 from pusher.s3_client import S3Client
 
@@ -27,16 +33,6 @@ def get_upload_bucket_keys_from_local_files(
         )
         for file_path in list_of_files
     }
-
-def get_delete_s3_files_from_local_files(
-    list_of_files: list[Path],
-    product_id: str,
-    dataset_id: str
-) -> list[str]:
-    return [
-        f"native/{product_id}/{dataset_id}/YYYY/MM/{file.name}"
-        for file in list_of_files
-    ]
 
 
 def get_manifest_destination_key(today: date, manifest_id: str) -> str:
@@ -122,22 +118,15 @@ def upload(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operation_files_mapping={
-            "upload": [
-                S3File(
-                    local_path=file.local_path,
-                    s3_path=file.s3_path,
-                    e_tag=file.e_tag,
-                )
-                for file in upload_multiple_files_result.successful_files
-            ]
-        },
+        operation_requests=[
+            RequestUpload(files=list(upload_multiple_files_result.successful_files))
+        ],
     )
 
     manifest_bucket_path = get_manifest_destination_key(today, manifest.manifest_id)
 
     # What if uploading the manifest fails :0! this is the worst of the worst case scenarios!
-    logger.debug(f"Uploading manifest to {manifest_bucket_path}")
+    logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
     upload_file_obj_result = s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
@@ -146,4 +135,46 @@ def upload(
     response.files_uploaded = [
         file.local_path.name for file in upload_multiple_files_result.successful_files
     ]
+    return response
+
+
+def delete(
+    pushing_entity_id: str,
+    product_id: str,
+    dataset_id: str,
+    files: list[str],
+) -> ResponseDelete:
+    """
+    Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
+    """
+    logger.info(
+        f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
+        f"\n\tFiles: {files}"
+    )
+
+    response = ResponseDelete()
+
+    s3_client = S3Client(
+        pushing_entity_id=pushing_entity_id,
+        access_key_id=environment_variables.OPDV_ACCESS_KEY_ID,
+        secret_access_key=environment_variables.OPDV_SECRET_ACCESS_KEY,
+        endpoint_url=environment_variables.INGESTION_BUCKETS_ENDPOINT,
+        environment=environment_variables.ENVIRONMENT,
+    )
+    today = date.today()
+
+    manifest = create_manifest(
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operation_requests=[RequestDelete(files=[S3Path(file) for file in files])],
+    )
+
+    manifest_bucket_path = get_manifest_destination_key(today, manifest.manifest_id)
+    logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
+    s3_client.upload_fileobj(
+        key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
+    )
+    response.delivery = manifest
+    response.transaction_id = manifest.manifest_id
     return response

@@ -6,20 +6,22 @@ from freezegun import freeze_time
 from pydantic import ValidationError
 
 from pusher.core_functions.core_functions import (
-    get_upload_bucket_keys_from_local_files,
     get_manifest_destination_key,
+    get_upload_bucket_keys_from_local_files,
 )
 from pusher.core_functions.manifests_helper import (
     create_manifest,
-    create_manifest_files,
     create_manifest_id,
+    create_upload_manifest_files,
 )
 from pusher.core_functions.models import (
     Manifest,
     ManifestFile,
     Operation,
+    RequestUpload,
     ResponseUpload,
     S3File,
+    S3Path,
 )
 
 RESOURCES = Path("tests/resources")
@@ -29,7 +31,9 @@ RESOURCES = Path("tests/resources")
 
 
 def test_manifest_file_none_file_size():
-    f = ManifestFile(s3_path="data/key/file.nc", file_size=None, checksum="abc123")
+    f = ManifestFile(
+        s3_path=S3Path("data/key/file.nc"), file_size=None, checksum="abc123"
+    )
     assert f.file_size is None
 
 
@@ -93,47 +97,37 @@ def test_create_manifest_id_format():
     assert suffix.isdigit() and 1000 <= int(suffix) <= 9999
 
 
-def test_create_manifest_files_upload(tmp_path):
+def test_create_upload_manifest_files(tmp_path):
     f = tmp_path / "file.nc"
     f.write_bytes(b"x" * 1024)
-    files = [S3File(local_path=f, s3_path="data/key/file.nc", e_tag="abc-1")]
-    result = create_manifest_files(files, "upload")
+    files = [S3File(local_path=f, s3_path=S3Path("data/key/file.nc"), e_tag="abc-1")]
+    result = create_upload_manifest_files(files)
     assert result[0].checksum == "abc-1"
     assert result[0].file_size == 0  # < 1 MB rounds to 0
 
 
-def test_create_manifest_files_delete():
-    files = [
-        S3File(
-            local_path=Path("/irrelevant"), s3_path="data/key/file.nc", e_tag="abc-1"
-        )
-    ]
-    result = create_manifest_files(files, "delete")
-    assert result[0].file_size is None
-
-
-def test_create_manifest_files_upload_missing_file():
+def test_create_upload_manifest_files_missing_file():
     files = [
         S3File(
             local_path=Path("/nonexistent/file.nc"),
-            s3_path="data/key/file.nc",
+            s3_path=S3Path("data/key/file.nc"),
             e_tag="abc-1",
         )
     ]
     with pytest.raises(AssertionError):
-        create_manifest_files(files, "upload")
+        create_upload_manifest_files(files)
 
 
 @freeze_time("2024-03-15 12:00:01")
 def test_create_manifest(tmp_path):
     f = tmp_path / "file.nc"
     f.write_bytes(b"x" * 1024)
-    files = [S3File(local_path=f, s3_path="data/key/file.nc", e_tag="abc-1")]
+    files = [S3File(local_path=f, s3_path=S3Path("data/key/file.nc"), e_tag="abc-1")]
     manifest = create_manifest(
         pushing_entity_id="TEST-FR",
         product_id="product1",
         dataset_id="dataset1",
-        operation_files_mapping={"upload": files},
+        operation_requests=[RequestUpload(files=files)],
     )
     assert manifest.pushing_entity_id == "TEST-FR"
     assert manifest.operations[0].operation == "upload"

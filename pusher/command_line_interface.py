@@ -4,29 +4,21 @@ import click
 
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import ResponseUpload
+from pusher.core_functions.models import ResponseDelete, ResponseUpload
 from pusher.logger import logger
 
 _shared_options = [
+    click.option("--source", type=str, multiple=True),
+    click.option("--dataset-id", type=str),
+    click.option("--product-id", type=str),
+    click.option("--pushing-entity-id", type=str),
     click.option(
-        "--source",
-        type=str,
-        multiple=True,
+        "--save-delivery-json",
+        is_flag=True,
+        help="Output delivery document to a json file.",
     ),
-    click.option(
-        "--dataset-id",
-        type=str,
-    ),
-    click.option(
-        "--product-id",
-        type=str,
-    ),
-    click.option(
-        "--pushing-entity-id",
-        type=str,
-    ),
-    click.option("--save-delivery-json", is_flag=True)
 ]
+
 
 def shared_options(func):
     """Prepend in reversed order, as click applies from bottom-up"""
@@ -42,17 +34,7 @@ def cli() -> None:
 
 @cli.command()
 @shared_options
-@click.option(
-    "--max-concurrent-uploads",
-    type=int,
-    default=10,
-    show_default=True,
-)
-@click.option(
-    "--save-delivery-json",
-    is_flag=True,
-    help="Output delivery document to a json file.",
-)
+@click.option("--max-concurrent-uploads", type=int, default=10, show_default=True)
 def upload(
     source: list[str],
     pushing_entity_id: str,
@@ -60,7 +42,6 @@ def upload(
     product_id: str,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = 10,
-    save_delivery_json: bool = False,
 ) -> None:
     """Upload SOURCE to the given dataset."""
     if not source:
@@ -104,27 +85,21 @@ def upload(
                 )
             )
 
+
 @cli.command()
 @shared_options
-@click.option(
-    "--max-concurrent-deletes",
-    type=int,
-    default=10,
-    show_default=True,
-)
 def delete(
     source: list[str],
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
-    max_concurrent_deletes: int = 10,
-) -> None: 
+) -> None:
     """Delete SOURCE from the given dataset."""
     if not source:
         logger.error("No files added to delete.")
         click.echo(
-            ResponseUpload(fatal_error="No files added to delete.").model_dump_json(
+            ResponseDelete(fatal_error="No files added to delete.").model_dump_json(
                 indent=2,
                 exclude_none=True,
                 exclude_unset=True,
@@ -132,28 +107,35 @@ def delete(
             )
         )
         sys.exit(1)
+
     response = _delete(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
-        max_concurrent_deletes=max_concurrent_deletes,
     )
     click.echo(
         response.model_dump_json(
             indent=2,
-            exclude={"manifest"},
+            exclude={"delivery"},
             exclude_none=True,
             exclude_unset=True,
             exclude_defaults=True,
         )
     )
-    if save_delivery_json:
-        assert response.manifest
-        manifest_output_file_name = f"{response.manifest.manifest_id}.json"
+    if save_delivery_json and response.delivery:
+        manifest_output_file_name = f"{response.delivery.manifest_id}.json"
         logger.info(f"Writing delivery result to {manifest_output_file_name}")
         with open(manifest_output_file_name, "w") as output_file:
-            output_file.write(response.manifest.model_dump_json(indent=2))
+            output_file.write(
+                response.delivery.model_dump_json(
+                    indent=2,
+                    exclude_none=True,
+                    exclude_unset=True,
+                    exclude_defaults=True,
+                )
+            )
+
 
 if __name__ == "__main__":
     cli()
