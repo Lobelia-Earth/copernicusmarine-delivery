@@ -13,10 +13,10 @@
       dict({
         'files': list([
           dict({
-            's3_path': '/Users/hmuro/dev/marine-producer-toolbox/tests/resources/file1.txt',
+            's3_path': 'tests/resources/file1.txt',
           }),
           dict({
-            's3_path': '/Users/hmuro/dev/marine-producer-toolbox/tests/resources/file2.txt',
+            's3_path': 'tests/resources/file2.txt',
           }),
         ]),
         'operation': 'delete',

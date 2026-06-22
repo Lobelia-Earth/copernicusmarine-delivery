@@ -1,6 +1,5 @@
 import glob
 import json
-import os
 import random
 
 from click.testing import CliRunner
@@ -57,7 +56,6 @@ def test_delete_cli(glo_mercator_bucket, cli_env, snapshot):
 def test_delete_cli_save_delivery_json(glo_mercator_bucket, cli_env, snapshot):
     random.seed(42)
     runner = CliRunner()
-    abs_files = [os.path.abspath(f) for f in MOCK_FILES]
     with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
@@ -66,9 +64,9 @@ def test_delete_cli_save_delivery_json(glo_mercator_bucket, cli_env, snapshot):
                 "--pushing-entity-id",
                 PUSHING_ENTITY_ID,
                 "--source",
-                abs_files[0],
+                MOCK_FILES[0],
                 "--source",
-                abs_files[1],
+                MOCK_FILES[1],
                 "--dataset-id",
                 "dataset1",
                 "--product-id",

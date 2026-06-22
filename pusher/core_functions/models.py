@@ -86,13 +86,13 @@ class S3File(BaseModel):
 @dataclass
 class RequestUpload:
     files: list[S3File]
-    op_type: Literal["upload"] = field(default="upload", init=False)
+    operation_type: Literal["upload"] = field(default="upload", init=False)
 
 
 @dataclass
 class RequestDelete:
     files: list[S3Path]
-    op_type: Literal["delete"] = field(default="delete", init=False)
+    operation_type: Literal["delete"] = field(default="delete", init=False)
 
 
 class ErrorResponseFile(BaseModel):

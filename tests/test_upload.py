@@ -14,7 +14,6 @@ ABS_MOCK_FILES = [os.path.abspath(f) for f in MOCK_FILES]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 
-# FIXME these tests fail due to the new validations added
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
     random.seed(42)
@@ -27,11 +26,10 @@ def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
         max_concurrent_uploads=10,
     )
     result = response.model_dump(exclude_none=True)
-    result["files"] = sorted(result.get("files", []))
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
     result["files_failed"] = sorted(result.get("files_failed", []))
     result["files_invalid"] = sorted(result.get("files_invalid", []))
-    for op in result.get("manifest", {}).get("operations", []):
+    for op in result.get("delivery", {}).get("operations", []):
         op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
     assert result == snapshot
 
@@ -96,6 +94,8 @@ def test_upload_cli_save_delivery_json(glo_mercator_bucket, cli_env, snapshot):
         assert len(json_files) == 1
         with open(json_files[0]) as f:
             delivery = json.load(f)
+        for op in delivery.get("operations", []):
+            op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
         assert delivery == snapshot
 
 

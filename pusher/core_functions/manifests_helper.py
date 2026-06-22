@@ -22,13 +22,13 @@ def create_manifest(
     for op_request in operation_requests:
         if isinstance(op_request, RequestUpload):
             manifest_files = create_upload_manifest_files(op_request.files)
-        else:
+        elif isinstance(op_request, RequestDelete):
             manifest_files = [
                 ManifestFile(s3_path=s3_path, file_size=None, checksum=None)
                 for s3_path in op_request.files
             ]
         all_operations.append(
-            Operation(operation=op_request.op_type, files=manifest_files)
+            Operation(operation=op_request.operation_type, files=manifest_files)
         )
     return Manifest(
         manifest_id=create_manifest_id(dataset_id),
