@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Literal
 
-from cloudpathlib import S3Path
 from pydantic import BaseModel, Field
 
 
@@ -87,7 +86,7 @@ class S3File(S3FileObj):
 class ErrorResponseFile(BaseModel):
     """Generic class for any invalid or errored file"""
 
-    path: Path | S3Path
+    path: Path
     reason: str
 
     def __str__(self) -> str:
@@ -101,7 +100,7 @@ class ErrorFile(ErrorResponseFile): ...
 
 
 class ValidateResult(BaseModel):
-    files_valid: list[Path | S3Path]
+    files_valid: list[Path]
     files_invalid: list[InvalidFile]
 
 

@@ -2,8 +2,6 @@ import json
 from datetime import date
 from pathlib import Path
 
-from cloudpathlib import S3Path
-
 from pusher.core_functions import environment_variables
 from pusher.core_functions.delivery_validator import validate_upload_file_requirements
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
@@ -14,7 +12,7 @@ from pusher.s3_client import S3Client
 
 def get_upload_bucket_keys_from_local_files(
     today: date,
-    list_of_files: list[Path | S3Path],
+    list_of_files: list[Path],
     bucket_name: str,
     manifest_id: str,
     product_id: str,
