@@ -52,7 +52,7 @@ def test_manifest_round_trip():
 
 def test_response_upload_error_no_manifest():
     response = ResponseUpload(fatal_error="No successful uploads - no data were sent.")
-    assert response.manifest is None
+    assert response.delivery is None
     assert response.files_uploaded == []
 
 

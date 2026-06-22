@@ -122,6 +122,6 @@ class ResponseUpload(BaseModel):
     #: Transaction ID.
     transaction_id: str | None = None
     #: Manifest of such upload
-    manifest: Manifest | None = None
+    delivery: Manifest | None = None
     #: Any error that may prematurely stop the upload.
     fatal_error: str | None = None
