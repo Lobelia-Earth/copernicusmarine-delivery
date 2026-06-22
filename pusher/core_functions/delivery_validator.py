@@ -1,27 +1,24 @@
 from pathlib import Path
 
-from cloudpathlib import S3Path
-
 from pusher.core_functions.models import InvalidFile, ValidateResult
 from pusher.logger import logger
 
 SUPPORTED_FILE_EXTENTIONS = {".txt", ".shp", ".zip", ".nc"}
 
 
-## The below are upload requirements
-def file_exists(file_path: Path | S3Path) -> bool:
+def file_exists(file_path: Path) -> bool:
     return file_path.exists()
 
 
-def file_not_empty(file_path: Path | S3Path) -> bool:
+def file_not_empty(file_path: Path) -> bool:
     return file_path.stat().st_size > 0
 
 
-def file_type_supported(file_path: Path | S3Path) -> bool:
+def file_type_supported(file_path: Path) -> bool:
     return file_path.suffix in SUPPORTED_FILE_EXTENTIONS
 
 
-def validate_upload_file_requirements(files: list[Path | S3Path]) -> ValidateResult:
+def validate_upload_file_requirements(files: list[Path]) -> ValidateResult:
     valid_files = []
     invalid_files = []
     for file in files:
