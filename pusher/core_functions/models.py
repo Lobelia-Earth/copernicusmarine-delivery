@@ -126,7 +126,7 @@ class BaseResponse(BaseModel):
     transaction_id: str | None = None
     #: Manifest of such upload
     delivery: Manifest | None = None
-    #: Any error that may prematurely stop the upload.
+    #: Any error that may prematurely stop the delivery.
     fatal_error: str | None = None
 
 
