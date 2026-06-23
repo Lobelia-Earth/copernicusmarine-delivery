@@ -1,4 +1,3 @@
-from datetime import date
 from pathlib import Path
 
 import pytest
@@ -66,7 +65,6 @@ def test_response_upload_error_no_manifest():
 @freeze_time("2024-03-15")
 def test_get_bucket_keys_from_local_files():
     result = get_upload_bucket_keys_from_local_files(
-        today=date.today(),
         list_of_files=[Path("path/to/file.nc")],
         bucket_name="mdl-ing-test",
         manifest_id="20240315T000000-dataset1-1234",
@@ -82,7 +80,7 @@ def test_get_bucket_keys_from_local_files():
 
 @freeze_time("2024-03-15")
 def test_get_manifest_destination_key():
-    key = get_manifest_destination_key(date.today(), "20240315T000000-dataset1-1234")
+    key = get_manifest_destination_key("20240315T000000-dataset1-1234")
     assert "20240315T000000-dataset1-1234" in key
 
 
