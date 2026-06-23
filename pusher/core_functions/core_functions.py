@@ -2,7 +2,7 @@ import json
 from datetime import date
 from pathlib import Path
 
-from pusher.core_functions import environment_variables
+from pusher.core_functions import constants, environment_variables
 from pusher.core_functions.delivery_validator import validate_upload_file_requirements
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
 from pusher.core_functions.models import (
@@ -17,7 +17,6 @@ from pusher.s3_client import S3Client
 
 
 def get_upload_bucket_keys_from_local_files(
-    today: date,
     list_of_files: list[Path],
     bucket_name: str,
     manifest_id: str,
@@ -25,7 +24,7 @@ def get_upload_bucket_keys_from_local_files(
     dataset_id: str,
 ) -> dict[Path, str]:
     return {
-        Path(file_path): environment_variables.NEW_DATA_BUCKET_PATH.format(
+        Path(file_path): constants.NEW_DATA_BUCKET_PATH.format(
             manifest_id=manifest_id,
             product_id=product_id,
             dataset_id=dataset_id,
@@ -35,8 +34,8 @@ def get_upload_bucket_keys_from_local_files(
     }
 
 
-def get_manifest_destination_key(today: date, manifest_id: str) -> str:
-    return environment_variables.NEW_MANIFESTS_PREFIX.format(manifest_id=manifest_id)
+def get_manifest_destination_key(manifest_id: str) -> str:
+    return constants.NEW_MANIFESTS_PATH.format(manifest_id=manifest_id)
 
 
 def upload(
@@ -83,9 +82,8 @@ def upload(
         environment=environment_variables.ENVIRONMENT,
     )
     manifest_id = create_manifest_id(product_id)
-    today = date.today()
+
     bucket_keys_by_local_file_path_mapping = get_upload_bucket_keys_from_local_files(
-        today,
         validate_result.files_valid,
         s3_client.bucket_name,
         manifest_id,
@@ -123,7 +121,7 @@ def upload(
         ],
     )
 
-    manifest_bucket_path = get_manifest_destination_key(today, manifest.manifest_id)
+    manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
 
     # What if uploading the manifest fails :0! this is the worst of the worst case scenarios!
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
@@ -170,7 +168,7 @@ def delete(
         operation_requests=[RequestDelete(files=[S3Path(file) for file in files])],
     )
 
-    manifest_bucket_path = get_manifest_destination_key(today, manifest.manifest_id)
+    manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
     s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
