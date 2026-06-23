@@ -10,7 +10,7 @@ from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
 )
-from pusher.core_functions.models import ErrorFile, PutFilesResult, S3File
+from pusher.core_functions.models import ErrorFile, PutFilesResult, S3File, S3Path
 from pusher.logger import logger
 
 CHUNK_SIZE = 16 * 1024 * 1024  # 16 MB
@@ -122,7 +122,7 @@ class S3Client:
             logger.debug(f"Successfully uploaded file {file.name}")
             return S3File(
                 local_path=file,
-                s3_path=key,
+                s3_path=S3Path(key),
                 e_tag=put_result["e_tag"].strip('"'),  # type: ignore
             )
 

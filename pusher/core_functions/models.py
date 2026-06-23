@@ -1,16 +1,19 @@
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NewType
 
 from pydantic import BaseModel, Field
+
+S3Path = NewType("S3Path", str)
 
 
 class ManifestFile(BaseModel):
     #: Path to the file in the destination storage (e.g., S3 path).
-    s3_path: str
+    s3_path: S3Path
     #: Estimation of the size of the file in MB.
     file_size: int | None
     #: checksum of the file to be uploaded.
-    checksum: str
+    checksum: str | None
     #: Status of the file in the OPDV system
     #: todo: The file has not been picked up yet by the OPDV system.
     #: validated: The file has been validated by the OPDV system. Will be processed.
@@ -74,13 +77,22 @@ class Manifest(BaseModel):
     error: str | None = None
 
 
-class S3FileObj(BaseModel):
-    s3_path: str
+class S3File(BaseModel):
+    local_path: Path
+    s3_path: S3Path
     e_tag: str
 
 
-class S3File(S3FileObj):
-    local_path: Path
+@dataclass
+class RequestUpload:
+    files: list[S3File]
+    operation_type: Literal["upload"] = field(default="upload", init=False)
+
+
+@dataclass
+class RequestDelete:
+    files: list[S3Path]
+    operation_type: Literal["delete"] = field(default="delete", init=False)
 
 
 class ErrorResponseFile(BaseModel):
@@ -109,8 +121,16 @@ class PutFilesResult(BaseModel):
     errored_files: list[ErrorFile] = Field(default_factory=list)
 
 
-# TODO: document. Also, get rid of the manifest vocabulary?
-class ResponseUpload(BaseModel):
+class BaseResponse(BaseModel):
+    #: Transaction ID.
+    transaction_id: str | None = None
+    #: Manifest of such upload
+    delivery: Manifest | None = None
+    #: Any error that may prematurely stop the delivery.
+    fatal_error: str | None = None
+
+
+class ResponseUpload(BaseResponse):
     """Metadata returned when using :func:`~pusher.upload`"""
 
     #: Successful uploaded file names
@@ -119,9 +139,7 @@ class ResponseUpload(BaseModel):
     files_invalid: list[InvalidFile] = Field(default_factory=list)
     # Potential I/O errors, might be on the user side, not necessarily user fault
     files_failed: list[ErrorFile] = Field(default_factory=list)
-    #: Transaction ID.
-    transaction_id: str | None = None
-    #: Manifest of such upload
-    delivery: Manifest | None = None
-    #: Any error that may prematurely stop the upload.
-    fatal_error: str | None = None
+
+
+class ResponseDelete(BaseResponse):
+    """Metadata returned when using :func:`~pusher.delete`"""

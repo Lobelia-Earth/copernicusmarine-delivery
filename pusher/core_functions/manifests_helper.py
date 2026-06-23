@@ -1,21 +1,35 @@
 import os
 from datetime import datetime, timezone
 from random import randint
-from typing import Literal
 
-from pusher.core_functions.models import Manifest, ManifestFile, Operation, S3File
+from pusher.core_functions.models import (
+    Manifest,
+    ManifestFile,
+    Operation,
+    RequestDelete,
+    RequestUpload,
+    S3File,
+)
 
 
 def create_manifest(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
-    operation_files_mapping: dict[Literal["upload", "delete"], list[S3File]],
+    operation_requests: list[RequestUpload | RequestDelete],
 ) -> Manifest:
     all_operations: list[Operation] = []
-    for operation, files in operation_files_mapping.items():
-        manifest_files = create_manifest_files(files, operation)
-        all_operations.append(Operation(operation=operation, files=manifest_files))
+    for op_request in operation_requests:
+        if isinstance(op_request, RequestUpload):
+            manifest_files = create_upload_manifest_files(op_request.files)
+        elif isinstance(op_request, RequestDelete):
+            manifest_files = [
+                ManifestFile(s3_path=s3_path, file_size=None, checksum=None)
+                for s3_path in op_request.files
+            ]
+        all_operations.append(
+            Operation(operation=op_request.operation_type, files=manifest_files)
+        )
     return Manifest(
         manifest_id=create_manifest_id(dataset_id),
         pushing_entity_id=pushing_entity_id,
@@ -33,21 +47,14 @@ def create_manifest_id(product_id: str) -> str:
     return f"{iso_timestamp_with_seconds}-{product_id}-{random_number}"
 
 
-def create_manifest_files(
-    files: list[S3File], operation: Literal["upload", "delete"]
-) -> list[ManifestFile]:
+def create_upload_manifest_files(files: list[S3File]) -> list[ManifestFile]:
     manifest_files = []
     for file_ in files:
-        if operation == "delete":
-            file_size = None
-        else:
-            # TODO: add documented validation here with proper error handling
-            assert os.path.exists(
-                file_.local_path
-            ), f"File {file_} does not exist for upload operation"
-            assert os.path.getsize(file_.local_path) > 0, f"File {file_} seems empty"
-            file_size = os.path.getsize(file_.local_path) // (1024 * 1024)  # Size in MB
-
+        assert os.path.exists(file_.local_path), (
+            f"File {file_} does not exist for upload operation"
+        )
+        assert os.path.getsize(file_.local_path) > 0, f"File {file_} seems empty"
+        file_size = os.path.getsize(file_.local_path) // (1024 * 1024)
         manifest_file = ManifestFile(
             s3_path=file_.s3_path,
             file_size=file_size,

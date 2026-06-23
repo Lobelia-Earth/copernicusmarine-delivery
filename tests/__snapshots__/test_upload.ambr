@@ -64,8 +64,6 @@
       'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
       'status': 'todo',
     }),
-    'files': list([
-    ]),
     'files_failed': list([
     ]),
     'files_invalid': list([
