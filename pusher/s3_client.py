@@ -47,7 +47,8 @@ class S3Client:
         self._endpoint_url = endpoint_url
         self._access_key_id = access_key_id
         self._secret_access_key = secret_access_key
-        self._bucket_name = f"mdl-ing-{pushing_entity_id.lower()}"
+        self._suffix = "-dta" if environment == "dta" else ""
+        self._bucket_name = f"mdl-ing-{pushing_entity_id.lower()}{self._suffix}"
         self._store: S3Store = S3Store.from_url(
             url=f"s3://{self._bucket_name}",
             config={
