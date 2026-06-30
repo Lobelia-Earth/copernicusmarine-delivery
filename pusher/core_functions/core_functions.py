@@ -16,7 +16,7 @@ from pusher.core_functions.models import (
     S3Path,
 )
 from pusher.logger import logger
-from pusher.s3_client import get_s3_ingestion_buckets_client
+from pusher.s3_client import get_s3_ingestion_client
 
 
 def get_upload_bucket_keys_from_local_files(
@@ -88,7 +88,7 @@ def upload(
         response.fatal_error = no_valid_files_fatal_error_response
         return response
 
-    ingestion_buckets_s3_client = get_s3_ingestion_buckets_client(pushing_entity_id)
+    ingestion_buckets_s3_client = get_s3_ingestion_client(pushing_entity_id)
     manifest_id = create_manifest_id(product_id)
 
     bucket_keys_by_local_file_path_mapping = get_upload_bucket_keys_from_local_files(
@@ -171,7 +171,7 @@ def delete(
         response.fatal_error = invalid_delivery_ids_response.reason
         return response
 
-    ingestion_buckets_s3_client = get_s3_ingestion_buckets_client(pushing_entity_id)
+    ingestion_buckets_s3_client = get_s3_ingestion_client(pushing_entity_id)
 
     today = date.today()
 

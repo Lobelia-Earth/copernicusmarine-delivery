@@ -41,14 +41,14 @@ def _get_s3_store(
     secret_access_key: str | None,
     is_local: bool,
 ) -> S3Store:
-    skip_credentials = (
+    skip_signature = (
         "true" if access_key_id is None and secret_access_key is None else None
     )
     config = {
         "endpoint": endpoint_url,
         "access_key_id": access_key_id,
         "secret_access_key": secret_access_key,
-        "skip_signature": skip_credentials,
+        "skip_signature": skip_signature,
     }
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
@@ -83,7 +83,7 @@ def get_s3_metadata_client() -> "S3Client":
     )
 
 
-def get_s3_ingestion_buckets_client(pushing_entity_id: str) -> "S3Client":
+def get_s3_ingestion_client(pushing_entity_id: str) -> "S3Client":
     bucket_name = f"mdl-ing-{pushing_entity_id.lower()}{'-dta' if environment_variables.ENVIRONMENT == 'dta' else ''}"
     return _make_client(
         bucket_name=bucket_name,
@@ -102,8 +102,8 @@ class S3Client:
         self,
         store: S3Store,
         bucket_name: str,
+        assert_bucket_exists: bool,
         max_concurrency: int = 12,
-        assert_bucket_exists: bool = True,
     ) -> None:
         self._store = store
         self._bucket_name = bucket_name
@@ -215,7 +215,7 @@ class S3Client:
             successful_files=success_results, errored_files=error_results
         )
 
-    def get_file(self, path_to_file: str) -> bytes:
+    def get_file_stream(self, path_to_file: str) -> bytes:
         response = get(
             self._store,
             path=path_to_file,

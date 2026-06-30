@@ -4,14 +4,14 @@ import pytest
 
 from pusher.core_functions.exceptions import NoSuchBucketException
 from pusher.core_functions.models import ErrorFile, S3File
-from pusher.s3_client import S3Client, get_s3_ingestion_buckets_client
+from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 RESOURCES = Path("tests/resources")
 
 
 def test_no_such_bucket_raises(ministack_endpoint: str, set_env):
     with pytest.raises(NoSuchBucketException):
-        get_s3_ingestion_buckets_client(pushing_entity_id="NONEXISTENT-ENTITY-ZZ")
+        get_s3_ingestion_client(pushing_entity_id="NONEXISTENT-ENTITY-ZZ")
 
 
 def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str):

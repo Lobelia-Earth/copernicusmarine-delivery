@@ -63,7 +63,7 @@ def validate_delivery_ids(
     if not pushing_entities:
         # TODO Should we cache this somehow?
         metadata_s3_client = get_s3_metadata_client()
-        pushing_entities_raw = metadata_s3_client.get_file(
+        pushing_entities_raw = metadata_s3_client.get_file_stream(
             path_to_file=PUSHING_ENTITIES_PATH
         )
         pushing_entities = PushingEntities.from_stream(pushing_entities_raw)

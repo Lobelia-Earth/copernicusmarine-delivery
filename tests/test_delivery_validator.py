@@ -71,7 +71,7 @@ def test_get_file_called_when_no_pushing_entities(monkeypatch):
             ]
         }
     ).encode()
-    monkeypatch.setattr(S3Client, "get_file", lambda self, **kwargs: fake_yaml)
+    monkeypatch.setattr(S3Client, "get_file_stream", lambda self, **kwargs: fake_yaml)
 
     result = validate_delivery_ids(
         pushing_entity_id="TEST-ENTITY-FR",

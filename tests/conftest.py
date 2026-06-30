@@ -4,7 +4,7 @@ from typing import Generator
 import boto3
 import pytest
 
-from pusher.s3_client import S3Client, get_s3_ingestion_buckets_client
+from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
 _BUCKET_NAME = f"mdl-ing-{_PUSHING_ENTITY_ID.lower()}"
@@ -48,7 +48,7 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None]:
 
 @pytest.fixture
 def service(ingestion_bucket: str, ministack_endpoint: str, set_env) -> S3Client:
-    return get_s3_ingestion_buckets_client(
+    return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
     )
 
