@@ -31,7 +31,7 @@ RESOURCES = Path("tests/resources")
 
 def test_manifest_file_none_file_size():
     f = ManifestFile(
-        s3_path=S3Path("data/key/file.nc"), file_size=None, checksum="abc123"
+        file_path=S3Path("data/key/file.nc"), file_size=None, checksum="abc123"
     )
     assert f.file_size is None
 
@@ -125,7 +125,7 @@ def test_create_manifest(tmp_path):
         pushing_entity_id="TEST-FR",
         product_id="product1",
         dataset_id="dataset1",
-        operation_requests=[RequestUpload(files=files)],
+        operations=[RequestUpload(files=files)],
     )
     assert manifest.pushing_entity_id == "TEST-FR"
     assert manifest.operations[0].operation == "upload"

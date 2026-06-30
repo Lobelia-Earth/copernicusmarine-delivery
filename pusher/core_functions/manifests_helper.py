@@ -1,13 +1,12 @@
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from random import randint
 
 from pusher.core_functions.models import (
     Manifest,
     ManifestFile,
     Operation,
-    RequestDelete,
-    RequestUpload,
     S3File,
 )
 
@@ -16,26 +15,15 @@ def create_manifest(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
-    operation_requests: list[RequestUpload | RequestDelete],
+    operations: list[Operation],
+    manifest_id: str,
 ) -> Manifest:
-    all_operations: list[Operation] = []
-    for op_request in operation_requests:
-        if isinstance(op_request, RequestUpload):
-            manifest_files = create_upload_manifest_files(op_request.files)
-        elif isinstance(op_request, RequestDelete):
-            manifest_files = [
-                ManifestFile(s3_path=s3_path, file_size=None, checksum=None)
-                for s3_path in op_request.files
-            ]
-        all_operations.append(
-            Operation(operation=op_request.operation_type, files=manifest_files)
-        )
     return Manifest(
-        manifest_id=create_manifest_id(dataset_id),
+        manifest_id=manifest_id,
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operations=all_operations,
+        operations=operations,
         creation_time=datetime.now(timezone.utc).isoformat(),
     )
 
@@ -50,13 +38,13 @@ def create_manifest_id(product_id: str) -> str:
 def create_upload_manifest_files(files: list[S3File]) -> list[ManifestFile]:
     manifest_files = []
     for file_ in files:
-        assert os.path.exists(file_.local_path), (
-            f"File {file_} does not exist for upload operation"
-        )
+        assert os.path.exists(
+            file_.local_path
+        ), f"File {file_} does not exist for upload operation"
         assert os.path.getsize(file_.local_path) > 0, f"File {file_} seems empty"
         file_size = os.path.getsize(file_.local_path) // (1024 * 1024)
         manifest_file = ManifestFile(
-            s3_path=file_.s3_path,
+            file_path=Path(file_.s3_path),
             file_size=file_size,
             checksum=file_.e_tag,
         )

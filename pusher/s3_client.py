@@ -3,8 +3,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 from pathlib import Path
 
-from obstore import list, put
-from obstore.store import S3Store
+from environment_variables import (
+    ENVIRONMENT,
+    INGESTION_BUCKETS_ENDPOINT,
+    OPDV_ACCESS_KEY_ID,
+    OPDV_SECRET_ACCESS_KEY,
+)
+from obstore import list as list_obstore
+from obstore import put
+from obstore.store import ClientConfig, RetryConfig, S3Store
 
 from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
@@ -15,17 +22,17 @@ from pusher.logger import logger
 
 CHUNK_SIZE = 16 * 1024 * 1024  # 16 MB
 
-_RETRY_CONFIG = {
-    "max_retries": 5,
-    "retry_timeout": timedelta(minutes=10),
-    "backoff": {
+_RETRY_CONFIG = RetryConfig(
+    max_retries=5,
+    retry_timeout=timedelta(minutes=10),
+    backoff={
         "base": 2,
         "init_backoff": timedelta(seconds=1),
         "max_backoff": timedelta(seconds=30),
     },
-}
+)
 
-_CLIENT_OPTIONS = {"allow_http": True}
+_CLIENT_OPTIONS: ClientConfig = ClientConfig(allow_http=True)
 
 
 def _extract_error_message(e: Exception) -> str:
@@ -37,16 +44,12 @@ class S3Client:
     def __init__(
         self,
         pushing_entity_id: str,
-        access_key_id: str,
-        secret_access_key: str,
-        endpoint_url: str,
-        environment: str,
         max_concurrency: int = 12,
     ) -> None:
         self.max_concurrency = max_concurrency
-        self._endpoint_url = endpoint_url
-        self._access_key_id = access_key_id
-        self._secret_access_key = secret_access_key
+        self._endpoint_url = INGESTION_BUCKETS_ENDPOINT
+        self._access_key_id = OPDV_ACCESS_KEY_ID
+        self._secret_access_key = OPDV_SECRET_ACCESS_KEY
         self._bucket_name = f"mdl-ing-{pushing_entity_id.lower()}"
         self._store: S3Store = S3Store.from_url(
             url=f"s3://{self._bucket_name}",
@@ -56,14 +59,14 @@ class S3Client:
                 "secret_access_key": self._secret_access_key,
             },
             retry_config=_RETRY_CONFIG,
-            client_options={} if environment != "local" else _CLIENT_OPTIONS,
+            client_options={} if ENVIRONMENT != "local" else _CLIENT_OPTIONS,
         )
 
         self._assert_bucket_exists()
 
     def _assert_bucket_exists(self) -> None:
         try:
-            next(iter(list(store=self._store, chunk_size=1)), None)
+            next(iter(list_obstore(store=self._store, chunk_size=1)), None)
         except Exception as e:
             if "NoSuchBucket" in str(e):
                 raise NoSuchBucketException(
@@ -135,10 +138,10 @@ class S3Client:
 
     def upload_multiple_files(
         self,
-        bucket_keys_by_local_file_path_mapping: dict[Path, str],
+        s3_key_local_file_mapping: dict[Path, str],
         max_concurrent_uploads: int,
     ) -> PutFilesResult:
-        total = len(bucket_keys_by_local_file_path_mapping)
+        total = len(s3_key_local_file_mapping)
         success_results = []
         error_results = []
         with ThreadPoolExecutor(max_workers=max_concurrent_uploads) as executor:
@@ -150,9 +153,7 @@ class S3Client:
                     use_multipart=True,
                     chunk_size=CHUNK_SIZE,
                 ): (path, key)
-                for i, (path, key) in enumerate(
-                    bucket_keys_by_local_file_path_mapping.items()
-                )
+                for _, (path, key) in enumerate(s3_key_local_file_mapping.items())
             }
             for i, future in enumerate(as_completed(futures)):
                 result = future.result()
