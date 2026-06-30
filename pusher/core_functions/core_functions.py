@@ -2,8 +2,11 @@ import json
 from datetime import date
 from pathlib import Path
 
-from pusher.core_functions import constants, environment_variables
-from pusher.core_functions.delivery_validator import validate_upload_file_requirements
+from pusher.core_functions import constants
+from pusher.core_functions.delivery_validator import (
+    validate_delivery_ids,
+    validate_upload_file_requirements,
+)
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
 from pusher.core_functions.models import (
     RequestDelete,
@@ -13,7 +16,7 @@ from pusher.core_functions.models import (
     S3Path,
 )
 from pusher.logger import logger
-from pusher.s3_client import S3Client
+from pusher.s3_client import get_s3_ingestion_client
 
 
 def get_upload_bucket_keys_from_local_files(
@@ -57,7 +60,18 @@ def upload(
 
     response = ResponseUpload()
 
-    logger.info("Validating files provided before relase")
+    invalid_delivery_ids_response = validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id
+    )
+    if invalid_delivery_ids_response:
+        logger.error(
+            "The ids provided for this delivery did not match our records, "
+            f"see: {invalid_delivery_ids_response.reason}"
+        )
+        response.fatal_error = invalid_delivery_ids_response.reason
+        return response
+
+    logger.info("Validating files provided before release")
 
     validate_result = validate_upload_file_requirements([Path(file) for file in files])
 
@@ -74,23 +88,17 @@ def upload(
         response.fatal_error = no_valid_files_fatal_error_response
         return response
 
-    s3_client = S3Client(
-        pushing_entity_id=pushing_entity_id,
-        access_key_id=environment_variables.OPDV_ACCESS_KEY_ID,
-        secret_access_key=environment_variables.OPDV_SECRET_ACCESS_KEY,
-        endpoint_url=environment_variables.INGESTION_BUCKETS_ENDPOINT,
-        environment=environment_variables.ENVIRONMENT,
-    )
+    ingestion_buckets_s3_client = get_s3_ingestion_client(pushing_entity_id)
     manifest_id = create_manifest_id(product_id)
 
     bucket_keys_by_local_file_path_mapping = get_upload_bucket_keys_from_local_files(
         validate_result.files_valid,
-        s3_client.bucket_name,
+        ingestion_buckets_s3_client.bucket_name,
         manifest_id,
         product_id,
         dataset_id,
     )
-    upload_multiple_files_result = s3_client.upload_multiple_files(
+    upload_multiple_files_result = ingestion_buckets_s3_client.upload_multiple_files(
         bucket_keys_by_local_file_path_mapping,
         max_concurrent_uploads,
     )
@@ -125,7 +133,7 @@ def upload(
 
     # What if uploading the manifest fails :0! this is the worst of the worst case scenarios!
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
-    upload_file_obj_result = s3_client.upload_fileobj(
+    upload_file_obj_result = ingestion_buckets_s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
     response.delivery = manifest
@@ -152,13 +160,19 @@ def delete(
 
     response = ResponseDelete()
 
-    s3_client = S3Client(
-        pushing_entity_id=pushing_entity_id,
-        access_key_id=environment_variables.OPDV_ACCESS_KEY_ID,
-        secret_access_key=environment_variables.OPDV_SECRET_ACCESS_KEY,
-        endpoint_url=environment_variables.INGESTION_BUCKETS_ENDPOINT,
-        environment=environment_variables.ENVIRONMENT,
+    invalid_delivery_ids_response = validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id
     )
+    if invalid_delivery_ids_response:
+        logger.error(
+            "The ids provided for this delivery did not match our records, "
+            f"see: {invalid_delivery_ids_response.reason}"
+        )
+        response.fatal_error = invalid_delivery_ids_response.reason
+        return response
+
+    ingestion_buckets_s3_client = get_s3_ingestion_client(pushing_entity_id)
+
     today = date.today()
 
     manifest = create_manifest(
@@ -170,7 +184,7 @@ def delete(
 
     manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
-    s3_client.upload_fileobj(
+    ingestion_buckets_s3_client.upload_fileobj(
         key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
     )
     response.delivery = manifest
