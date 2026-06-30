@@ -2,9 +2,43 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, NewType
 
+import yaml
 from pydantic import BaseModel, Field
 
 S3Path = NewType("S3Path", str)
+
+
+class Product(BaseModel):
+    product_id: str = Field(..., alias="name")
+    datasets: list[str]
+
+
+class PushingEntity(BaseModel):
+    name: str
+    products: list[Product]
+
+
+class InvalidDeliveryIds(BaseModel):
+    reason: str
+
+
+class PushingEntities(BaseModel):
+    pushing_entities: list[PushingEntity] = Field(..., alias="pushing-entities")
+
+    @classmethod
+    def from_stream(cls, bytes: bytes) -> "PushingEntities":
+        data = yaml.safe_load(bytes)
+        return cls(**data)
+
+    @classmethod
+    def from_file(cls, path: Path) -> "PushingEntities":
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"Could not open file in given path: {path.as_posix()}"
+            )
+        with open(path) as input_config_file:
+            data = yaml.safe_load(input_config_file)
+        return cls(**data)
 
 
 class ManifestFile(BaseModel):

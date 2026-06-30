@@ -2,11 +2,14 @@ import glob
 import json
 import random
 
+import pytest
 from click.testing import CliRunner
 from freezegun import freeze_time
 
 from pusher.command_line_interface import cli
 from pusher.core_functions.core_functions import delete
+
+pytestmark = pytest.mark.usefixtures("skip_delivery_ids_validation")
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
