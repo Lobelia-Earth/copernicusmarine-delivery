@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 
@@ -50,7 +49,7 @@ def upload(
     dataset_id: str,
     files: list[str],
     max_concurrent_uploads: int,
-) -> ResponseUpload:
+) -> tuple[ResponseUpload, Manifest | None]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
@@ -70,8 +69,11 @@ def upload(
             "The ids provided for this delivery did not match our records, "
             f"see: {invalid_delivery_ids_response.reason}"
         )
-        return ResponseUpload.create_from_fatal_error(
-            invalid_delivery_ids_response.reason
+        return (
+            ResponseUpload.create_from_fatal_error(
+                invalid_delivery_ids_response.reason
+            ),
+            None,
         )
 
     upload_operation, validation_result = create_upload_operation(
@@ -83,8 +85,9 @@ def upload(
             "No file passed the validation. No manifest will be created."
         )
         logger.error(no_valid_files_fatal_error_response)
-        return ResponseUpload.create_from_fatal_error(
-            no_valid_files_fatal_error_response
+        return (
+            ResponseUpload.create_from_fatal_error(no_valid_files_fatal_error_response),
+            None,
         )
 
     s3_client = get_s3_ingestion_client(pushing_entity_id)
@@ -103,8 +106,9 @@ def upload(
             "No successful uploads - no data were sent."
         )
         logger.error(no_valid_files_fatal_error_response)
-        return ResponseUpload.create_from_fatal_error(
-            no_valid_files_fatal_error_response
+        return (
+            ResponseUpload.create_from_fatal_error(no_valid_files_fatal_error_response),
+            None,
         )
     _update_operation_with_put_results(upload_operation, put_files_result)
 
@@ -117,10 +121,13 @@ def upload(
         manifest_id=manifest_id,
     )
 
-    return ResponseUpload.create(
-        delivery_id=manifest.manifest_id,
-        result_validation=validation_result,
-        result_upload=put_files_result,
+    return (
+        ResponseUpload.create(
+            delivery_id=manifest.manifest_id,
+            result_validation=validation_result,
+            result_upload=put_files_result,
+        ),
+        manifest,
     )
 
 
@@ -129,7 +136,7 @@ def delete(
     product_id: str,
     dataset_id: str,
     files: list[str],
-) -> ResponseDelete:
+) -> tuple[ResponseDelete, Manifest | None]:
     """
     Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
@@ -145,8 +152,11 @@ def delete(
             "The ids provided for this delivery did not match our records, "
             f"see: {invalid_delivery_ids_response.reason}"
         )
-        return ResponseDelete.create_from_fatal_error(
-            invalid_delivery_ids_response.reason
+        return (
+            ResponseDelete.create_from_fatal_error(
+                invalid_delivery_ids_response.reason
+            ),
+            None,
         )
 
     s3_client = get_s3_ingestion_client(pushing_entity_id)
@@ -158,7 +168,7 @@ def delete(
         dataset_id=dataset_id,
         operations=[create_delete_operation(files)],
     )
-    return ResponseDelete.create(delivery_id=manifest.manifest_id)
+    return ResponseDelete.create(delivery_id=manifest.manifest_id), manifest
 
 
 def create_delete_operation(files: list[str]) -> Operation:
@@ -179,7 +189,7 @@ def delivery(
     dataset_id: str,
     product_id: str,
     max_concurrent_uploads: int = 10,
-) -> ResponseDelivery:
+) -> tuple[ResponseDelivery, Manifest | None]:
 
     invalid_delivery_ids_response = validate_delivery_ids(
         pushing_entity_id, product_id, dataset_id
@@ -189,8 +199,11 @@ def delivery(
             "The ids provided for this delivery did not match our records, "
             f"see: {invalid_delivery_ids_response.reason}"
         )
-        return ResponseDelivery.create_from_fatal_error(
-            invalid_delivery_ids_response.reason
+        return (
+            ResponseDelivery.create_from_fatal_error(
+                invalid_delivery_ids_response.reason
+            ),
+            None,
         )
 
     manifest_id = create_manifest_id(product_id)
@@ -218,8 +231,11 @@ def delivery(
         logger.error(
             f"Some files failed validation: {validation_errors}. Delivery cancelled. No manifest will be created."
         )
-        return ResponseDelivery.create_from_fatal_error(
-            fatal_error=f"Some files failed validation: {validation_errors}. Delivery cancelled. No manifest will be created."
+        return (
+            ResponseDelivery.create_from_fatal_error(
+                fatal_error=f"Some files failed validation: {validation_errors}. Delivery cancelled. No manifest will be created."
+            ),
+            None,
         )
     all_responses: list[ResponseUpload | ResponseDelete] = []
     for operation, validation_result in zip(all_operations, validation_results):
@@ -243,7 +259,7 @@ def delivery(
         elif operation.operation == "delete":
             all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
 
-    _create_and_upload_manifest(
+    manifest = _create_and_upload_manifest(
         s3_client,
         pushing_entity_id,
         product_id,
@@ -251,8 +267,11 @@ def delivery(
         all_operations,
         manifest_id,
     )
-    return ResponseDelivery.create(
-        delivery_id=manifest_id, operations_responses=all_responses
+    return (
+        ResponseDelivery.create(
+            delivery_id=manifest_id, operations_responses=all_responses
+        ),
+        manifest,
     )
 
 
@@ -296,7 +315,7 @@ def _create_and_upload_manifest(
     manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
     s3_client.upload_fileobj(
-        key=manifest_bucket_path, file=json.dumps(manifest.model_dump()).encode()
+        key=manifest_bucket_path, file=manifest.model_dump_json().encode()
     )
     return manifest
 

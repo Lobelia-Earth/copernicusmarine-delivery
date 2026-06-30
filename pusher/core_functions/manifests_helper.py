@@ -38,9 +38,9 @@ def create_manifest_id(product_id: str) -> str:
 def create_upload_manifest_files(files: list[S3File]) -> list[ManifestFile]:
     manifest_files = []
     for file_ in files:
-        assert os.path.exists(
-            file_.local_path
-        ), f"File {file_} does not exist for upload operation"
+        assert os.path.exists(file_.local_path), (
+            f"File {file_} does not exist for upload operation"
+        )
         assert os.path.getsize(file_.local_path) > 0, f"File {file_} seems empty"
         file_size = os.path.getsize(file_.local_path) // (1024 * 1024)
         manifest_file = ManifestFile(

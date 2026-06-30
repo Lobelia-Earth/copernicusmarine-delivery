@@ -17,7 +17,6 @@ from pusher.core_functions.models import (
     Manifest,
     ManifestFile,
     Operation,
-    RequestUpload,
     ResponseUpload,
     S3File,
     S3Path,
@@ -31,7 +30,7 @@ RESOURCES = Path("tests/resources")
 
 def test_manifest_file_none_file_size():
     f = ManifestFile(
-        file_path=S3Path("data/key/file.nc"), file_size=None, checksum="abc123"
+        file_path=Path("data/key/file.nc"), file_size=None, checksum="abc123"
     )
     assert f.file_size is None
 
@@ -55,7 +54,6 @@ def test_manifest_round_trip():
 
 def test_response_upload_error_no_manifest():
     response = ResponseUpload(fatal_error="No successful uploads - no data were sent.")
-    assert response.delivery is None
     assert response.files_uploaded == []
 
 
@@ -66,7 +64,6 @@ def test_response_upload_error_no_manifest():
 def test_get_bucket_keys_from_local_files():
     result = get_upload_bucket_keys_from_local_files(
         list_of_files=[Path("path/to/file.nc")],
-        bucket_name="mdl-ing-test",
         manifest_id="20240315T000000-dataset1-1234",
         product_id="product1",
         dataset_id="dataset1",
@@ -120,12 +117,18 @@ def test_create_upload_manifest_files_missing_file():
 def test_create_manifest(tmp_path):
     f = tmp_path / "file.nc"
     f.write_bytes(b"x" * 1024)
-    files = [S3File(local_path=f, s3_path=S3Path("data/key/file.nc"), e_tag="abc-1")]
+    manifest_id = create_manifest_id("product1")
     manifest = create_manifest(
         pushing_entity_id="TEST-FR",
         product_id="product1",
         dataset_id="dataset1",
-        operations=[RequestUpload(files=files)],
+        operations=[
+            Operation(
+                operation="upload",
+                files=[ManifestFile(file_path=f, file_size=43, checksum="abc-1")],
+            )
+        ],
+        manifest_id=manifest_id,
     )
     assert manifest.pushing_entity_id == "TEST-FR"
     assert manifest.operations[0].operation == "upload"

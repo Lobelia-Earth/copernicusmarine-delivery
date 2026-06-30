@@ -2,37 +2,41 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
-from environment_variables import (
-    ENVIRONMENT,
-    INGESTION_BUCKETS_ENDPOINT,
-    OPDV_ACCESS_KEY_ID,
-    OPDV_SECRET_ACCESS_KEY,
-)
 from obstore import get, put
 from obstore import list as list_obstore
-from obstore.store import ClientConfig, RetryConfig, S3Config, S3Store
+from obstore.store import S3Store
 
 from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
 )
 from pusher.core_functions.models import ErrorFile, PutFilesResult, S3File, S3Path
+from pusher.environment_variables import (
+    ENVIRONMENT,
+    INGESTION_BUCKETS_ENDPOINT,
+    OPDV_ACCESS_KEY_ID,
+    OPDV_SECRET_ACCESS_KEY,
+)
 from pusher.logger import logger
 
 CHUNK_SIZE = 16 * 1024 * 1024  # 16 MB
 
-_RETRY_CONFIG = RetryConfig(
-    max_retries=5,
-    retry_timeout=timedelta(minutes=10),
-    backoff={
+
+_RETRY_CONFIG: Any = {
+    "max_retries": 5,
+    "retry_timeout": timedelta(minutes=10),
+    "backoff": {
         "base": 2,
         "init_backoff": timedelta(seconds=1),
         "max_backoff": timedelta(seconds=30),
     },
-)
+}
 
-_CLIENT_OPTIONS: ClientConfig = ClientConfig(allow_http=True)
+_CLIENT_CONFIG: Any = {
+    "allow_http": ENVIRONMENT == "local",
+}
 
 
 def _extract_error_message(e: Exception) -> str:
@@ -45,7 +49,6 @@ def _get_s3_store(
     bucket_name: str,
     access_key_id: str | None,
     secret_access_key: str | None,
-    is_local: bool,
 ) -> S3Store:
     skip_signature = (
         "true" if access_key_id is None and secret_access_key is None else None
@@ -56,12 +59,12 @@ def _get_s3_store(
         "secret_access_key": secret_access_key,
         "skip_signature": skip_signature,
     }
-    s3_config = S3Config(**{k: v for k, v in config.items() if v is not None})
+    s3_config: Any = {k: v for k, v in config.items() if v is not None}
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
         config=s3_config,
         retry_config=_RETRY_CONFIG,
-        client_options=_CLIENT_OPTIONS if is_local else {},
+        client_options=_CLIENT_CONFIG,
     )
 
 
@@ -82,7 +85,6 @@ def get_s3_metadata_client() -> "S3Client":
             bucket_name=bucket_name,
             access_key_id=None,
             secret_access_key=None,
-            is_local=ENVIRONMENT == "local",
         ),
         assert_bucket_exists=False,
     )
@@ -99,7 +101,6 @@ def get_s3_ingestion_client(pushing_entity_id: str) -> "S3Client":
             access_key_id=OPDV_ACCESS_KEY_ID,
             secret_access_key=OPDV_SECRET_ACCESS_KEY,
             endpoint_url=INGESTION_BUCKETS_ENDPOINT,
-            is_local=ENVIRONMENT == "local",
         ),
     )
 

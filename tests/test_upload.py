@@ -33,7 +33,7 @@ def test_upload_python_interface(
 ):
     random.seed(42)
 
-    response = upload(
+    response, manifest = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -44,9 +44,11 @@ def test_upload_python_interface(
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
     result["files_failed"] = sorted(result.get("files_failed", []))
     result["files_invalid"] = sorted(result.get("files_invalid", []))
-    for op in result.get("delivery", {}).get("operations", []):
-        op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
+    assert manifest is not None
+    for op in manifest.operations:
+        op.files = sorted(op.files, key=lambda f: f.file_path)
     assert result == snapshot
+    assert manifest.model_dump_json(indent=2) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
@@ -114,7 +116,7 @@ def test_upload_cli_save_delivery_json(
         with open(json_files[0]) as f:
             delivery = json.load(f)
         for op in delivery.get("operations", []):
-            op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
+            op["files"] = sorted(op["files"], key=lambda f: f["file_path"])
         assert delivery == snapshot
 
 
@@ -141,7 +143,7 @@ def test_upload_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
 
-    response = upload(
+    response, manifest = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -152,4 +154,4 @@ def test_upload_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
         response.fatal_error
         == f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity"
     )
-    assert response.delivery is None
+    assert manifest is None

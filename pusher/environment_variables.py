@@ -1,17 +1,16 @@
 import os
 
-_REQUIRED_ENV_VARS = {"OPDV_ACCESS_KEY_ID", "OPDV_SECRET_ACCESS_KEY"}
 
-_ENV_VARS_WITH_DEFAULTS = {
-    "ENVIRONMENT": "prod",
-    "INGESTION_BUCKETS_ENDPOINT": "http://localhost:4566",
-}
+def required_environment_variable(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise ValueError(f"{name} environment variable is not set.")
+    return value
 
 
-def __getattr__(name: str) -> str:
-    if name in _REQUIRED_ENV_VARS or name in _ENV_VARS_WITH_DEFAULTS:
-        value = os.getenv(name, _ENV_VARS_WITH_DEFAULTS.get(name, ""))
-        if not value:
-            raise ValueError(f"{name} environment variable is not set.")
-        return value
-    raise ValueError(f"{name} is not a valid environment variable.")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
+INGESTION_BUCKETS_ENDPOINT = os.getenv(
+    "INGESTION_BUCKETS_ENDPOINT", "http://localhost:4566"
+)
+OPDV_ACCESS_KEY_ID = required_environment_variable("OPDV_ACCESS_KEY_ID")
+OPDV_SECRET_ACCESS_KEY = required_environment_variable("OPDV_SECRET_ACCESS_KEY")

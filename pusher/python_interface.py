@@ -19,7 +19,7 @@ def upload(
     """Upload ``sources`` to the given dataset and product."""
     if not sources:
         return ResponseUpload(fatal_error="No files added to upload.")
-    response = _upload(
+    response, _ = _upload(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -38,7 +38,7 @@ def delete(
     """Delete ``sources`` from the given dataset and product."""
     if not sources:
         return ResponseDelete(fatal_error="No files given to delete.")
-    response = _delete(
+    response, _ = _delete(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -48,7 +48,7 @@ def delete(
 
 
 def delivery(
-    operations: list[OperationNames],
+    operations: list[str],
     operations_sources: list[list[str]],
     pushing_entity_id: str,
     dataset_id: str,
@@ -66,16 +66,22 @@ def delivery(
 
     if not operations:
         return ResponseDelivery(fatal_error="No operations given for delivery.")
+    for operation_name in operations:
+        if operation_name not in OperationNames.__args__:
+            return ResponseDelivery(
+                fatal_error=f"Invalid operation name: {operation_name}. Must be one of {OperationNames.__args__}."
+            )
     if not len(operations) == len(operations_sources):
         # TODO: should we raise here?
         return ResponseDelivery(
             fatal_error="The number of operations and the number of sources lists must be the same."
         )
-    return _delivery(
+    response, _ = _delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operations=operations,
+        operations=operations,  # type: ignore
         operations_sources=operations_sources,
         max_concurrent_uploads=max_concurrent_uploads,
     )
+    return response

@@ -31,13 +31,15 @@ def test_delete_python_interface(
 ):
     random.seed(42)
 
-    response = delete(
+    response, manifest = delete(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
     )
-    assert response == snapshot
+    assert response.model_dump_json(indent=2) == snapshot
+    assert manifest is not None
+    assert manifest.model_dump_json(indent=2) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
@@ -128,7 +130,7 @@ def test_delete_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
 
-    response = delete(
+    response, manifest = delete(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -138,4 +140,4 @@ def test_delete_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
         response.fatal_error
         == f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity"
     )
-    assert response.delivery is None
+    assert manifest is None

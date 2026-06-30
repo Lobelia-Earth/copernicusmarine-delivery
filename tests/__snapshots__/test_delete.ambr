@@ -1,22 +1,22 @@
 # serializer version: 1
 # name: test_delete_cli
   dict({
-    'transaction_id': '20120114T120001-dataset1-2824',
+    'delivery_id': '20120114T120001-product1-2824',
   })
 # ---
 # name: test_delete_cli_save_delivery_json
   dict({
     'creation_time': '2012-01-14T12:00:01+00:00',
     'dataset_id': 'dataset1',
-    'manifest_id': '20120114T120001-dataset1-2824',
+    'manifest_id': '20120114T120001-product1-2824',
     'operations': list([
       dict({
         'files': list([
           dict({
-            's3_path': 'tests/resources/file1.txt',
+            'file_path': 'tests/resources/file1.txt',
           }),
           dict({
-            's3_path': 'tests/resources/file2.txt',
+            'file_path': 'tests/resources/file2.txt',
           }),
         ]),
         'operation': 'delete',
@@ -27,5 +27,50 @@
   })
 # ---
 # name: test_delete_python_interface
-  ResponseDelete(transaction_id='20120114T120001-dataset1-2824', delivery=Manifest(manifest_id='20120114T120001-dataset1-2824', pushing_entity_id='GLO-MERCATOR-TOULOUSE-FR', product_id='product1', dataset_id='dataset1', operations=[Operation(operation='delete', status='todo', status_timestamp=None, error=None, files=[ManifestFile(s3_path='tests/resources/file1.txt', file_size=None, checksum=None, status='todo', status_timestamp=None, error=None), ManifestFile(s3_path='tests/resources/file2.txt', file_size=None, checksum=None, status='todo', status_timestamp=None, error=None)])], creation_time='2012-01-14T12:00:01+00:00', status='todo', status_timestamp=None, error=None), fatal_error=None)
+  '''
+  {
+    "delivery_id": "20120114T120001-product1-2824",
+    "fatal_error": null
+  }
+  '''
+# ---
+# name: test_delete_python_interface.1
+  '''
+  {
+    "manifest_id": "20120114T120001-product1-2824",
+    "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
+    "product_id": "product1",
+    "dataset_id": "dataset1",
+    "operations": [
+      {
+        "operation": "delete",
+        "status": "todo",
+        "status_timestamp": null,
+        "error": null,
+        "files": [
+          {
+            "file_path": "tests/resources/file1.txt",
+            "file_size": null,
+            "checksum": null,
+            "status": "todo",
+            "status_timestamp": null,
+            "error": null
+          },
+          {
+            "file_path": "tests/resources/file2.txt",
+            "file_size": null,
+            "checksum": null,
+            "status": "todo",
+            "status_timestamp": null,
+            "error": null
+          }
+        ]
+      }
+    ],
+    "creation_time": "2012-01-14T12:00:01+00:00",
+    "status": "todo",
+    "status_timestamp": null,
+    "error": null
+  }
+  '''
 # ---
