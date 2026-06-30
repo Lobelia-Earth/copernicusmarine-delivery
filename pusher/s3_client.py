@@ -9,9 +9,9 @@ from environment_variables import (
     OPDV_ACCESS_KEY_ID,
     OPDV_SECRET_ACCESS_KEY,
 )
+from obstore import get, put
 from obstore import list as list_obstore
-from obstore import put
-from obstore.store import ClientConfig, RetryConfig, S3Store
+from obstore.store import ClientConfig, RetryConfig, S3Config, S3Store
 
 from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
@@ -40,29 +40,83 @@ def _extract_error_message(e: Exception) -> str:
     return match.group(1) if match else str(e).splitlines()[0]
 
 
+def _get_s3_store(
+    endpoint_url: str,
+    bucket_name: str,
+    access_key_id: str | None,
+    secret_access_key: str | None,
+    is_local: bool,
+) -> S3Store:
+    skip_signature = (
+        "true" if access_key_id is None and secret_access_key is None else None
+    )
+    config = {
+        "endpoint": endpoint_url,
+        "access_key_id": access_key_id,
+        "secret_access_key": secret_access_key,
+        "skip_signature": skip_signature,
+    }
+    s3_config = S3Config(**{k: v for k, v in config.items() if v is not None})
+    return S3Store.from_url(
+        url=f"s3://{bucket_name}",
+        config=s3_config,
+        retry_config=_RETRY_CONFIG,
+        client_options=_CLIENT_OPTIONS if is_local else {},
+    )
+
+
+def _make_client(
+    bucket_name: str, store: S3Store, assert_bucket_exists: bool = True
+) -> "S3Client":
+    return S3Client(
+        store=store, bucket_name=bucket_name, assert_bucket_exists=assert_bucket_exists
+    )
+
+
+def get_s3_metadata_client() -> "S3Client":
+    bucket_name = f"mdl-metadata{'-dta' if ENVIRONMENT == 'dta' else ''}"
+    return _make_client(
+        bucket_name=bucket_name,
+        store=_get_s3_store(
+            endpoint_url="https://s3.waw3-1.cloudferro.com",
+            bucket_name=bucket_name,
+            access_key_id=None,
+            secret_access_key=None,
+            is_local=ENVIRONMENT == "local",
+        ),
+        assert_bucket_exists=False,
+    )
+
+
+def get_s3_ingestion_client(pushing_entity_id: str) -> "S3Client":
+    bucket_name = (
+        f"mdl-ing-{pushing_entity_id.lower()}{'-dta' if ENVIRONMENT == 'dta' else ''}"
+    )
+    return _make_client(
+        bucket_name=bucket_name,
+        store=_get_s3_store(
+            bucket_name=bucket_name,
+            access_key_id=OPDV_ACCESS_KEY_ID,
+            secret_access_key=OPDV_SECRET_ACCESS_KEY,
+            endpoint_url=INGESTION_BUCKETS_ENDPOINT,
+            is_local=ENVIRONMENT == "local",
+        ),
+    )
+
+
 class S3Client:
     def __init__(
         self,
-        pushing_entity_id: str,
+        store: S3Store,
+        bucket_name: str,
+        assert_bucket_exists: bool,
         max_concurrency: int = 12,
     ) -> None:
+        self._store = store
+        self._bucket_name = bucket_name
         self.max_concurrency = max_concurrency
-        self._endpoint_url = INGESTION_BUCKETS_ENDPOINT
-        self._access_key_id = OPDV_ACCESS_KEY_ID
-        self._secret_access_key = OPDV_SECRET_ACCESS_KEY
-        self._bucket_name = f"mdl-ing-{pushing_entity_id.lower()}"
-        self._store: S3Store = S3Store.from_url(
-            url=f"s3://{self._bucket_name}",
-            config={
-                "endpoint": self._endpoint_url,
-                "access_key_id": self._access_key_id,
-                "secret_access_key": self._secret_access_key,
-            },
-            retry_config=_RETRY_CONFIG,
-            client_options={} if ENVIRONMENT != "local" else _CLIENT_OPTIONS,
-        )
-
-        self._assert_bucket_exists()
+        if assert_bucket_exists:
+            self._assert_bucket_exists()
 
     def _assert_bucket_exists(self) -> None:
         try:
@@ -165,3 +219,10 @@ class S3Client:
         return PutFilesResult(
             successful_files=success_results, errored_files=error_results
         )
+
+    def get_file_stream(self, path_to_file: str) -> bytes:
+        response = get(
+            self._store,
+            path=path_to_file,
+        )
+        return b"".join(response.stream(min_chunk_size=20 * 1024 * 1024))

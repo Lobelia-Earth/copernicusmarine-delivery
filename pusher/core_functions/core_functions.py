@@ -3,7 +3,10 @@ import os
 from pathlib import Path
 
 from pusher.core_functions.constants import NEW_DATA_BUCKET_PATH, NEW_MANIFESTS_PATH
-from pusher.core_functions.delivery_validator import upload_files_validation
+from pusher.core_functions.delivery_validator import (
+    upload_files_validation,
+    validate_delivery_ids,
+)
 from pusher.core_functions.manifests_helper import create_manifest, create_manifest_id
 from pusher.core_functions.models import (
     Manifest,
@@ -17,7 +20,7 @@ from pusher.core_functions.models import (
     UploadValidationResult,
 )
 from pusher.logger import logger
-from pusher.s3_client import S3Client
+from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
 def get_upload_bucket_keys_from_local_files(
@@ -59,7 +62,17 @@ def upload(
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
 
-    logger.debug("Validating files provided before release")
+    invalid_delivery_ids_response = validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id
+    )
+    if invalid_delivery_ids_response:
+        logger.error(
+            "The ids provided for this delivery did not match our records, "
+            f"see: {invalid_delivery_ids_response.reason}"
+        )
+        return ResponseUpload.create_from_fatal_error(
+            invalid_delivery_ids_response.reason
+        )
 
     upload_operation, validation_result = create_upload_operation(
         [Path(file_) for file_ in files]
@@ -74,9 +87,7 @@ def upload(
             no_valid_files_fatal_error_response
         )
 
-    s3_client = S3Client(
-        pushing_entity_id=pushing_entity_id,
-    )
+    s3_client = get_s3_ingestion_client(pushing_entity_id)
     manifest_id = create_manifest_id(product_id)
     put_files_result = _put_files_to_ingestion_system(
         s3_client,
@@ -126,10 +137,19 @@ def delete(
         f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
     )
-
-    s3_client = S3Client(
-        pushing_entity_id=pushing_entity_id,
+    invalid_delivery_ids_response = validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id
     )
+    if invalid_delivery_ids_response:
+        logger.error(
+            "The ids provided for this delivery did not match our records, "
+            f"see: {invalid_delivery_ids_response.reason}"
+        )
+        return ResponseDelete.create_from_fatal_error(
+            invalid_delivery_ids_response.reason
+        )
+
+    s3_client = get_s3_ingestion_client(pushing_entity_id)
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -160,12 +180,23 @@ def delivery(
     product_id: str,
     max_concurrent_uploads: int = 10,
 ) -> ResponseDelivery:
+
+    invalid_delivery_ids_response = validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id
+    )
+    if invalid_delivery_ids_response:
+        logger.error(
+            "The ids provided for this delivery did not match our records, "
+            f"see: {invalid_delivery_ids_response.reason}"
+        )
+        return ResponseDelivery.create_from_fatal_error(
+            invalid_delivery_ids_response.reason
+        )
+
     manifest_id = create_manifest_id(product_id)
     all_operations: list[Operation] = []
     validation_results: list[UploadValidationResult | None] = []
-    s3_client = S3Client(
-        pushing_entity_id=pushing_entity_id,
-    )
+    s3_client = get_s3_ingestion_client(pushing_entity_id)
     for operation, sources in zip(operations, operations_sources):
         if operation == "delete":
             all_operations.append(create_delete_operation(sources))

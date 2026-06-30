@@ -4,7 +4,7 @@ from typing import Generator
 import boto3
 import pytest
 
-from pusher.s3_client import S3Client
+from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
 _BUCKET_NAME = f"mdl-ing-{_PUSHING_ENTITY_ID.lower()}"
@@ -47,13 +47,9 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None]:
 
 
 @pytest.fixture
-def service(ingestion_bucket: str, ministack_endpoint: str) -> S3Client:
-    return S3Client(
+def service(ingestion_bucket: str, ministack_endpoint: str, set_env) -> S3Client:
+    return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
-        access_key_id="test",
-        secret_access_key="test",
-        endpoint_url=ministack_endpoint,
-        environment="local",
     )
 
 
@@ -71,3 +67,10 @@ def cli_env(ministack_endpoint: str) -> dict:
 def set_env(monkeypatch, cli_env):
     for key, value in cli_env.items():
         monkeypatch.setenv(key, value)
+
+
+@pytest.fixture
+def skip_delivery_ids_validation(monkeypatch):
+    from pusher.core_functions import core_functions
+
+    monkeypatch.setattr(core_functions, "validate_delivery_ids", lambda *a, **kw: None)
