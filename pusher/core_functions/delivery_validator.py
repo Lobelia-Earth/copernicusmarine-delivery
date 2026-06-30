@@ -58,15 +58,12 @@ def validate_delivery_ids(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
-    pushing_entities: PushingEntities | None = None,
 ) -> InvalidDeliveryIds | None:
-    if not pushing_entities:
-        # TODO Should we cache this somehow?
-        metadata_s3_client = get_s3_metadata_client()
-        pushing_entities_raw = metadata_s3_client.get_file_stream(
-            path_to_file=PUSHING_ENTITIES_PATH
-        )
-        pushing_entities = PushingEntities.from_stream(pushing_entities_raw)
+    metadata_s3_client = get_s3_metadata_client()
+    pushing_entities_raw = metadata_s3_client.get_file_stream(
+        path_to_file=PUSHING_ENTITIES_PATH
+    )
+    pushing_entities = PushingEntities.from_stream(pushing_entities_raw)
 
     valid_pushing_entity = next(
         (e for e in pushing_entities.pushing_entities if e.name == pushing_entity_id),

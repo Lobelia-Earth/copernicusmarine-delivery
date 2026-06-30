@@ -3,22 +3,34 @@ import json
 import os
 import random
 
-import pytest
+import yaml
 from click.testing import CliRunner
 from freezegun import freeze_time
 
 from pusher.command_line_interface import cli
 from pusher.core_functions.core_functions import upload
-
-pytestmark = pytest.mark.usefixtures("skip_delivery_ids_validation")
+from pusher.s3_client import S3Client
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
 ABS_MOCK_FILES = [os.path.abspath(f) for f in MOCK_FILES]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
+_UNKNOWN_ENTITY_YAML = yaml.dump(
+    {
+        "pushing-entities": [
+            {
+                "name": "OTHER-ENTITY",
+                "products": [{"name": "product1", "datasets": ["dataset1"]}],
+            }
+        ]
+    }
+).encode()
+
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
+def test_upload_python_interface(
+    snapshot, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+):
     random.seed(42)
 
     response = upload(
@@ -38,7 +50,9 @@ def test_upload_python_interface(snapshot, glo_mercator_bucket, set_env):
 
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_cli(glo_mercator_bucket, cli_env, snapshot):
+def test_upload_cli(
+    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+):
     random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
@@ -67,7 +81,9 @@ def test_upload_cli(glo_mercator_bucket, cli_env, snapshot):
 
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_cli_save_delivery_json(glo_mercator_bucket, cli_env, snapshot):
+def test_upload_cli_save_delivery_json(
+    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+):
     random.seed(42)
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -118,3 +134,22 @@ def test_upload_cli_no_source_exits(cli_env):
         env=cli_env,
     )
     assert result.exit_code == 1
+
+
+def test_upload_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
+    monkeypatch.setattr(
+        S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
+    )
+
+    response = upload(
+        pushing_entity_id=PUSHING_ENTITY_ID,
+        files=MOCK_FILES,
+        dataset_id="dataset1",
+        product_id="product1",
+        max_concurrent_uploads=10,
+    )
+    assert (
+        response.fatal_error
+        == f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity"
+    )
+    assert response.delivery is None
