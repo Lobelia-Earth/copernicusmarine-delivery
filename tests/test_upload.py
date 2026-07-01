@@ -88,36 +88,39 @@ def test_upload_cli_save_delivery_json(
 ):
     random.seed(42)
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli,
-            [
-                "upload",
-                "--pushing-entity-id",
-                PUSHING_ENTITY_ID,
-                "--source",
-                ABS_MOCK_FILES[0],
-                "--source",
-                ABS_MOCK_FILES[1],
-                "--dataset-id",
-                "dataset1",
-                "--product-id",
-                "product1",
-                "--save-delivery-json",
-            ],
-            env=cli_env,
-        )
-        assert result.exit_code == 0
-        output = json.loads(result.output)
-        assert "delivery" not in output
+    result = runner.invoke(
+        cli,
+        [
+            "upload",
+            "--pushing-entity-id",
+            PUSHING_ENTITY_ID,
+            "--source",
+            MOCK_FILES[0],
+            "--source",
+            MOCK_FILES[1],
+            "--dataset-id",
+            "dataset1",
+            "--product-id",
+            "product1",
+            "--save-delivery-json",
+        ],
+        env=cli_env,
+    )
+    assert result.exit_code == 0
+    output = json.loads(result.output)
+    assert "delivery" not in output
 
-        json_files = glob.glob("*.json")
-        assert len(json_files) == 1
+    json_files = glob.glob("*.json")
+    assert len(json_files) == 1
+    try:
         with open(json_files[0]) as f:
             delivery = json.load(f)
         for op in delivery.get("operations", []):
             op["files"] = sorted(op["files"], key=lambda f: f["file_path"])
         assert delivery == snapshot
+    finally:
+        for jf in json_files:
+            os.remove(jf)
 
 
 def test_upload_cli_no_source_exits(cli_env):

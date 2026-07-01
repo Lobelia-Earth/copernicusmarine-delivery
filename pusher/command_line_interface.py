@@ -4,7 +4,7 @@ import click
 
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import ResponseDelete, ResponseUpload
+from pusher.core_functions.models import Manifest, ResponseDelete, ResponseUpload
 from pusher.logger import logger
 
 _shared_options = [
@@ -115,7 +115,7 @@ def delete(
         saving_delivery_file(manifest)
 
 
-def saving_delivery_file(manifest):
+def saving_delivery_file(manifest: Manifest) -> None:
     manifest_output_file_name = f"{manifest.manifest_id}.json"
     logger.info(f"Writing delivery file to {manifest_output_file_name}")
     with open(manifest_output_file_name, "w") as output_file:
