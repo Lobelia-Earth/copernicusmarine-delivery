@@ -1,4 +1,13 @@
 # serializer version: 1
+# name: test_delivery_early_exit_with_validation_error
+  '''
+  {
+    "delivery_id": null,
+    "fatal_error": "Some files failed validation: [[InvalidFile(path=PosixPath('extra_file.txt'), reason='File path does not exist.')]]. Delivery cancelled. No manifest will be created.",
+    "operations_responses": []
+  }
+  '''
+# ---
 # name: test_delivery_python_interface
   '''
   {
