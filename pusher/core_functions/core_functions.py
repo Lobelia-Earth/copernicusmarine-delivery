@@ -183,8 +183,7 @@ def create_delete_operation(files: list[str]) -> Operation:
 
 
 def delivery(
-    operations: list[OperationNames],
-    operations_sources: list[list[str]],
+    operations: list[tuple[OperationNames, list[str]]],
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
@@ -210,11 +209,11 @@ def delivery(
     all_operations: list[Operation] = []
     validation_results: list[UploadValidationResult | None] = []
     s3_client = get_s3_ingestion_client(pushing_entity_id)
-    for operation, sources in zip(operations, operations_sources):
-        if operation == "delete":
+    for operation_name, sources in operations:
+        if operation_name == "delete":
             all_operations.append(create_delete_operation(sources))
             validation_results.append(None)
-        elif operation == "upload":
+        elif operation_name == "upload":
             operation, validation_result = create_upload_operation(
                 [Path(file_) for file_ in sources]
             )
@@ -335,11 +334,11 @@ def _put_files_to_ingestion_system(
         product_id,
         dataset_id,
     )
-    upload_multiple_files_result = s3_client.upload_multiple_files(
+    put_files_result = s3_client.upload_multiple_files(
         s3_keys_local_file_mapping,
         max_concurrent_uploads,
     )
-    return upload_multiple_files_result
+    return put_files_result
 
 
 def _update_operation_with_put_results(

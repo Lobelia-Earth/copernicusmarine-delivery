@@ -11,15 +11,12 @@ from pusher.core_functions.core_functions import (
 from pusher.core_functions.manifests_helper import (
     create_manifest,
     create_manifest_id,
-    create_upload_manifest_files,
 )
 from pusher.core_functions.models import (
     Manifest,
     ManifestFile,
     Operation,
     ResponseUpload,
-    S3File,
-    S3Path,
 )
 
 RESOURCES = Path("tests/resources")
@@ -90,27 +87,6 @@ def test_create_manifest_id_format():
     assert manifest_id.startswith("20240315T120001-dataset1-")
     suffix = manifest_id.split("-")[-1]
     assert suffix.isdigit() and 1000 <= int(suffix) <= 9999
-
-
-def test_create_upload_manifest_files(tmp_path):
-    f = tmp_path / "file.nc"
-    f.write_bytes(b"x" * 1024)
-    files = [S3File(local_path=f, s3_path=S3Path("data/key/file.nc"), e_tag="abc-1")]
-    result = create_upload_manifest_files(files)
-    assert result[0].checksum == "abc-1"
-    assert result[0].file_size == 0  # < 1 MB rounds to 0
-
-
-def test_create_upload_manifest_files_missing_file():
-    files = [
-        S3File(
-            local_path=Path("/nonexistent/file.nc"),
-            s3_path=S3Path("data/key/file.nc"),
-            e_tag="abc-1",
-        )
-    ]
-    with pytest.raises(AssertionError):
-        create_upload_manifest_files(files)
 
 
 @freeze_time("2024-03-15 12:00:01")

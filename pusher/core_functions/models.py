@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 # that is used to find the file locally, in the manifest, and
 # as the suffix of the S3 key.
 S3Path = NewType("S3Path", str)
+# TODO: see if an Enum wouldn't be better to avoid the type ignore
 OperationNames = Literal["upload", "delete"]
 
 
@@ -192,6 +193,11 @@ class ResponseUpload(BaseResponse):
     files_invalid: list[InvalidFile] = Field(default_factory=list)
     #: Potential I/O errors, might be on the user side, not necessarily user fault
     files_failed: list[ErrorFile] = Field(default_factory=list)
+
+    @field_validator("files_uploaded")
+    @classmethod
+    def sort_lists(cls, v: list) -> list:
+        return sorted(v)
 
     # function to initialise the response
     @classmethod

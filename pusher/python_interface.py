@@ -1,3 +1,5 @@
+from typing import get_args
+
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import upload as _upload
@@ -48,8 +50,7 @@ def delete(
 
 
 def delivery(
-    operations: list[str],
-    operations_sources: list[list[str]],
+    operations: list[tuple[str, list[str]]],
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
@@ -61,27 +62,27 @@ def delivery(
     Each operation will be performed sequentially in the order they are given.
     Each operation can have multiple sources (files) to be processed.
 
-    It is important to sort the operations and their sources in the same order, so that the first operation corresponds to the first list of sources, the second operation to the second list of sources, and so on.
+    :param operations: A list of operations to be performed. Each operation is a tuple with the operation name as the first element and a list of sources as the second element. Available operations are 'upload' and 'delete'.
     """  # noqa
 
     if not operations:
         return ResponseDelivery(fatal_error="No operations given for delivery.")
-    for operation_name in operations:
-        if operation_name not in OperationNames.__args__:
-            return ResponseDelivery(
-                fatal_error=f"Invalid operation name: {operation_name}. Must be one of {OperationNames.__args__}."
-            )
-    if not len(operations) == len(operations_sources):
-        # TODO: should we raise here?
+    if not isinstance(operations, list):
         return ResponseDelivery(
-            fatal_error="The number of operations and the number of sources lists must be the same."
+            fatal_error="Operations must be a list because order matters."
         )
+    for operation_name in [operation[0] for operation in operations]:
+        authorised_operations = get_args(OperationNames)
+        if operation_name not in authorised_operations:
+            return ResponseDelivery(
+                fatal_error=f"Operation '{operation_name}' is not supported. Supported operations are: {authorised_operations}."
+            )
+
     response, _ = _delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         operations=operations,  # type: ignore
-        operations_sources=operations_sources,
         max_concurrent_uploads=max_concurrent_uploads,
     )
     return response
