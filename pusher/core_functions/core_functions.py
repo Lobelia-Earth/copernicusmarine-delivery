@@ -76,7 +76,7 @@ def upload(
             None,
         )
 
-    upload_operation, validation_result = create_upload_operation(
+    upload_operation, validation_result = create_and_validate_upload_operation(
         [Path(file_) for file_ in files]
     )
 
@@ -214,7 +214,7 @@ def delivery(
             all_operations.append(create_delete_operation(sources))
             validation_results.append(None)
         elif operation_name == "upload":
-            operation, validation_result = create_upload_operation(
+            operation, validation_result = create_and_validate_upload_operation(
                 [Path(file_) for file_ in sources]
             )
             all_operations.append(operation)
@@ -274,7 +274,7 @@ def delivery(
     )
 
 
-def create_upload_operation(
+def create_and_validate_upload_operation(
     files: list[Path],
 ) -> tuple[Operation, UploadValidationResult]:
     validation_result = upload_files_validation(files)
