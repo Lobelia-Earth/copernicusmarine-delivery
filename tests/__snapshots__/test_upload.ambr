@@ -1,30 +1,30 @@
 # serializer version: 1
 # name: test_upload_cli
   dict({
+    'delivery_id': '20120114T120001-product1-2824',
     'files_uploaded': list([
       'file1.txt',
       'file2.txt',
     ]),
-    'transaction_id': '20120114T120001-dataset1-1409',
   })
 # ---
 # name: test_upload_cli_save_delivery_json
   dict({
     'creation_time': '2012-01-14T12:00:01+00:00',
     'dataset_id': 'dataset1',
-    'manifest_id': '20120114T120001-dataset1-1409',
+    'manifest_id': '20120114T120001-product1-2824',
     'operations': list([
       dict({
         'files': list([
           dict({
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
+            'file_path': 'tests/resources/file1.txt',
             'file_size': 0,
-            's3_path': 'data/20120114T120001-product1-2824/product1/dataset1/file1.txt',
           }),
           dict({
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
+            'file_path': 'tests/resources/file2.txt',
             'file_size': 0,
-            's3_path': 'data/20120114T120001-product1-2824/product1/dataset1/file2.txt',
           }),
         ]),
         'operation': 'upload',
@@ -36,34 +36,7 @@
 # ---
 # name: test_upload_python_interface
   dict({
-    'delivery': dict({
-      'creation_time': '2012-01-14T12:00:01+00:00',
-      'dataset_id': 'dataset1',
-      'manifest_id': '20120114T120001-dataset1-1409',
-      'operations': list([
-        dict({
-          'files': list([
-            dict({
-              'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
-              'file_size': 0,
-              's3_path': 'data/20120114T120001-product1-2824/product1/dataset1/file1.txt',
-              'status': 'todo',
-            }),
-            dict({
-              'checksum': '727a3ead5c2a5492759091a67cb31068-1',
-              'file_size': 0,
-              's3_path': 'data/20120114T120001-product1-2824/product1/dataset1/file2.txt',
-              'status': 'todo',
-            }),
-          ]),
-          'operation': 'upload',
-          'status': 'todo',
-        }),
-      ]),
-      'product_id': 'product1',
-      'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
-      'status': 'todo',
-    }),
+    'delivery_id': '20120114T120001-product1-2824',
     'files_failed': list([
     ]),
     'files_invalid': list([
@@ -72,6 +45,45 @@
       'file1.txt',
       'file2.txt',
     ]),
-    'transaction_id': '20120114T120001-dataset1-1409',
   })
+# ---
+# name: test_upload_python_interface.1
+  '''
+  {
+    "manifest_id": "20120114T120001-product1-2824",
+    "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
+    "product_id": "product1",
+    "dataset_id": "dataset1",
+    "operations": [
+      {
+        "operation": "upload",
+        "status": "todo",
+        "status_timestamp": null,
+        "error": null,
+        "files": [
+          {
+            "file_path": "tests/resources/file1.txt",
+            "file_size": 0,
+            "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
+            "status": "todo",
+            "status_timestamp": null,
+            "error": null
+          },
+          {
+            "file_path": "tests/resources/file2.txt",
+            "file_size": 0,
+            "checksum": "727a3ead5c2a5492759091a67cb31068-1",
+            "status": "todo",
+            "status_timestamp": null,
+            "error": null
+          }
+        ]
+      }
+    ],
+    "creation_time": "2012-01-14T12:00:01+00:00",
+    "status": "todo",
+    "status_timestamp": null,
+    "error": null
+  }
+  '''
 # ---

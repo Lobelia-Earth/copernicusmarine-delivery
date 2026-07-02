@@ -5,7 +5,7 @@ from pusher.core_functions.models import (
     InvalidDeliveryIds,
     InvalidFile,
     PushingEntities,
-    ValidateResult,
+    UploadValidationResult,
 )
 from pusher.logger import logger
 from pusher.s3_client import get_s3_metadata_client
@@ -25,19 +25,19 @@ def file_type_supported(file_path: Path) -> bool:
     return file_path.suffix in SUPPORTED_FILE_EXTENTIONS
 
 
-def validate_upload_file_requirements(files: list[Path]) -> ValidateResult:
+def upload_files_validation(files: list[Path]) -> UploadValidationResult:
     valid_files = []
     invalid_files = []
-    for file in files:
-        if not file_exists(file):
+    for file_ in files:
+        if not file_exists(file_):
             invalid_files.append(
-                InvalidFile(path=file, reason="File path does not exist.")
+                InvalidFile(path=file_, reason="File path does not exist.")
             )
             continue
-        if not file_not_empty(file):
-            invalid_files.append(InvalidFile(path=file, reason="File is empty."))
+        if not file_not_empty(file_):
+            invalid_files.append(InvalidFile(path=file_, reason="File is empty."))
             continue
-        if not file_type_supported(file):
+        if not file_type_supported(file_):
             # Just a warning for now
             logger.warning(
                 "File extension is not supported. There might be some issues downstream. "
@@ -45,13 +45,13 @@ def validate_upload_file_requirements(files: list[Path]) -> ValidateResult:
             )
             # invalid_files.append(
             #     InvalidFile(
-            #         path=file,
+            #         path=file_,
             #         reason=f"File extension not supported. Supported extensions are: {SUPPORTED_FILE_EXTENTIONS}",
             #     )
             # )
             # continue
-        valid_files.append(file)
-    return ValidateResult(files_valid=valid_files, files_invalid=invalid_files)
+        valid_files.append(file_)
+    return UploadValidationResult(files_valid=valid_files, files_invalid=invalid_files)
 
 
 def validate_delivery_ids(

@@ -4,7 +4,7 @@ import click
 
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import ResponseDelete, ResponseUpload
+from pusher.core_functions.models import Manifest, ResponseDelete, ResponseUpload
 from pusher.logger import logger
 
 _shared_options = [
@@ -56,7 +56,7 @@ def upload(
         )
         sys.exit(1)
 
-    response = _upload(
+    response, manifest = _upload(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -66,24 +66,13 @@ def upload(
     click.echo(
         response.model_dump_json(
             indent=2,
-            exclude={"delivery"},
             exclude_none=True,
             exclude_unset=True,
             exclude_defaults=True,
         )
     )
-    if save_delivery_json and response.delivery:
-        manifest_output_file_name = f"{response.delivery.manifest_id}.json"
-        logger.info(f"Writing delivery result to {manifest_output_file_name}")
-        with open(manifest_output_file_name, "w") as output_file:
-            output_file.write(
-                response.delivery.model_dump_json(
-                    indent=2,
-                    exclude_none=True,
-                    exclude_unset=True,
-                    exclude_defaults=True,
-                )
-            )
+    if save_delivery_json and manifest:
+        saving_delivery_file(manifest)
 
 
 @cli.command()
@@ -108,7 +97,7 @@ def delete(
         )
         sys.exit(1)
 
-    response = _delete(
+    response, manifest = _delete(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -117,24 +106,27 @@ def delete(
     click.echo(
         response.model_dump_json(
             indent=2,
-            exclude={"delivery"},
             exclude_none=True,
             exclude_unset=True,
             exclude_defaults=True,
         )
     )
-    if save_delivery_json and response.delivery:
-        manifest_output_file_name = f"{response.delivery.manifest_id}.json"
-        logger.info(f"Writing delivery result to {manifest_output_file_name}")
-        with open(manifest_output_file_name, "w") as output_file:
-            output_file.write(
-                response.delivery.model_dump_json(
-                    indent=2,
-                    exclude_none=True,
-                    exclude_unset=True,
-                    exclude_defaults=True,
-                )
+    if save_delivery_json and manifest:
+        saving_delivery_file(manifest)
+
+
+def saving_delivery_file(manifest: Manifest) -> None:
+    manifest_output_file_name = f"{manifest.manifest_id}.json"
+    logger.info(f"Writing delivery file to {manifest_output_file_name}")
+    with open(manifest_output_file_name, "w") as output_file:
+        output_file.write(
+            manifest.model_dump_json(
+                indent=2,
+                exclude_none=True,
+                exclude_unset=True,
+                exclude_defaults=True,
             )
+        )
 
 
 if __name__ == "__main__":
