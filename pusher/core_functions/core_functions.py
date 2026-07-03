@@ -22,8 +22,8 @@ from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
-def get_upload_bucket_keys_from_local_files(
-    list_of_files: list[Path],
+def get_local_path_s3_keys_mapping(
+    list_of_files: list[str],
     manifest_id: str,
     product_id: str,
     dataset_id: str,
@@ -33,7 +33,7 @@ def get_upload_bucket_keys_from_local_files(
             manifest_id=manifest_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            file_name=file_path.name,
+            file_name=file_path,
         )
         for file_path in list_of_files
     }
@@ -176,8 +176,8 @@ def create_delete_operation(files: list[str]) -> Operation:
     return Operation(
         operation="delete",
         files=[
-            ManifestFile(file_path=Path(file_), file_size=None, checksum=None)
-            for file_ in files
+            ManifestFile(key_suffix=file, file_size=None, checksum=None)
+            for file in files
         ],
     )
 
@@ -283,11 +283,11 @@ def create_and_validate_upload_operation(
             operation="upload",
             files=[
                 ManifestFile(
-                    file_path=file_,
-                    file_size=os.path.getsize(file_) // (1024 * 1024),
+                    key_suffix=str(file),
+                    file_size=os.path.getsize(file) // (1024 * 1024),
                     checksum=None,  # ETag will be filled in after upload
                 )
-                for file_ in validation_result.files_valid
+                for file in validation_result.files_valid
             ],
         ),
         validation_result,
@@ -328,14 +328,14 @@ def _put_files_to_ingestion_system(
     max_concurrent_uploads: int,
 ) -> PutFilesResult:
 
-    s3_keys_local_file_mapping = get_upload_bucket_keys_from_local_files(
-        [file_.file_path for file_ in operation.files],
+    local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
+        [file_.key_suffix for file_ in operation.files],
         manifest_id,
         product_id,
         dataset_id,
     )
     put_files_result = s3_client.upload_multiple_files(
-        s3_keys_local_file_mapping,
+        local_path_s3_keys_mapping,
         max_concurrent_uploads,
     )
     return put_files_result
@@ -350,18 +350,20 @@ def _update_operation_with_put_results(
     Might be the default one.
     """
     successful_files_dict = {
-        file_.local_path: file_ for file_ in put_files_result.successful_files
+        str(file.local_path): file for file in put_files_result.successful_files
     }
-    errored_files_dict = {file_.path: file_ for file_ in put_files_result.errored_files}
+    errored_files_dict = {
+        str(file.local_path): file for file in put_files_result.errored_files
+    }
     index_files_to_remove = []
     for i, manifest_file in enumerate(operation.files):
-        if manifest_file.file_path in successful_files_dict:
+        if manifest_file.key_suffix in successful_files_dict:
             manifest_file.checksum = successful_files_dict[
-                manifest_file.file_path
+                manifest_file.key_suffix
             ].e_tag
-        elif manifest_file.file_path in errored_files_dict:
+        elif manifest_file.key_suffix in errored_files_dict:
             logger.error(
-                f"File {manifest_file.file_path} failed to upload: {errored_files_dict[manifest_file.file_path].reason}"
+                f"File {manifest_file.key_suffix} failed to upload: {errored_files_dict[manifest_file.key_suffix].reason}"
             )
             index_files_to_remove.append(i)
     for index in reversed(index_files_to_remove):

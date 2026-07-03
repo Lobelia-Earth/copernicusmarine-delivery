@@ -46,7 +46,7 @@ def test_upload_python_interface(
     result["files_invalid"] = sorted(result.get("files_invalid", []))
     assert manifest is not None
     for op in manifest.operations:
-        op.files = sorted(op.files, key=lambda f: f.file_path)
+        op.files = sorted(op.files, key=lambda f: f.key_suffix)
     assert result == snapshot
     assert manifest.model_dump_json(indent=2) == snapshot
 
@@ -116,7 +116,7 @@ def test_upload_cli_save_delivery_json(
         with open(json_files[0]) as f:
             delivery = json.load(f)
         for op in delivery.get("operations", []):
-            op["files"] = sorted(op["files"], key=lambda f: f["file_path"])
+            op["files"] = sorted(op["files"], key=lambda f: f["key_suffix"])
         assert delivery == snapshot
     finally:
         for jf in json_files:

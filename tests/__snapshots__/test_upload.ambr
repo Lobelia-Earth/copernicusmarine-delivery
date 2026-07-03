@@ -18,13 +18,13 @@
         'files': list([
           dict({
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
-            'file_path': 'tests/resources/file1.txt',
             'file_size': 0,
+            'key_suffix': 'tests/resources/file1.txt',
           }),
           dict({
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
-            'file_path': 'tests/resources/file2.txt',
             'file_size': 0,
+            'key_suffix': 'tests/resources/file2.txt',
           }),
         ]),
         'operation': 'upload',
@@ -62,7 +62,7 @@
         "error": null,
         "files": [
           {
-            "file_path": "tests/resources/file1.txt",
+            "key_suffix": "tests/resources/file1.txt",
             "file_size": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
             "status": "todo",
@@ -70,7 +70,7 @@
             "error": null
           },
           {
-            "file_path": "tests/resources/file2.txt",
+            "key_suffix": "tests/resources/file2.txt",
             "file_size": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
             "status": "todo",
