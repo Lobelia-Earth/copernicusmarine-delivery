@@ -30,6 +30,9 @@ platforms = ["osx-arm64", "linux-64"]
 [tool.pixi.pypi-dependencies]
 pusher = { path = ".", editable = true }
 
+[tool.pixi.tasks]
+delivery-ui = "python -m pusher.tui_app"
+
 [tool.pixi.feature.dev.dependencies]
 pytest = "*"
 ruff = "*"
@@ -60,6 +63,3 @@ fixable = ["F401", "I"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
-
-[tool.pixi.dependencies]
-
