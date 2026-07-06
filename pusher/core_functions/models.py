@@ -48,12 +48,15 @@ class PushingEntities(BaseModel):
 
 
 class ManifestFile(BaseModel):
-    #: Path to the file in the destination storage (e.g., S3 path).
-    file_path: Path
+    #: File path. Only the part specific to the dataset and defined by the pushing entity.
+    #: Example: "subfolder/file.nc" or "file.nc"
+    #: In the case of an upload, it will be uploaded to the Marine datastore as "/{product_id}/{dataset_id}/{key_suffix}".
+    #: Similarly for a delete, the file will be deleted from the Marine datastore at "/{product_id}/{dataset_id}/{key_suffix}".
+    key_suffix: str
 
-    @field_validator("file_path")
+    @field_validator("key_suffix")
     @classmethod
-    def ensure_relative_path(cls, v: Path) -> Path:
+    def ensure_relative_path(cls, v: str) -> str:
         """
         From Claude. Not sure it is a good idea but I will leave it there as a TODO.
 
@@ -73,8 +76,10 @@ class ManifestFile(BaseModel):
         - we ask for the full path and we strip the product/dataset prefix if it exists so we use the datasetID as anchor.
         - etc
         """
-        if v.is_absolute():
-            return Path(os.path.relpath(v))
+        if os.path.isabs(v):
+            return os.path.relpath(v).replace(
+                "../", ""
+            )  # disgusting but good enough for now
         return v
 
     #: Estimation of the size of the file in MB.
@@ -153,11 +158,11 @@ class S3File(BaseModel):
 class ErrorResponseFile(BaseModel):
     """Generic class for any invalid or errored file"""
 
-    path: Path
+    local_path: Path
     reason: str
 
     def __str__(self) -> str:
-        return f"{self.path}: {self.reason}"
+        return f"{self.local_path}: {self.reason}"
 
 
 class InvalidFile(ErrorResponseFile): ...

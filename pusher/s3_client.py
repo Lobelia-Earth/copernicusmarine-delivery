@@ -12,7 +12,12 @@ from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
 )
-from pusher.core_functions.models import ErrorFile, PutFilesResult, S3File, S3Path
+from pusher.core_functions.models import (
+    ErrorFile,
+    PutFilesResult,
+    S3File,
+    S3Path,
+)
 from pusher.environment_variables import (
     ENVIRONMENT,
     INGESTION_BUCKETS_ENDPOINT,
@@ -187,7 +192,7 @@ class S3Client:
         except Exception as e:
             logger.error(f"Something went wrong uploading: {file.name}")
             return ErrorFile(
-                path=file,
+                local_path=file,
                 reason=_extract_error_message(e),
             )
 

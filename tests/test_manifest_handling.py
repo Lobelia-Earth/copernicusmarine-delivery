@@ -5,8 +5,8 @@ from freezegun import freeze_time
 from pydantic import ValidationError
 
 from pusher.core_functions.core_functions import (
+    get_local_path_s3_keys_mapping,
     get_manifest_destination_key,
-    get_upload_bucket_keys_from_local_files,
 )
 from pusher.core_functions.manifests_helper import (
     create_manifest,
@@ -26,9 +26,7 @@ RESOURCES = Path("tests/resources")
 
 
 def test_manifest_file_none_file_size():
-    f = ManifestFile(
-        file_path=Path("data/key/file.nc"), file_size=None, checksum="abc123"
-    )
+    f = ManifestFile(key_suffix="data/key/file.nc", file_size=None, checksum="abc123")
     assert f.file_size is None
 
 
@@ -59,8 +57,8 @@ def test_response_upload_error_no_manifest():
 
 @freeze_time("2024-03-15")
 def test_get_bucket_keys_from_local_files():
-    result = get_upload_bucket_keys_from_local_files(
-        list_of_files=[Path("path/to/file.nc")],
+    result = get_local_path_s3_keys_mapping(
+        list_of_files=["path/to/file.nc"],
         manifest_id="20240315T000000-dataset1-1234",
         product_id="product1",
         dataset_id="dataset1",
@@ -68,7 +66,7 @@ def test_get_bucket_keys_from_local_files():
     assert result == {
         Path(
             "path/to/file.nc"
-        ): "data/20240315T000000-dataset1-1234/product1/dataset1/file.nc"
+        ): "data/20240315T000000-dataset1-1234/product1/dataset1/path/to/file.nc"
     }
 
 
@@ -101,7 +99,7 @@ def test_create_manifest(tmp_path):
         operations=[
             Operation(
                 operation="upload",
-                files=[ManifestFile(file_path=f, file_size=43, checksum="abc-1")],
+                files=[ManifestFile(key_suffix=str(f), file_size=43, checksum="abc-1")],
             )
         ],
         manifest_id=manifest_id,

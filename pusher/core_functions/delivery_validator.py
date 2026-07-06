@@ -31,11 +31,11 @@ def upload_files_validation(files: list[Path]) -> UploadValidationResult:
     for file_ in files:
         if not file_exists(file_):
             invalid_files.append(
-                InvalidFile(path=file_, reason="File path does not exist.")
+                InvalidFile(local_path=file_, reason="File path does not exist.")
             )
             continue
         if not file_not_empty(file_):
-            invalid_files.append(InvalidFile(path=file_, reason="File is empty."))
+            invalid_files.append(InvalidFile(local_path=file_, reason="File is empty."))
             continue
         if not file_type_supported(file_):
             # Just a warning for now

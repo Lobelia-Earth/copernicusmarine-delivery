@@ -3,7 +3,7 @@
   '''
   {
     "delivery_id": null,
-    "fatal_error": "Some files failed validation: [[InvalidFile(path=PosixPath('extra_file.txt'), reason='File path does not exist.')]]. Delivery cancelled. No manifest will be created.",
+    "fatal_error": "Some files failed validation: [[InvalidFile(local_path=PosixPath('extra_file.txt'), reason='File path does not exist.')]]. Delivery cancelled. No manifest will be created.",
     "operations_responses": []
   }
   '''
@@ -47,7 +47,7 @@
         "error": null,
         "files": [
           {
-            "file_path": "tests/resources/file1.txt",
+            "key_suffix": "tests/resources/file1.txt",
             "file_size": null,
             "checksum": null,
             "status": "todo",
@@ -55,7 +55,7 @@
             "error": null
           },
           {
-            "file_path": "tests/resources/file2.txt",
+            "key_suffix": "tests/resources/file2.txt",
             "file_size": null,
             "checksum": null,
             "status": "todo",
@@ -71,7 +71,7 @@
         "error": null,
         "files": [
           {
-            "file_path": "tests/resources/file1.txt",
+            "key_suffix": "tests/resources/file1.txt",
             "file_size": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
             "status": "todo",
@@ -79,7 +79,7 @@
             "error": null
           },
           {
-            "file_path": "tests/resources/file2.txt",
+            "key_suffix": "tests/resources/file2.txt",
             "file_size": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
             "status": "todo",
