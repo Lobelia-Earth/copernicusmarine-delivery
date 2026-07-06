@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pusher.core_functions.constants import NEW_DATA_BUCKET_PATH, NEW_MANIFESTS_PATH
 from pusher.core_functions.delivery_validator import (
+    fetch_pushing_entities,
     upload_files_validation,
     validate_delivery_ids,
 )
@@ -61,8 +62,9 @@ def upload(
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
 
+    pushing_entities = fetch_pushing_entities()
     invalid_delivery_ids_response = validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id
+        pushing_entity_id, product_id, dataset_id, pushing_entities
     )
     if invalid_delivery_ids_response:
         logger.error(
@@ -144,8 +146,9 @@ def delete(
         f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
     )
+    pushing_entities = fetch_pushing_entities()
     invalid_delivery_ids_response = validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id
+        pushing_entity_id, product_id, dataset_id, pushing_entities
     )
     if invalid_delivery_ids_response:
         logger.error(
@@ -190,8 +193,9 @@ def delivery(
     max_concurrent_uploads: int = 10,
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
+    pushing_entities = fetch_pushing_entities()
     invalid_delivery_ids_response = validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id
+        pushing_entity_id, product_id, dataset_id, pushing_entities
     )
     if invalid_delivery_ids_response:
         logger.error(
