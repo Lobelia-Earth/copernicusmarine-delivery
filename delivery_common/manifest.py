@@ -1,10 +1,7 @@
 from datetime import datetime, timezone
 from random import randint
 
-from pusher.core_functions.models import (
-    Manifest,
-    Operation,
-)
+from delivery_common.domain import Manifest, Operation
 
 
 def create_manifest(
