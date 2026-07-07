@@ -1,0 +1,73 @@
+# serializer version: 1
+# name: test_delivery_status_cli
+  '''
+  {
+    "manifest_id": "20120114T120001-product1-2824",
+    "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
+    "product_id": "product1",
+    "dataset_id": "dataset1",
+    "operations": [
+      {
+        "operation": "upload",
+        "status": "todo",
+        "files": [
+          {
+            "key_suffix": "tests/resources/file1.txt",
+            "file_size": 0,
+            "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
+            "status": "todo"
+          },
+          {
+            "key_suffix": "tests/resources/file2.txt",
+            "file_size": 0,
+            "checksum": "727a3ead5c2a5492759091a67cb31068-1",
+            "status": "todo"
+          }
+        ]
+      }
+    ],
+    "creation_time": "2012-01-14T12:00:01+00:00",
+    "status": "todo"
+  }
+  '''
+# ---
+# name: test_delivery_status_python_interface
+  '''
+  {
+    "manifest_id": "20120114T120001-product1-2824",
+    "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
+    "product_id": "product1",
+    "dataset_id": "dataset1",
+    "operations": [
+      {
+        "operation": "upload",
+        "status": "todo",
+        "status_timestamp": null,
+        "error": null,
+        "files": [
+          {
+            "key_suffix": "tests/resources/file1.txt",
+            "file_size": 0,
+            "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
+            "status": "todo",
+            "status_timestamp": null,
+            "error": null
+          },
+          {
+            "key_suffix": "tests/resources/file2.txt",
+            "file_size": 0,
+            "checksum": "727a3ead5c2a5492759091a67cb31068-1",
+            "status": "todo",
+            "status_timestamp": null,
+            "error": null
+          }
+        ]
+      }
+    ],
+    "creation_time": "2012-01-14T12:00:01+00:00",
+    "status": "todo",
+    "status_timestamp": null,
+    "error": null
+  }
+  '''
+# ---

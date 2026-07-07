@@ -4,6 +4,7 @@ import click
 
 from delivery_common.domain import Manifest
 from pusher.core_functions.core_functions import delete as _delete
+from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import ResponseDelete, ResponseUpload
 from pusher.logger import logger
@@ -128,6 +129,34 @@ def saving_delivery_file(manifest: Manifest) -> None:
                 exclude_defaults=True,
             )
         )
+
+
+@cli.command()
+@click.option(
+    "--delivery-id", required=True, help="ID of the delivery to check status for."
+)
+@click.option("--pushing-entity-id", required=True, help="ID of the pushing entity.")
+@click.option("--product-id", required=True, help="ID of the product.")
+@click.option("--dataset-id", required=True, help="ID of the dataset.")
+def delivery_status(
+    delivery_id: str,
+    pushing_entity_id: str,
+    product_id: str,
+    dataset_id: str,
+) -> None:
+    """Get the status of a delivery."""
+    manifest = get_manifest(
+        delivery_id=delivery_id,
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+    )
+    click.echo(
+        manifest.model_dump_json(
+            indent=2,
+            exclude_none=True,
+        )
+    )
 
 
 if __name__ == "__main__":
