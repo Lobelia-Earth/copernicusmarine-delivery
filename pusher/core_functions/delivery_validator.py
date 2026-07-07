@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from delivery_common.domain import PushingEntities
-
 from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
 from pusher.core_functions.models import (
     InvalidFile,

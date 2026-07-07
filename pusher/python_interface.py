@@ -1,7 +1,6 @@
 from typing import cast, get_args
 
 from delivery_common.domain import OperationNames
-
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import upload as _upload

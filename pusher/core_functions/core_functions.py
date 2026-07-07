@@ -9,7 +9,6 @@ from delivery_common.domain import (
 )
 from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
-
 from pusher.core_functions.constants import NEW_DATA_BUCKET_PATH, NEW_MANIFESTS_PATH
 from pusher.core_functions.delivery_validator import (
     fetch_pushing_entities,
