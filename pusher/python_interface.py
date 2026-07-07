@@ -1,8 +1,9 @@
 from typing import cast, get_args
 
-from delivery_common.domain import OperationNames
+from delivery_common.domain import Manifest, OperationNames
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
+from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import (
     ResponseDelete,
@@ -86,3 +87,20 @@ def delivery(
         max_concurrent_uploads=max_concurrent_uploads,
     )
     return response
+
+
+def delivery_status(
+    delivery_id: str, pushing_entity_id: str, product_id: str, dataset_id: str
+) -> Manifest:
+    """
+    Get the status of a delivery.
+
+    Right now, returns the manifest.
+    """
+    manifest = get_manifest(
+        delivery_id=delivery_id,
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+    )
+    return manifest

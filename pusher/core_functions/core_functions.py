@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import yaml
+
 from delivery_common.domain import (
     Manifest,
     ManifestFile,
@@ -9,7 +11,13 @@ from delivery_common.domain import (
 )
 from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
-from pusher.core_functions.constants import NEW_DATA_BUCKET_PATH, NEW_MANIFESTS_PATH
+from pusher.core_functions.constants import (
+    DONE_MANIFESTS_PATH,
+    FAILED_MANIFESTS_PATH,
+    IN_PROGRESS_MANIFESTS_PATH,
+    NEW_DATA_BUCKET_PATH,
+    NEW_MANIFESTS_PATH,
+)
 from pusher.core_functions.delivery_validator import (
     fetch_pushing_entities,
     upload_files_validation,
@@ -374,3 +382,54 @@ def _update_operation_with_put_results(
             index_files_to_remove.append(i)
     for index in reversed(index_files_to_remove):
         del operation.files[index]
+
+
+def get_manifest(
+    delivery_id: str,
+    pushing_entity_id: str,
+    product_id: str,
+    dataset_id: str,
+) -> Manifest:
+    s3_client = get_s3_ingestion_client(pushing_entity_id)
+    manifest_new = _get_manifest(
+        s3_client, NEW_MANIFESTS_PATH.format(manifest_id=delivery_id)
+    )
+    if manifest_new:
+        return manifest_new
+    manifest_in_progress = _get_manifest(
+        s3_client,
+        IN_PROGRESS_MANIFESTS_PATH.format(manifest_id=delivery_id),
+    )
+    if manifest_in_progress:
+        return manifest_in_progress
+    manifest_failed = _get_manifest(
+        s3_client,
+        FAILED_MANIFESTS_PATH.format(
+            product_id=product_id, dataset_id=dataset_id, manifest_id=delivery_id
+        ),
+    )
+    if manifest_failed:
+        return manifest_failed
+    manifest_done = _get_manifest(
+        s3_client,
+        DONE_MANIFESTS_PATH.format(
+            product_id=product_id, dataset_id=dataset_id, manifest_id=delivery_id
+        ),
+    )
+    if manifest_done:
+        return manifest_done
+    raise ValueError(
+        f"Manifest with id {delivery_id} not found for pushing entity {pushing_entity_id}."
+    )
+
+
+def _get_manifest(
+    s3_client: S3Client,
+    key: str,
+) -> Manifest | None:
+    try:
+        manifest_stream = s3_client.get_file_stream(key)
+        return Manifest.model_validate(yaml.safe_load(manifest_stream))
+    except Exception:
+        logger.debug(f"Manifest not found at {key}")
+        return None
