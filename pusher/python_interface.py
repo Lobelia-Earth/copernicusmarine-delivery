@@ -1,10 +1,10 @@
-from typing import get_args
+from typing import cast, get_args
 
+from delivery_common.domain import OperationNames
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import (
-    OperationNames,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
@@ -82,7 +82,7 @@ def delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operations=operations,  # type: ignore
+        operations=cast(list[tuple[OperationNames, list[str]]], operations),
         max_concurrent_uploads=max_concurrent_uploads,
     )
     return response

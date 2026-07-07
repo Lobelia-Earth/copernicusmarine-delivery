@@ -2,9 +2,10 @@ import sys
 
 import click
 
+from delivery_common.domain import Manifest
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import Manifest, ResponseDelete, ResponseUpload
+from pusher.core_functions.models import ResponseDelete, ResponseUpload
 from pusher.logger import logger
 
 _shared_options = [

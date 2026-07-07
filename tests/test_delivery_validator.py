@@ -1,8 +1,8 @@
 import pytest
 import yaml
 
-from pusher.core_functions.delivery_validator import validate_delivery_ids
-from pusher.core_functions.models import PushingEntities
+from delivery_common.domain import PushingEntities
+from delivery_common.validation import validate_delivery_ids
 from pusher.s3_client import S3Client
 
 _PUSHING_ENTITIES_YAML = yaml.dump(
