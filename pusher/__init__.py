@@ -1,5 +1,10 @@
 """Pusher package."""
 
-from pusher.python_interface import delete, delivery, upload
+from pusher.python_interface import Delete, Delivery, Upload, delivery_status
 
-__all__ = ["delete", "delivery", "upload"]
+__all__ = [
+    "Delete",
+    "Delivery",
+    "Upload",
+    "delivery_status",
+]

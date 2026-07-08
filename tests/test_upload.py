@@ -12,7 +12,6 @@ from pusher.core_functions.core_functions import upload
 from pusher.s3_client import S3Client
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
-ABS_MOCK_FILES = [os.path.abspath(f) for f in MOCK_FILES]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 _UNKNOWN_ENTITY_YAML = yaml.dump(

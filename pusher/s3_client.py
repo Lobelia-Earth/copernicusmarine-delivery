@@ -20,8 +20,8 @@ from pusher.core_functions.models import (
 )
 from pusher.environment_variables import (
     ENVIRONMENT,
-    INGESTION_BUCKETS_ENDPOINT,
     OPDV_ACCESS_KEY_ID,
+    OPDV_S3_ENDPOINT,
     OPDV_SECRET_ACCESS_KEY,
 )
 from pusher.logger import logger
@@ -105,7 +105,7 @@ def get_s3_ingestion_client(pushing_entity_id: str) -> "S3Client":
             bucket_name=bucket_name,
             access_key_id=OPDV_ACCESS_KEY_ID,
             secret_access_key=OPDV_SECRET_ACCESS_KEY,
-            endpoint_url=INGESTION_BUCKETS_ENDPOINT,
+            endpoint_url=OPDV_S3_ENDPOINT,
         ),
     )
 

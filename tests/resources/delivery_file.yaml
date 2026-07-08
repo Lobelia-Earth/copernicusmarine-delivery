@@ -1,0 +1,7 @@
+delivery:
+  - delete:
+      - tests/resources/file1.txt
+      - tests/resources/file2.txt
+  - upload:
+      - tests/resources/file1.txt
+      - tests/resources/file2.txt
