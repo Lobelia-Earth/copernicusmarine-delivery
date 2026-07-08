@@ -1,3 +1,4 @@
+from delivery_common.domain import PushingEntities
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
@@ -95,10 +96,7 @@ def get_s3_metadata_client() -> "S3Client":
     )
 
 
-def get_s3_ingestion_client(pushing_entity_id: str) -> "S3Client":
-    bucket_name = (
-        f"mdl-ing-{pushing_entity_id.lower()}{'-dta' if ENVIRONMENT == 'dta' else ''}"
-    )
+def get_s3_ingestion_client(pushing_entity_id: str, bucket_name) -> "S3Client":
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(
