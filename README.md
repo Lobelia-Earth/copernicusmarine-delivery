@@ -164,6 +164,18 @@ You can pass multiple sources:
 pusher delivery --file delivery_file.yaml --dataset-id hello --product-id world --pushing-entity-id lololo
 ```
 
+The delivery file should be a YAML file with the following structure:
+
+``` yaml
+delivery:
+  - delete:
+      - some/file.nc
+      - some/other/file.nc
+  - upload:
+      - some/file.nc    
+      - some/other/file.nc
+```
+
 ### Delivery status command (WIP)
 
 > WIP: for internal testing for the moment. Don't hesitate to suggest what this command should do.
