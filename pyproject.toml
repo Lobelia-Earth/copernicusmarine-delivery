@@ -48,7 +48,7 @@ test = "pytest"
 
 [tool.pixi.feature.dev.activation.env]
 ENVIRONMENT = "local"
-INGESTION_BUCKETS_ENDPOINT = "http://localhost:4566"
+OPDV_S3_ENDPOINT = "http://localhost:4566"
 OPDV_ACCESS_KEY_ID = "test"
 OPDV_SECRET_ACCESS_KEY = "test"
 

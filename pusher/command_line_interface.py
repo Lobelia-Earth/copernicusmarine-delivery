@@ -1,23 +1,26 @@
 import sys
+from pathlib import Path
 
 import click
+import yaml
 
 from delivery_common.domain import Manifest
 from pusher.core_functions.core_functions import delete as _delete
+from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import ResponseDelete, ResponseUpload
+from pusher.core_functions.models import DeliveryFile, ResponseDelete, ResponseUpload
 from pusher.logger import logger
 
 _shared_options = [
-    click.option("--source", type=str, multiple=True),
-    click.option("--dataset-id", type=str),
-    click.option("--product-id", type=str),
-    click.option("--pushing-entity-id", type=str),
+    click.option("--source", type=str, multiple=True, help="Relative path to the file"),
+    click.option("--dataset-id", type=str, help="ID of the dataset."),
+    click.option("--product-id", type=str, help="ID of the product."),
+    click.option("--pushing-entity-id", type=str, help="ID of the pushing entity."),
     click.option(
         "--save-delivery-json",
         is_flag=True,
-        help="Output delivery document to a json file.",
+        help="Output delivery document to a json file named with the deliveryID.",
     ),
 ]
 
@@ -129,6 +132,41 @@ def saving_delivery_file(manifest: Manifest) -> None:
                 exclude_defaults=True,
             )
         )
+
+
+@cli.command()
+@click.option(
+    "--file",
+    required=True,
+    help="A path to a yaml file that describes the delivery. "
+    "See the documentation for the format of the delibery file",
+)
+@click.option("--dataset-id", type=str, help="ID of the dataset.")
+@click.option("--product-id", type=str, help="ID of the product.")
+@click.option("--pushing-entity-id", type=str, help="ID of the pushing entity.")
+def delivery(
+    file: Path, pushing_entity_id: str, dataset_id: str, product_id: str
+) -> None:
+    with open(file) as f:
+        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
+
+    response_delivery, _ = _delivery(
+        [
+            (operation.operation, operation.files)
+            for operation in delivery_file.delivery
+        ],
+        pushing_entity_id=pushing_entity_id,
+        dataset_id=dataset_id,
+        product_id=product_id,
+    )
+    click.echo(
+        response_delivery.model_dump_json(
+            indent=2,
+            exclude_none=True,
+            exclude_unset=True,
+            exclude_defaults=True,
+        )
+    )
 
 
 @cli.command()
