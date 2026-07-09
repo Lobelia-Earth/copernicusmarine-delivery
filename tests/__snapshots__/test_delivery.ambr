@@ -1,4 +1,23 @@
 # serializer version: 1
+# name: test_delivery_cli_with_delivery_file
+  '''
+  {
+    "delivery_id": "20120114T120001-product1-2824",
+    "operations_responses": [
+      {
+        "delivery_id": "20120114T120001-product1-2824"
+      },
+      {
+        "delivery_id": "20120114T120001-product1-2824",
+        "files_uploaded": [
+          "file1.txt",
+          "file2.txt"
+        ]
+      }
+    ]
+  }
+  '''
+# ---
 # name: test_delivery_early_exit_with_validation_error
   '''
   {

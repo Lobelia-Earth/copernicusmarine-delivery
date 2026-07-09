@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from delivery_common.domain import (
     ErrorResponseFile,
     InvalidFile,
+    OperationNames,
     PushingEntities,
     S3Path,
     UploadValidationResult,
@@ -122,3 +123,15 @@ class ResponseDelivery(BaseResponse):
     @classmethod
     def create_from_fatal_error(cls, fatal_error: str) -> "ResponseDelivery":
         return cls(fatal_error=fatal_error)
+
+
+class BaseOperation(BaseModel):
+    operation: OperationNames
+    files: list[str]
+
+    def add(self, file: str) -> None:
+        self.files.append(file)
+
+
+class DeliveryFile(BaseModel):
+    delivery: list[BaseOperation]

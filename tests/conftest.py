@@ -94,7 +94,7 @@ def cli_env(ministack_endpoint: str) -> dict:
     return {
         "OPDV_ACCESS_KEY_ID": "test",
         "OPDV_SECRET_ACCESS_KEY": "test",
-        "INGESTION_BUCKETS_ENDPOINT": ministack_endpoint,
+        "OPDV_S3_ENDPOINT": ministack_endpoint,
         "ENVIRONMENT": "local",
     }
 
