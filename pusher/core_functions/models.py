@@ -6,23 +6,9 @@ from delivery_common.domain import (
     ErrorResponseFile,
     InvalidFile,
     OperationNames,
-    PushingEntities,
     S3Path,
     UploadValidationResult,
 )
-
-
-def get_ingestion_bucket_name(
-    pushing_entity_id: str, pushing_entities: PushingEntities
-) -> str | None:
-    return next(
-        (
-            pu.bucket
-            for pu in pushing_entities.pushing_entities
-            if pu.name == pushing_entity_id
-        ),
-        None,
-    )
 
 
 class S3File(BaseModel):

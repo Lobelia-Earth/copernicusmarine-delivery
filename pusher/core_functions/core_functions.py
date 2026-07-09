@@ -28,8 +28,8 @@ from pusher.core_functions.models import (
     ResponseDelivery,
     ResponseUpload,
     UploadValidationResult,
-    get_ingestion_bucket_name,
 )
+from pusher.core_functions.utils import get_ingestion_bucket_name
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
