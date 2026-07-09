@@ -16,7 +16,6 @@ from pusher.core_functions.models import (
 
 
 class Upload(BaseOperation):
-
     def __init__(self, files: list[str]):
         super().__init__(operation="upload", files=files)
 
@@ -41,7 +40,6 @@ class Upload(BaseOperation):
 
 
 class Delete(BaseOperation):
-
     def __init__(self, files: list[str]):
         super().__init__(operation="delete", files=files)
 
