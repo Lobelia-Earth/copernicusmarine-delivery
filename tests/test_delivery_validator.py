@@ -10,8 +10,12 @@ _PUSHING_ENTITIES_YAML = yaml.dump(
         "pushing-entities": [
             {
                 "name": "TEST-ENTITY-FR",
+                "bucket": "mdl-ing-test-entity-fr",
                 "products": [
-                    {"name": "product1", "datasets": ["dataset1", "dataset2"]}
+                    {
+                        "name": "product1",
+                        "datasets": ["dataset1", "dataset2"],
+                    }
                 ],
             }
         ]

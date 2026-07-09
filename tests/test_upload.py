@@ -20,6 +20,7 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
         "pushing-entities": [
             {
                 "name": "OTHER-ENTITY",
+                "bucket": "mdl-ing-other-entity",
                 "products": [{"name": "product1", "datasets": ["dataset1"]}],
             }
         ]

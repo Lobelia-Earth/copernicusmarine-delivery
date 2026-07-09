@@ -11,7 +11,10 @@ RESOURCES = Path("tests/resources")
 
 def test_no_such_bucket_raises(ministack_endpoint: str, set_env):
     with pytest.raises(NoSuchBucketException):
-        get_s3_ingestion_client(pushing_entity_id="NONEXISTENT-ENTITY-ZZ")
+        get_s3_ingestion_client(
+            pushing_entity_id="NONEXISTENT-ENTITY-ZZ",
+            bucket_name="nonexistent-entity-bucket-name",
+        )
 
 
 def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str):

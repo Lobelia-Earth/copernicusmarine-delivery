@@ -3,16 +3,51 @@ from typing import Generator
 
 import boto3
 import pytest
+import yaml
 
+from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
 _BUCKET_NAME = f"mdl-ing-{_PUSHING_ENTITY_ID.lower()}"
+
+_DEFAULT_PUSHING_ENTITIES_YAML = yaml.dump(
+    {
+        "pushing-entities": [
+            {
+                "name": "GLO-MERCATOR-TOULOUSE-FR",
+                "bucket": "mdl-ing-glo-mercator-toulouse-fr",
+                "products": [
+                    {"name": "product1", "datasets": ["dataset1", "dataset2"]},
+                ],
+            },
+            {
+                "name": _PUSHING_ENTITY_ID,
+                "bucket": _BUCKET_NAME,
+                "products": [
+                    {"name": "product1", "datasets": ["dataset1", "dataset2"]},
+                ],
+            },
+        ]
+    }
+).encode()
 _BOTO_KWARGS = {
     "aws_access_key_id": "test",
     "aws_secret_access_key": "test",
     "region_name": "us-east-1",
 }
+
+
+@pytest.fixture(autouse=True)
+def mock_pushing_entities(monkeypatch):
+    original_get_file_stream = S3Client.get_file_stream
+
+    def _get_file_stream(self, path_to_file: str, **kwargs):
+        if path_to_file == PUSHING_ENTITIES_PATH:
+            return _DEFAULT_PUSHING_ENTITIES_YAML
+        return original_get_file_stream(self, path_to_file, **kwargs)
+
+    monkeypatch.setattr(S3Client, "get_file_stream", _get_file_stream)
 
 
 @pytest.fixture(scope="session")
@@ -50,6 +85,7 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None]:
 def service(ingestion_bucket: str, ministack_endpoint: str, set_env) -> S3Client:
     return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
+        bucket_name=_BUCKET_NAME,
     )
 
 
