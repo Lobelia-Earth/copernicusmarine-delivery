@@ -29,6 +29,7 @@ from pusher.core_functions.models import (
     ResponseUpload,
     UploadValidationResult,
 )
+from pusher.core_functions.utils import get_ingestion_bucket_name
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
@@ -101,8 +102,17 @@ def upload(
             ResponseUpload.create_from_fatal_error(no_valid_files_fatal_error_response),
             None,
         )
-
-    s3_client = get_s3_ingestion_client(pushing_entity_id)
+    ingestion_bucket_name = get_ingestion_bucket_name(
+        pushing_entity_id, pushing_entities
+    )
+    if not ingestion_bucket_name:
+        return (
+            ResponseUpload.create_from_fatal_error(
+                f"{pushing_entity_id} is not associated with any ingestion bucket."
+            ),
+            None,
+        )
+    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
     manifest_id = create_manifest_id(product_id)
     put_files_result = _put_files_to_ingestion_system(
         s3_client,
@@ -172,7 +182,17 @@ def delete(
             None,
         )
 
-    s3_client = get_s3_ingestion_client(pushing_entity_id)
+    ingestion_bucket_name = get_ingestion_bucket_name(
+        pushing_entity_id, pushing_entities
+    )
+    if not ingestion_bucket_name:
+        return (
+            ResponseDelete.create_from_fatal_error(
+                f"{pushing_entity_id} is not associated with any ingestion bucket."
+            ),
+            None,
+        )
+    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -222,7 +242,17 @@ def delivery(
     manifest_id = create_manifest_id(product_id)
     all_operations: list[Operation] = []
     validation_results: list[UploadValidationResult | None] = []
-    s3_client = get_s3_ingestion_client(pushing_entity_id)
+    ingestion_bucket_name = get_ingestion_bucket_name(
+        pushing_entity_id, pushing_entities
+    )
+    if not ingestion_bucket_name:
+        return (
+            ResponseDelivery.create_from_fatal_error(
+                f"{pushing_entity_id} is not associated with any ingestion bucket."
+            ),
+            None,
+        )
+    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
     for operation_name, sources in operations:
         if operation_name == "delete":
             all_operations.append(create_delete_operation(sources))
@@ -390,7 +420,15 @@ def get_manifest(
     product_id: str,
     dataset_id: str,
 ) -> Manifest:
-    s3_client = get_s3_ingestion_client(pushing_entity_id)
+    pushing_entities = fetch_pushing_entities()
+    ingestion_bucket_name = get_ingestion_bucket_name(
+        pushing_entity_id, pushing_entities
+    )
+    if not ingestion_bucket_name:
+        raise ValueError(
+            f"{pushing_entity_id} is not associated with any ingestion bucket."
+        )
+    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
     manifest_new = _get_manifest(
         s3_client, NEW_MANIFESTS_PATH.format(manifest_id=delivery_id)
     )

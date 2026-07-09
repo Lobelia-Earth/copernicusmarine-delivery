@@ -19,7 +19,8 @@ from pusher.core_functions.models import (
     S3Path,
 )
 from pusher.environment_variables import (
-    ENVIRONMENT,
+    ALLOW_HTTP,
+    MDL_METADATA_BUCKET,
     OPDV_ACCESS_KEY_ID,
     OPDV_S3_ENDPOINT,
     OPDV_SECRET_ACCESS_KEY,
@@ -40,7 +41,7 @@ _RETRY_CONFIG: Any = {
 }
 
 _CLIENT_CONFIG: Any = {
-    "allow_http": ENVIRONMENT == "local",
+    "allow_http": ALLOW_HTTP,
 }
 
 
@@ -82,12 +83,11 @@ def _make_client(
 
 
 def get_s3_metadata_client() -> "S3Client":
-    bucket_name = f"mdl-metadata{'-dta' if ENVIRONMENT == 'dta' else ''}"
     return _make_client(
-        bucket_name=bucket_name,
+        bucket_name=MDL_METADATA_BUCKET,
         store=_get_s3_store(
             endpoint_url="https://s3.waw3-1.cloudferro.com",
-            bucket_name=bucket_name,
+            bucket_name=MDL_METADATA_BUCKET,
             access_key_id=None,
             secret_access_key=None,
         ),
@@ -95,10 +95,7 @@ def get_s3_metadata_client() -> "S3Client":
     )
 
 
-def get_s3_ingestion_client(pushing_entity_id: str) -> "S3Client":
-    bucket_name = (
-        f"mdl-ing-{pushing_entity_id.lower()}{'-dta' if ENVIRONMENT == 'dta' else ''}"
-    )
+def get_s3_ingestion_client(pushing_entity_id: str, bucket_name: str) -> "S3Client":
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(

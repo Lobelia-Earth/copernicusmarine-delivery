@@ -21,6 +21,7 @@ class Product(BaseModel):
 
 class PushingEntity(BaseModel):
     name: str
+    bucket: str
     products: list[Product]
 
 
