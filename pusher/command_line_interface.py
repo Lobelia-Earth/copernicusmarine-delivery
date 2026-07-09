@@ -3,14 +3,13 @@ from pathlib import Path
 
 import click
 import yaml
-from typing_extensions import get_args
 
-from delivery_common.domain import Manifest, OperationNames
+from delivery_common.domain import Manifest
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import ResponseDelete, ResponseUpload
+from pusher.core_functions.models import DeliveryFile, ResponseDelete, ResponseUpload
 from pusher.logger import logger
 
 _shared_options = [
@@ -149,20 +148,13 @@ def delivery(
     file: Path, pushing_entity_id: str, dataset_id: str, product_id: str
 ) -> None:
     with open(file) as f:
-        delivery_file = yaml.safe_load(f)
-
-    operations: list[tuple[OperationNames, list[str]]] = []
-    for item in delivery_file["delivery"]:
-        for operation_name, files in item.items():
-            if not operation_name in get_args(OperationNames):
-                logger.error(
-                    f"Operation '{operation_name}' is not supported. Supported operations are: {get_args(OperationNames)}."
-                )
-                sys.exit(1)
-            operations.append((operation_name, files))
+        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
     response_delivery, _ = _delivery(
-        operations,
+        [
+            (operation.operation, operation.files)
+            for operation in delivery_file.delivery
+        ],
         pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,

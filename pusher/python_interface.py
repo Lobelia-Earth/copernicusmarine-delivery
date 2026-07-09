@@ -8,21 +8,14 @@ from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import (
+    BaseOperation,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
 )
 
 
-class UserOperation(BaseModel):
-    operation: OperationNames
-    files: list[str]
-
-    def add(self, file: str) -> None:
-        self.files.append(file)
-
-
-class Upload(UserOperation):
+class Upload(BaseOperation):
 
     def __init__(self, files: list[str]):
         super().__init__(operation="upload", files=files)
@@ -47,7 +40,7 @@ class Upload(UserOperation):
         return response
 
 
-class Delete(UserOperation):
+class Delete(BaseOperation):
 
     def __init__(self, files: list[str]):
         super().__init__(operation="delete", files=files)
@@ -73,7 +66,7 @@ class Delete(UserOperation):
 class Delivery(BaseModel):
     operations: list[Upload | Delete] = Field(default_factory=list)
 
-    def add_operation(self, operation: Upload | Delete) -> None:
+    def add(self, operation: Upload | Delete) -> None:
         self.operations.append(operation)
 
     def submit(

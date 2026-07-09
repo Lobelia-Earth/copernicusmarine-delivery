@@ -1,7 +1,9 @@
 delivery:
-  - delete:
+  - operation: delete
+    files:
       - tests/resources/file1.txt
       - tests/resources/file2.txt
-  - upload:
+  - operation: upload
+    files:
       - tests/resources/file1.txt
       - tests/resources/file2.txt

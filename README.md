@@ -93,9 +93,8 @@ delivery = Delivery([
     Delete(["some/file.nc"]),
     Upload(["some/file.nc"]),
 ])
-
-delivery.upload(["some/other/file.nc"])
 delivery.add(Delete(["some/other/file.nc"]))
+delivery.add(Upload(["some/other/file.nc"]))
 
 # --- submit ---
 delivery.submit(pushing_entity_id, product_id, dataset_id)
@@ -168,12 +167,14 @@ The delivery file should be a YAML file with the following structure:
 
 ``` yaml
 delivery:
-  - delete:
-      - some/file.nc
-      - some/other/file.nc
-  - upload:
-      - some/file.nc    
-      - some/other/file.nc
+  - operation: delete
+    files:
+      - tests/resources/file1.txt
+      - tests/resources/file2.txt
+  - operation: upload
+    files:
+      - tests/resources/file1.txt
+      - tests/resources/file2.txt
 ```
 
 ### Delivery status command (WIP)
