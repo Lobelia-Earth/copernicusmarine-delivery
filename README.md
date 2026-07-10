@@ -75,6 +75,7 @@ You need to set the following environment variables:
 - `OPDV_S3_ENDPOINT`: the URL of the OPDV S3 service.
 - `OPDV_ACCESS_KEY_ID`: the access key ID to access the OPDV S3 service.
 - `OPDV_SECRET_ACCESS_KEY`: the secret access key to access the OPDV S3 service.
+- `MDL_METADATA_BUCKET="mdl-metadata-dta"`: Set this as the dta bucket name, otherwise points to production.
 
 ## Concepts
 
