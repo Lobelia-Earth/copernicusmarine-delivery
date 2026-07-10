@@ -49,7 +49,6 @@ test = "pytest"
 [tool.pixi.feature.dev.activation.env]
 ALLOW_HTTP = "true"
 MDL_METADATA_BUCKET = "mdl-metadata-dta"
-INGESTION_BUCKETS_ENDPOINT = "http://localhost:4566"
 OPDV_S3_ENDPOINT = "http://localhost:4566"
 OPDV_ACCESS_KEY_ID = "test"
 OPDV_SECRET_ACCESS_KEY = "test"
