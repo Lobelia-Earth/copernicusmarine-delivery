@@ -4,7 +4,69 @@ Python library to help you upload data to the MDS.
 
 ## Installation
 
-TODO
+Right now, the toolbox is not published on PyPI. So the first step is to clone the repository:
+
+``` bash
+git clone https://github.com/Lobelia-Earth/marine-producer-toolbox.git
+```
+
+You can find the HTTPS or SSH URL on the GitHub home page of the repository.
+
+Then, change directory to the cloned repository:
+
+``` bash
+cd marine-producer-toolbox
+```
+
+Then you have two options to install the toolbox, described below.
+
+### With pip
+
+You can install the toolbox with pip:
+
+``` bash
+pip install .
+```
+
+Then check that the installation was successful by running:
+
+``` bash
+pusher --help
+```
+
+It's also installed in your Python environment, so you can use it in your Python scripts:
+
+```python
+from pusher import Upload, Delete, Delivery, delivery_status
+```
+
+### With pixi
+
+Pixi is a tool to manage Python environments and dependencies. You can find installation instructions on the [Pixi website](https://pixi.prefix.dev/latest/installation/).
+
+Then you can use the `pixi run` command to run the toolbox:
+
+``` bash
+pixi run pusher --help
+```
+
+If you want to use the toolbox in your Python scripts, you can run your script with `pixi run`:
+
+``` bash
+pixi run python my_script.py
+```
+
+You can also use the `pixi shell` command to open a shell with the toolbox installed:
+
+``` bash
+pixi shell
+```
+
+And then you can run the toolbox:
+
+``` bash
+pusher --help
+```
 
 ## Setup
 
@@ -26,9 +88,9 @@ Two types of operations are supported right now:
 
 ### Delivery
 
-A delivery is a list of "uploads" and "deletes" that are **run sequentially**. Indeed, if you start uploads and deletes in parallel, they will be processed in parallel. Here, a delivery forces the system to run these operations sequentially.
+A delivery is a list of "uploads" and "deletes" that are **run sequentially**. If you start uploads and deletes in parallel, they will be processed in parallel. A delivery forces the system to run these operations sequentially instead.
 
-Deliveries are defined at datasetID level, i.e. if you need to submit operations for two distinct datasets, then two deliveries need to be submitted.
+Deliveries are defined at the datasetID level, i.e. if you need to submit operations for two distinct datasets, then two deliveries need to be submitted.
 
 Note: when using the "upload" and "delete" functions directly, you submit a delivery of one operation.
 
@@ -36,20 +98,20 @@ Note: when using the "upload" and "delete" functions directly, you submit a deli
 
 Let's define the different paths you can encounter:
 
-- relative local path: path to a file present in the system relative to the working directory.
-- absolute local path: absolute path to a file present in the system.
-- s3 mds path: s3 key of the file published in MDS buckets. Usually in the form: `productID/datasetID/some/folders/filename.nc`
-- s3 mds suffix: the s3 key suffix of the file, the part that is decided by the producers. From the example above it would be: `some/folders/filename.nc`.
+- Relative local path: path to a file present in the system relative to the working directory.
+- Absolute local path: absolute path to a file present in the system.
+- S3 MDS path: S3 key of the file published in MDS buckets. Usually in the form: `productID/datasetID/some/folders/filename.nc`
+- S3 MDS suffix: the S3 key suffix of the file, the part that is decided by the producers. From the example above it would be: `some/folders/filename.nc`.
 
-Right now, the ingestion system (OPDV) only accepts **s3 mds suffixes**.
+Right now, the ingestion system (OPDV) only accepts **S3 MDS suffixes**.
 
 Right now, the toolbox accepts the following:
 
 - For the "upload", you have to pass a **relative local path** and **the file will be published with the same folder structure.** For example, if the source is `my/local/folder/filename.nc`, then in MDS the file will be published with the key: `productID/datasetID/my/local/folder/filename.nc`.
 
-- For the "delete", you have to pass the **s3 mds suffix** (i.e. without datasetID and productID). For example, `some/folders/filename.nc` would work. `filename.nc` and `productID/datasetID/some/folders/filename.nc` would not work.
+- For the "delete", you have to pass the **S3 MDS suffix** (i.e. without datasetID and productID). For example, `some/folders/filename.nc` would work. `filename.nc` and `productID/datasetID/some/folders/filename.nc` would not work.
 
-> For internal testers: the fact that OPDV takes s3 mds suffixes as input is an internal detail. However, what the Toolbox accepts as input can be changed. We want to add a way to pass a local path and an s3 mds structure at some point. If you have any suggestions about this, don't hesitate to share.
+> For internal testers: the fact that OPDV takes S3 MDS suffixes as input is an internal detail. However, what the toolbox accepts as input can be changed. We want to add a way to pass a local path and an S3 MDS structure at some point. If you have any suggestions about this, don't hesitate to share.
 
 ## Python Interface
 
@@ -157,7 +219,7 @@ See the help for the inputs:
 pusher delivery --help
 ```
 
-You can pass multiple sources:
+Example:
 
 ``` bash
 pusher delivery --file delivery_file.yaml --dataset-id hello --product-id world --pushing-entity-id lololo
