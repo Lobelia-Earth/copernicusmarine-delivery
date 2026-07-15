@@ -1,6 +1,7 @@
+from collections import Counter
 from pathlib import Path
 
-from delivery_common.domain import PushingEntities
+from delivery_common.domain import DeleteValidationResult, PushingEntities, T
 from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
 from pusher.core_functions.models import (
     InvalidFile,
@@ -22,6 +23,14 @@ def file_not_empty(file_path: Path) -> bool:
 
 def file_type_supported(file_path: Path) -> bool:
     return file_path.suffix in SUPPORTED_FILE_EXTENTIONS
+
+
+def duplicate_files(files: list[T]) -> list[T]:
+    return [path for path, count in Counter(files).items() if count > 1]
+
+
+def delete_files_validation(files: list[str]) -> DeleteValidationResult:
+    return DeleteValidationResult(duplicate_files=duplicate_files(files))
 
 
 def upload_files_validation(files: list[Path]) -> UploadValidationResult:
@@ -50,7 +59,12 @@ def upload_files_validation(files: list[Path]) -> UploadValidationResult:
             # )
             # continue
         valid_files.append(file_)
-    return UploadValidationResult(files_valid=valid_files, files_invalid=invalid_files)
+
+    return UploadValidationResult(
+        duplicate_files=duplicate_files(files),
+        files_valid=valid_files,
+        files_invalid=invalid_files,
+    )
 
 
 def fetch_pushing_entities():

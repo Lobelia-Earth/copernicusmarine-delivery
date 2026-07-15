@@ -10,8 +10,8 @@
       {
         "delivery_id": "20120114T120001-product1-2824",
         "files_uploaded": [
-          "file1.txt",
-          "file2.txt"
+          "tests/resources/file1.txt",
+          "tests/resources/file2.txt"
         ]
       }
     ]
@@ -22,7 +22,7 @@
   '''
   {
     "delivery_id": null,
-    "fatal_error": "Some files failed validation: [[InvalidFile(local_path=PosixPath('extra_file.txt'), reason='File path does not exist.')]]. Delivery cancelled. No manifest will be created.",
+    "fatal_error": "Some files failed validation: [invalid - extra_file.txt: File path does not exist.]. Delivery cancelled. No manifest will be created.",
     "operations_responses": []
   }
   '''
@@ -41,8 +41,8 @@
         "delivery_id": "20120114T120001-product1-2824",
         "fatal_error": null,
         "files_uploaded": [
-          "file1.txt",
-          "file2.txt"
+          "tests/resources/file1.txt",
+          "tests/resources/file2.txt"
         ],
         "files_invalid": [],
         "files_failed": []

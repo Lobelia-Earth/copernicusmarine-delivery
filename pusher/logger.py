@@ -20,5 +20,16 @@ logHandler = logging.StreamHandler()
 logHandler.setLevel(level)
 logHandler.setFormatter(CustomFormatter())
 
+for _name in (
+    "asyncio",
+    "botocore",
+    "boto3",
+    "aiobotocore",
+    "urllib3",
+    "procrastinate",
+    "aiohttp",
+):
+    logging.getLogger(_name).setLevel(logging.WARNING)
+
 logger = logging.getLogger("marine-producer-toolbox")
 logger.addHandler(logHandler)

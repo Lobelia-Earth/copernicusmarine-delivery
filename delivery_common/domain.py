@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Literal, NewType
+from typing import Generic, Literal, NewType, TypeVar
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field, field_validator
 S3Path = NewType("S3Path", str)
 # TODO: see if an Enum wouldn't be better to avoid the type ignore
 OperationNames = Literal["upload", "delete"]
+
+T = TypeVar("T")
 
 
 class Product(BaseModel):
@@ -159,10 +161,29 @@ class ErrorResponseFile(BaseModel):
     def __str__(self) -> str:
         return f"{self.local_path}: {self.reason}"
 
+    __repr__ = __str__
+
 
 class InvalidFile(ErrorResponseFile): ...
 
 
-class UploadValidationResult(BaseModel):
+class ValidationResult(BaseModel, Generic[T]):
+    duplicate_files: list[T]
+
+
+class DeleteValidationResult(ValidationResult): ...
+
+
+class UploadValidationResult(ValidationResult):
     files_valid: list[Path]
     files_invalid: list[InvalidFile]
+
+
+class ValidationError(BaseModel, Generic[T]):
+    reason: str  # invalid, duplicates, etc
+    files: list[T]
+
+    def __str__(self) -> str:
+        return f"{self.reason} - {', '.join(str(f) for f in self.files)}"
+
+    __repr__ = __str__

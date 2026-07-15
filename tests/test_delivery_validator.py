@@ -3,6 +3,7 @@ import yaml
 
 from delivery_common.domain import PushingEntities
 from delivery_common.validation import validate_delivery_ids
+from pusher.core_functions.delivery_validator import duplicate_files
 from pusher.s3_client import S3Client
 
 _PUSHING_ENTITIES_YAML = yaml.dump(
@@ -73,3 +74,13 @@ def test_invalid_dataset_id():
     )
     assert result is not None
     assert "nonexistent-dataset" in result.reason
+
+
+def test_duplicate_files():
+    result = duplicate_files(["test.txt", "test.txt"])
+    assert result is not None
+    assert result == ["test.txt"]
+
+    result = duplicate_files(["test.txt", "test.txt", "test1.txt", "test2.txt"])
+    assert result is not None
+    assert result == ["test.txt"]

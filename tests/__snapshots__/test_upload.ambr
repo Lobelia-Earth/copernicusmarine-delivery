@@ -3,8 +3,8 @@
   dict({
     'delivery_id': '20120114T120001-product1-2824',
     'files_uploaded': list([
-      'file1.txt',
-      'file2.txt',
+      'tests/resources/file1.txt',
+      'tests/resources/file2.txt',
     ]),
   })
 # ---
@@ -42,8 +42,8 @@
     'files_invalid': list([
     ]),
     'files_uploaded': list([
-      'file1.txt',
-      'file2.txt',
+      PosixPath('tests/resources/file1.txt'),
+      PosixPath('tests/resources/file2.txt'),
     ]),
   })
 # ---
