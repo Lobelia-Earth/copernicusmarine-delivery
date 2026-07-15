@@ -104,7 +104,7 @@ def upload(
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = 10,
 ) -> None:
-    """Upload local SOURCE(S) of the given dataset to the Marine Data Lake."""
+    """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
         logger.error("No files added to upload.")
         click.echo(
@@ -151,7 +151,7 @@ def delete(
     product_id: str,
     save_delivery_json: bool = False,
 ) -> None:
-    """Delete remote SOURCE(S) from the given dataset from S3 the Marine Data Lake."""
+    """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
         logger.error("No files added to delete.")
         click.echo(
