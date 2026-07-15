@@ -2,6 +2,15 @@
 
 Python library to help you upload data to the MDS.
 
+## Setup
+
+You need to set the following environment variables:
+
+- `OPDV_S3_ENDPOINT`: the URL of the OPDV S3 service.
+- `OPDV_ACCESS_KEY_ID`: the access key ID to access the OPDV S3 service.
+- `OPDV_SECRET_ACCESS_KEY`: the secret access key to access the OPDV S3 service.
+- `MDL_METADATA_BUCKET="mdl-metadata-dta"`: Set this as the dta bucket name, otherwise points to production.
+
 ## Installation
 
 Right now, the toolbox is not published on PyPI. So the first step is to clone the repository:
@@ -67,15 +76,6 @@ And then you can run the toolbox:
 ``` bash
 pusher --help
 ```
-
-## Setup
-
-You need to set the following environment variables:
-
-- `OPDV_S3_ENDPOINT`: the URL of the OPDV S3 service.
-- `OPDV_ACCESS_KEY_ID`: the access key ID to access the OPDV S3 service.
-- `OPDV_SECRET_ACCESS_KEY`: the secret access key to access the OPDV S3 service.
-- `MDL_METADATA_BUCKET="mdl-metadata-dta"`: Set this as the dta bucket name, otherwise points to production.
 
 ## Concepts
 
