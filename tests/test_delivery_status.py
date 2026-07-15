@@ -69,7 +69,7 @@ def test_delivery_status_cli(
     result = runner.invoke(
         cli,
         [
-            "delivery-status",
+            "status",
             "--delivery-id",
             delivery_id,
             "--pushing-entity-id",
@@ -81,5 +81,5 @@ def test_delivery_status_cli(
         ],
         env=cli_env,
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output.strip()
     assert result.output.strip() == snapshot

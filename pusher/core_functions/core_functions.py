@@ -4,10 +4,14 @@ from pathlib import Path
 import yaml
 
 from delivery_common.domain import (
+    DeleteValidationResult,
     Manifest,
     ManifestFile,
     Operation,
     OperationNames,
+    UploadValidationResult,
+    ValidationError,
+    ValidationResult,
 )
 from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
@@ -19,6 +23,7 @@ from pusher.core_functions.constants import (
     NEW_MANIFESTS_PATH,
 )
 from pusher.core_functions.delivery_validator import (
+    delete_files_validation,
     fetch_pushing_entities,
     upload_files_validation,
 )
@@ -27,7 +32,6 @@ from pusher.core_functions.models import (
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
-    UploadValidationResult,
 )
 from pusher.core_functions.utils import get_ingestion_bucket_name
 from pusher.logger import logger
@@ -92,6 +96,17 @@ def upload(
     upload_operation, validation_result = create_and_validate_upload_operation(
         [Path(file_) for file_ in files]
     )
+
+    if validation_result.duplicate_files:
+        duplicate_files_error_response = (
+            "The following files are duplicated. No manifest will be created.\n"
+            f"{validation_result.duplicate_files}"
+        )
+        logger.error(duplicate_files_error_response)
+        return (
+            ResponseUpload.create_from_fatal_error(duplicate_files_error_response),
+            None,
+        )
 
     if not validation_result.files_valid:
         no_valid_files_fatal_error_response = (
@@ -170,6 +185,20 @@ def delete(
     invalid_delivery_ids_response = validate_delivery_ids(
         pushing_entity_id, product_id, dataset_id, pushing_entities
     )
+
+    delete_operation, validation_result = create_and_validate_delete_operation(files)
+
+    if validation_result.duplicate_files:
+        duplicate_files_error_response = (
+            "The following files are duplicated. No manifest will be created.\n"
+            f"{validation_result.duplicate_files}"
+        )
+        logger.error(duplicate_files_error_response)
+        return (
+            ResponseDelete.create_from_fatal_error(duplicate_files_error_response),
+            None,
+        )
+
     if invalid_delivery_ids_response:
         logger.error(
             "The ids provided for this delivery did not match our records, "
@@ -199,19 +228,24 @@ def delete(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operations=[create_delete_operation(files)],
+        operations=[delete_operation],
     )
     return ResponseDelete.create(delivery_id=manifest.manifest_id), manifest
 
 
-def create_delete_operation(files: list[str]) -> Operation:
-    # add validation here if needed
-    return Operation(
-        operation="delete",
-        files=[
-            ManifestFile(key_suffix=file, file_size=None, checksum=None)
-            for file in files
-        ],
+def create_and_validate_delete_operation(
+    files: list[str],
+) -> tuple[Operation, DeleteValidationResult]:
+    validation_result = delete_files_validation(files)
+    return (
+        Operation(
+            operation="delete",
+            files=[
+                ManifestFile(key_suffix=file, file_size=None, checksum=None)
+                for file in files
+            ],
+        ),
+        validation_result,
     )
 
 
@@ -241,7 +275,7 @@ def delivery(
 
     manifest_id = create_manifest_id(product_id)
     all_operations: list[Operation] = []
-    validation_results: list[UploadValidationResult | None] = []
+    validation_results: list[ValidationResult] = []
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
@@ -255,20 +289,16 @@ def delivery(
     s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
     for operation_name, sources in operations:
         if operation_name == "delete":
-            all_operations.append(create_delete_operation(sources))
-            validation_results.append(None)
+            operation, validation_result = create_and_validate_delete_operation(sources)
+            all_operations.append(operation)
+            validation_results.append(validation_result)
         elif operation_name == "upload":
             operation, validation_result = create_and_validate_upload_operation(
                 [Path(file_) for file_ in sources]
             )
             all_operations.append(operation)
             validation_results.append(validation_result)
-    validation_errors = [
-        validation_result.files_invalid
-        for validation_result in validation_results
-        if validation_result and validation_result.files_invalid
-    ]
-    if validation_errors:
+    if validation_errors := _get_validation_errors(validation_results):
         # TODO: this needs to be consistent accross the toolbox.
         # For now, any validation error will cancel the delivery.
         logger.error(
@@ -336,6 +366,23 @@ def create_and_validate_upload_operation(
         ),
         validation_result,
     )
+
+
+def _get_validation_errors(
+    validation_results: list[ValidationResult],
+) -> list[ValidationError]:
+    errors = [
+        ValidationError(reason="duplicates", files=validation_result.duplicate_files)
+        for validation_result in validation_results
+        if validation_result.duplicate_files
+    ]
+    errors += [
+        ValidationError(reason="invalid", files=validation_result.files_invalid)
+        for validation_result in validation_results
+        if isinstance(validation_result, UploadValidationResult)
+        and validation_result.files_invalid
+    ]
+    return errors
 
 
 def _create_and_upload_manifest(

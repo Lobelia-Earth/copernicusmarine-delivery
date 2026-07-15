@@ -1,8 +1,10 @@
+import json
 import sys
 from pathlib import Path
 
 import click
 import yaml
+from pydantic import ValidationError
 
 from delivery_common.domain import Manifest
 from pusher.core_functions.core_functions import delete as _delete
@@ -13,7 +15,6 @@ from pusher.core_functions.models import DeliveryFile, ResponseDelete, ResponseU
 from pusher.logger import logger
 
 _shared_options = [
-    click.option("--source", type=str, multiple=True, help="Relative path to the file"),
     click.option("--dataset-id", type=str, help="ID of the dataset."),
     click.option("--product-id", type=str, help="ID of the product."),
     click.option("--pushing-entity-id", type=str, help="ID of the pushing entity."),
@@ -32,12 +33,67 @@ def shared_options(func):
     return func
 
 
-@click.group()
-def cli() -> None:
+class OrderCommands(click.Group):
+    def list_commands(self, ctx: click.Context) -> list[str]:
+        return list(self.commands)
+
+
+@click.group(cls=OrderCommands)
+def cli(max_content_width=200) -> None:
     """Pusher command line interface."""
 
 
 @cli.command()
+@click.option(
+    "--file",
+    required=True,
+    help="A path to a yaml file that describes the deliver, "
+    "containing a set of operations [upload, delete] and their relative files."
+    "See the documentation for the format of the delivery file",
+)
+@shared_options
+@click.option("--max-concurrent-uploads", type=int, default=10, show_default=True)
+def delivery(
+    file: Path,
+    pushing_entity_id: str,
+    dataset_id: str,
+    product_id: str,
+    save_delivery_json: bool = False,
+    max_concurrent_uploads: int = 10,
+) -> None:
+    """Perform a delivery with multiple operations [upload, delete]."""
+    with open(file) as f:
+        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
+
+    response_delivery, manifest = _delivery(
+        [
+            (operation.operation, operation.files)
+            for operation in delivery_file.delivery
+        ],
+        pushing_entity_id=pushing_entity_id,
+        dataset_id=dataset_id,
+        product_id=product_id,
+        max_concurrent_uploads=max_concurrent_uploads,
+    )
+    click.echo(
+        response_delivery.model_dump_json(
+            indent=2,
+            exclude_none=True,
+            exclude_unset=True,
+            exclude_defaults=True,
+        )
+    )
+    if save_delivery_json and manifest:
+        saving_delivery_file(manifest)
+
+
+@cli.command()
+@click.option(
+    "--source",
+    type=str,
+    multiple=True,
+    help="Relative path to the file. `product_id/dataset_id` are prepended to the file.",
+)
 @shared_options
 @click.option("--max-concurrent-uploads", type=int, default=10, show_default=True)
 def upload(
@@ -48,7 +104,7 @@ def upload(
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = 10,
 ) -> None:
-    """Upload SOURCE to the given dataset."""
+    """Upload local SOURCE(S) of the given dataset to the Marine Data Lake."""
     if not source:
         logger.error("No files added to upload.")
         click.echo(
@@ -81,6 +137,12 @@ def upload(
 
 
 @cli.command()
+@click.option(
+    "--source",
+    type=str,
+    multiple=True,
+    help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
+)
 @shared_options
 def delete(
     source: list[str],
@@ -89,7 +151,7 @@ def delete(
     product_id: str,
     save_delivery_json: bool = False,
 ) -> None:
-    """Delete SOURCE from the given dataset."""
+    """Delete remote SOURCE(S) from the given dataset from S3 the Marine Data Lake."""
     if not source:
         logger.error("No files added to delete.")
         click.echo(
@@ -135,59 +197,56 @@ def saving_delivery_file(manifest: Manifest) -> None:
 
 
 @cli.command()
+@click.option("--delivery-id", help="ID of the delivery to check status for.")
+@click.option("--pushing-entity-id", help="ID of the pushing entity.")
+@click.option("--product-id", help="ID of the product.")
+@click.option("--dataset-id", help="ID of the dataset.")
 @click.option(
-    "--file",
-    required=True,
-    help="A path to a yaml file that describes the delivery. "
-    "See the documentation for the format of the delibery file",
+    "--delivery-json",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Path to an existing delivery json file",
 )
-@click.option("--dataset-id", type=str, help="ID of the dataset.")
-@click.option("--product-id", type=str, help="ID of the product.")
-@click.option("--pushing-entity-id", type=str, help="ID of the pushing entity.")
-def delivery(
-    file: Path, pushing_entity_id: str, dataset_id: str, product_id: str
+def status(
+    delivery_id: str | None = None,
+    pushing_entity_id: str | None = None,
+    product_id: str | None = None,
+    dataset_id: str | None = None,
+    delivery_json: Path | None = None,
 ) -> None:
-    with open(file) as f:
-        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
-
-    response_delivery, _ = _delivery(
-        [
-            (operation.operation, operation.files)
-            for operation in delivery_file.delivery
-        ],
-        pushing_entity_id=pushing_entity_id,
-        dataset_id=dataset_id,
-        product_id=product_id,
-    )
-    click.echo(
-        response_delivery.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
+    """Get the status of a delivery (upload and/or delete). Specify either ids
+    [delivery_id, pushing_entity_id, product_id, dataset_id] or a path to a delivery json file."""
+    if (
+        not all([delivery_id, pushing_entity_id, product_id, dataset_id])
+        and not delivery_json
+    ):
+        raise click.UsageError(
+            message=(
+                "Specify either the set of ids delivery_id, pushing_entity_id, "
+                "product_id, dataset_id] or a path to a delivery json file."
+            )
         )
-    )
 
+    if delivery_json:
+        try:
+            with open(delivery_json) as delivery_file:
+                manifest = Manifest.model_validate(json.load(delivery_file))
+        except (json.JSONDecodeError, ValidationError) as e:
+            raise click.UsageError(f"Invalid delivery json: {e}")
+        delivery_id = manifest.manifest_id
+        pushing_entity_id = manifest.pushing_entity_id
+        product_id = manifest.product_id
+        dataset_id = manifest.dataset_id
+    else:
+        delivery_id = delivery_id
+        pushing_entity_id = pushing_entity_id
+        product_id = product_id
+        dataset_id = dataset_id
 
-@cli.command()
-@click.option(
-    "--delivery-id", required=True, help="ID of the delivery to check status for."
-)
-@click.option("--pushing-entity-id", required=True, help="ID of the pushing entity.")
-@click.option("--product-id", required=True, help="ID of the product.")
-@click.option("--dataset-id", required=True, help="ID of the dataset.")
-def delivery_status(
-    delivery_id: str,
-    pushing_entity_id: str,
-    product_id: str,
-    dataset_id: str,
-) -> None:
-    """Get the status of a delivery."""
     manifest = get_manifest(
-        delivery_id=delivery_id,
-        pushing_entity_id=pushing_entity_id,
-        product_id=product_id,
-        dataset_id=dataset_id,
+        delivery_id=delivery_id,  # ty: ignore
+        pushing_entity_id=pushing_entity_id,  # ty: ignore
+        product_id=product_id,  # ty: ignore
+        dataset_id=dataset_id,  # ty: ignore
     )
     click.echo(
         manifest.model_dump_json(
