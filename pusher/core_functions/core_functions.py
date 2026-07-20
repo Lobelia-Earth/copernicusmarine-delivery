@@ -65,6 +65,7 @@ def upload(
     dataset_id: str,
     files: list[str],
     max_concurrent_uploads: int,
+    chunk_concurrency: int = 6,
 ) -> tuple[ResponseUpload, Manifest | None]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
@@ -127,7 +128,9 @@ def upload(
             ),
             None,
         )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
+    s3_client = get_s3_ingestion_client(
+        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+    )
     manifest_id = create_manifest_id(product_id)
     put_files_result = _put_files_to_ingestion_system(
         s3_client,
@@ -254,7 +257,8 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
-    max_concurrent_uploads: int = 10,
+    max_concurrent_uploads: int = 5,
+    chunk_concurrency: int = 6,
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
     pushing_entities = fetch_pushing_entities()
@@ -286,7 +290,9 @@ def delivery(
             ),
             None,
         )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
+    s3_client = get_s3_ingestion_client(
+        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+    )
     for operation_name, sources in operations:
         if operation_name == "delete":
             operation, validation_result = create_and_validate_delete_operation(sources)

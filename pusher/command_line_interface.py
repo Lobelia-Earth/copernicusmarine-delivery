@@ -52,14 +52,22 @@ def cli(max_content_width=200) -> None:
     "See the documentation for the format of the delivery file",
 )
 @shared_options
-@click.option("--max-concurrent-uploads", type=int, default=10, show_default=True)
+@click.option("--max-concurrent-uploads", type=int, default=5, show_default=True)
+@click.option(
+    "--chunk-concurrency",
+    type=int,
+    default=6,
+    show_default=True,
+    help="Number of parts uploaded in parallel per file (multipart upload).",
+)
 def delivery(
     file: Path,
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
-    max_concurrent_uploads: int = 10,
+    max_concurrent_uploads: int = 5,
+    chunk_concurrency: int = 6,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
     with open(file) as f:
@@ -74,6 +82,7 @@ def delivery(
         dataset_id=dataset_id,
         product_id=product_id,
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_concurrency=chunk_concurrency,
     )
     click.echo(
         response_delivery.model_dump_json(
@@ -95,14 +104,22 @@ def delivery(
     help="Relative path to the file. `product_id/dataset_id` are prepended to the file.",
 )
 @shared_options
-@click.option("--max-concurrent-uploads", type=int, default=10, show_default=True)
+@click.option("--max-concurrent-uploads", type=int, default=5, show_default=True)
+@click.option(
+    "--chunk-concurrency",
+    type=int,
+    default=6,
+    show_default=True,
+    help="Number of parts uploaded in parallel per file (multipart upload).",
+)
 def upload(
     source: list[str],
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
-    max_concurrent_uploads: int = 10,
+    max_concurrent_uploads: int = 5,
+    chunk_concurrency: int = 6,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -123,6 +140,7 @@ def upload(
         dataset_id=dataset_id,
         files=source,
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_concurrency=chunk_concurrency,
     )
     click.echo(
         response.model_dump_json(

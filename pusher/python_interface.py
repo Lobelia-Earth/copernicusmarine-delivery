@@ -25,6 +25,7 @@ class Upload(BaseOperation):
         dataset_id: str,
         product_id: str,
         max_concurrent_uploads: int = 5,
+        chunk_concurrency: int = 6,
     ) -> ResponseUpload:
 
         if not self.files:
@@ -35,6 +36,7 @@ class Upload(BaseOperation):
             dataset_id=dataset_id,
             files=self.files,
             max_concurrent_uploads=max_concurrent_uploads,
+            chunk_concurrency=chunk_concurrency,
         )
         return response
 
@@ -73,6 +75,7 @@ class Delivery(BaseModel):
         dataset_id: str,
         product_id: str,
         max_concurrent_uploads: int = 5,
+        chunk_concurrency: int = 6,
     ) -> ResponseDelivery:
 
         if not self.operations:
@@ -83,6 +86,7 @@ class Delivery(BaseModel):
             dataset_id=dataset_id,
             operations=[(op.operation, op.files) for op in self.operations],
             max_concurrent_uploads=max_concurrent_uploads,
+            chunk_concurrency=chunk_concurrency,
         )
         return response
 
@@ -112,7 +116,8 @@ def upload(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
-    max_concurrent_uploads: int = 10,
+    max_concurrent_uploads: int = 5,
+    chunk_concurrency: int = 6,
 ) -> ResponseUpload:
     """
     LEGACY: keeping until the result of the internal testing.
@@ -127,6 +132,7 @@ def upload(
         dataset_id=dataset_id,
         files=sources,
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_concurrency=chunk_concurrency,
     )
     return response
 
@@ -158,7 +164,8 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
-    max_concurrent_uploads: int = 10,
+    max_concurrent_uploads: int = 5,
+    chunk_concurrency: int = 6,
 ) -> ResponseDelivery:
     """
     LEGACY: keeping until the result of the internal testing.
@@ -190,5 +197,6 @@ def delivery(
         dataset_id=dataset_id,
         operations=cast(list[tuple[OperationNames, list[str]]], operations),
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_concurrency=chunk_concurrency,
     )
     return response
