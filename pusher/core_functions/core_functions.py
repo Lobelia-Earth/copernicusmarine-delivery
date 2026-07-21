@@ -16,6 +16,7 @@ from delivery_common.domain import (
 from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
 from pusher.core_functions.constants import (
+    DEFAULT_CHUNK_SIZE_MB,
     DONE_MANIFESTS_PATH,
     FAILED_MANIFESTS_PATH,
     IN_PROGRESS_MANIFESTS_PATH,
@@ -33,7 +34,7 @@ from pusher.core_functions.models import (
     ResponseDelivery,
     ResponseUpload,
 )
-from pusher.core_functions.utils import get_ingestion_bucket_name
+from pusher.core_functions.utils import get_ingestion_bucket_name, megabytes_to_bytes
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
@@ -65,6 +66,8 @@ def upload(
     dataset_id: str,
     files: list[str],
     max_concurrent_uploads: int,
+    chunk_size_bytes: int,
+    chunk_concurrency: int,
 ) -> tuple[ResponseUpload, Manifest | None]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
@@ -127,7 +130,9 @@ def upload(
             ),
             None,
         )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
+    s3_client = get_s3_ingestion_client(
+        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+    )
     manifest_id = create_manifest_id(product_id)
     put_files_result = _put_files_to_ingestion_system(
         s3_client,
@@ -135,6 +140,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         operation=upload_operation,
+        chunk_size=chunk_size_bytes,
         max_concurrent_uploads=max_concurrent_uploads,
     )
 
@@ -254,7 +260,9 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
-    max_concurrent_uploads: int = 10,
+    max_concurrent_uploads: int,
+    chunk_size_bytes: int,
+    chunk_concurrency: int,
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
     pushing_entities = fetch_pushing_entities()
@@ -286,7 +294,9 @@ def delivery(
             ),
             None,
         )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
+    s3_client = get_s3_ingestion_client(
+        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+    )
     for operation_name, sources in operations:
         if operation_name == "delete":
             operation, validation_result = create_and_validate_delete_operation(sources)
@@ -319,6 +329,7 @@ def delivery(
                 product_id=product_id,
                 dataset_id=dataset_id,
                 operation=operation,
+                chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
             )
             _update_operation_with_put_results(operation, put_files_result)
@@ -405,7 +416,9 @@ def _create_and_upload_manifest(
     manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
     s3_client.upload_fileobj(
-        key=manifest_bucket_path, file=manifest.model_dump_json().encode()
+        key=manifest_bucket_path,
+        file=manifest.model_dump_json().encode(),
+        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
     )
     return manifest
 
@@ -416,6 +429,7 @@ def _put_files_to_ingestion_system(
     product_id: str,
     dataset_id: str,
     operation: Operation,
+    chunk_size: int,
     max_concurrent_uploads: int,
 ) -> PutFilesResult:
 
@@ -427,6 +441,7 @@ def _put_files_to_ingestion_system(
     )
     put_files_result = s3_client.upload_multiple_files(
         local_path_s3_keys_mapping,
+        chunk_size,
         max_concurrent_uploads,
     )
     return put_files_result

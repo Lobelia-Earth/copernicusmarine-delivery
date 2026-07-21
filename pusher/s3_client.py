@@ -1,10 +1,11 @@
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from obstore import get, put
+from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
@@ -21,14 +22,12 @@ from pusher.core_functions.models import (
 from pusher.environment_variables import (
     ALLOW_HTTP,
     MDL_METADATA_BUCKET,
+    MDL_METADATA_ENDPOINT,
     OPDV_ACCESS_KEY_ID,
     OPDV_S3_ENDPOINT,
     OPDV_SECRET_ACCESS_KEY,
 )
 from pusher.logger import logger
-
-CHUNK_SIZE = 16 * 1024 * 1024  # 16 MB
-
 
 _RETRY_CONFIG: Any = {
     "max_retries": 5,
@@ -42,7 +41,11 @@ _RETRY_CONFIG: Any = {
 
 _CLIENT_CONFIG: Any = {
     "allow_http": ALLOW_HTTP,
+    "timeout": "300s",
 }
+
+_OS_ERROR_RETRIES = 3
+_OS_ERROR_BACKOFF_SECONDS = 5
 
 
 def _extract_error_message(e: Exception) -> str:
@@ -75,10 +78,16 @@ def _get_s3_store(
 
 
 def _make_client(
-    bucket_name: str, store: S3Store, assert_bucket_exists: bool = True
+    bucket_name: str,
+    store: S3Store,
+    assert_bucket_exists: bool = True,
+    chunk_concurrency: int = 6,
 ) -> "S3Client":
     return S3Client(
-        store=store, bucket_name=bucket_name, assert_bucket_exists=assert_bucket_exists
+        store=store,
+        bucket_name=bucket_name,
+        assert_bucket_exists=assert_bucket_exists,
+        max_concurrency=chunk_concurrency,
     )
 
 
@@ -86,7 +95,7 @@ def get_s3_metadata_client() -> "S3Client":
     return _make_client(
         bucket_name=MDL_METADATA_BUCKET,
         store=_get_s3_store(
-            endpoint_url="https://s3.waw3-1.cloudferro.com",
+            endpoint_url=MDL_METADATA_ENDPOINT,
             bucket_name=MDL_METADATA_BUCKET,
             access_key_id=None,
             secret_access_key=None,
@@ -95,7 +104,9 @@ def get_s3_metadata_client() -> "S3Client":
     )
 
 
-def get_s3_ingestion_client(pushing_entity_id: str, bucket_name: str) -> "S3Client":
+def get_s3_ingestion_client(
+    pushing_entity_id: str, bucket_name: str, chunk_concurrency: int = 6
+) -> "S3Client":
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(
@@ -104,6 +115,7 @@ def get_s3_ingestion_client(pushing_entity_id: str, bucket_name: str) -> "S3Clie
             secret_access_key=OPDV_SECRET_ACCESS_KEY,
             endpoint_url=OPDV_S3_ENDPOINT,
         ),
+        chunk_concurrency=chunk_concurrency,
     )
 
 
@@ -113,7 +125,7 @@ class S3Client:
         store: S3Store,
         bucket_name: str,
         assert_bucket_exists: bool,
-        max_concurrency: int = 12,
+        max_concurrency: int = 6,
     ) -> None:
         self._store = store
         self._bucket_name = bucket_name
@@ -143,8 +155,8 @@ class S3Client:
         self,
         key: str,
         file: bytes,
+        chunk_size: int,
         use_multipart: bool = True,
-        chunk_size: int = CHUNK_SIZE,
     ):
         """Upload a file object (bytes) to S3."""
         try:
@@ -161,23 +173,40 @@ class S3Client:
         except Exception as e:
             raise
 
+    def _put_with_os_error_retry(
+        self, key: str, file: Path, use_multipart: bool, chunk_size: int
+    ) -> Any:
+        for attempt in range(1, _OS_ERROR_RETRIES + 1):
+            try:
+                return put(
+                    store=self._store,
+                    path=key,
+                    file=file,
+                    use_multipart=use_multipart,
+                    chunk_size=chunk_size,
+                    max_concurrency=self.max_concurrency,
+                )
+            except OSError as e:
+                if attempt == _OS_ERROR_RETRIES:
+                    raise
+                logger.warning(
+                    f"Socket error uploading {file.name} "
+                    f"(attempt {attempt}/{_OS_ERROR_RETRIES}): {e}. Retrying."
+                )
+                time.sleep(_OS_ERROR_BACKOFF_SECONDS * attempt)
+
     def upload_file(
         self,
         key: str,
         file: Path,
+        chunk_size: int,
         use_multipart: bool = True,
-        chunk_size: int = CHUNK_SIZE,
     ) -> S3File | ErrorFile:
         """Upload a local file (by Path) to S3."""
         logger.debug(f"Starting upload for {file.name}")
         try:
-            put_result = put(
-                store=self._store,
-                path=key,
-                file=file,
-                use_multipart=use_multipart,
-                chunk_size=chunk_size,
-                max_concurrency=self.max_concurrency,
+            put_result = self._put_with_os_error_retry(
+                key, file, use_multipart, chunk_size
             )
             logger.debug(f"Successfully uploaded file {file.name}")
             return S3File(
@@ -196,6 +225,7 @@ class S3Client:
     def upload_multiple_files(
         self,
         s3_key_local_file_mapping: dict[Path, str],
+        chunk_size: int,
         max_concurrent_uploads: int,
     ) -> PutFilesResult:
         total = len(s3_key_local_file_mapping)
@@ -208,7 +238,7 @@ class S3Client:
                     key=key,
                     file=path,
                     use_multipart=True,
-                    chunk_size=CHUNK_SIZE,
+                    chunk_size=chunk_size,
                 ): (path, key)
                 for _, (path, key) in enumerate(s3_key_local_file_mapping.items())
             }
@@ -229,3 +259,6 @@ class S3Client:
             path=path_to_file,
         )
         return b"".join(response.stream(min_chunk_size=20 * 1024 * 1024))
+
+    def delete_keys(self, keys: list[str]) -> None:
+        delete(self._store, paths=keys)

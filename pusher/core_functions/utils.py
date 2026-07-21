@@ -12,3 +12,7 @@ def get_ingestion_bucket_name(
         ),
         None,
     )
+
+
+def megabytes_to_bytes(megabytes: int) -> int:
+    return megabytes * 1024 * 1024
