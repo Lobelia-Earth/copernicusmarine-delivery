@@ -9,6 +9,7 @@ from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
+from pusher.core_functions.constants import CHUNK_SIZE
 from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
@@ -28,9 +29,6 @@ from pusher.environment_variables import (
     OPDV_SECRET_ACCESS_KEY,
 )
 from pusher.logger import logger
-
-CHUNK_SIZE = 16 * 1024 * 1024  # 16 MB
-
 
 _RETRY_CONFIG: Any = {
     "max_retries": 5,

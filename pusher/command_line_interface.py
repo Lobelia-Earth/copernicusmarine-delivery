@@ -7,13 +7,17 @@ import yaml
 from pydantic import ValidationError
 
 from delivery_common.domain import Manifest
+from pusher.core_functions.constants import (
+    CHUNK_CONCURRENCY,
+    CHUNK_SIZE,
+    MAX_CONCURRENT_UPLOADS,
+)
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import DeliveryFile, ResponseDelete, ResponseUpload
 from pusher.logger import logger
-from pusher.s3_client import CHUNK_SIZE
 
 _shared_options = [
     click.option("--dataset-id", type=str, help="ID of the dataset."),
@@ -56,7 +60,7 @@ def cli(max_content_width=200) -> None:
 @click.option(
     "--max-concurrent-uploads",
     type=int,
-    default=5,
+    default=MAX_CONCURRENT_UPLOADS,
     show_default=True,
     help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
 )
@@ -70,7 +74,7 @@ def cli(max_content_width=200) -> None:
 @click.option(
     "--chunk-concurrency",
     type=int,
-    default=6,
+    default=CHUNK_CONCURRENCY,
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
@@ -80,9 +84,9 @@ def delivery(
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
-    max_concurrent_uploads: int = 5,
+    max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_bytes: int = CHUNK_SIZE,
-    chunk_concurrency: int = 6,
+    chunk_concurrency: int = CHUNK_CONCURRENCY,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
     with open(file) as f:
@@ -123,7 +127,7 @@ def delivery(
 @click.option(
     "--max-concurrent-uploads",
     type=int,
-    default=5,
+    default=MAX_CONCURRENT_UPLOADS,
     show_default=True,
     help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
 )
@@ -137,7 +141,7 @@ def delivery(
 @click.option(
     "--chunk-concurrency",
     type=int,
-    default=6,
+    default=CHUNK_CONCURRENCY,
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
@@ -147,9 +151,9 @@ def upload(
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
-    max_concurrent_uploads: int = 5,
+    max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_bytes: int = CHUNK_SIZE,
-    chunk_concurrency: int = 6,
+    chunk_concurrency: int = CHUNK_CONCURRENCY,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:

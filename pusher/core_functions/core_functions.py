@@ -35,7 +35,7 @@ from pusher.core_functions.models import (
 )
 from pusher.core_functions.utils import get_ingestion_bucket_name
 from pusher.logger import logger
-from pusher.s3_client import CHUNK_SIZE, S3Client, get_s3_ingestion_client
+from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
 def get_local_path_s3_keys_mapping(
@@ -65,8 +65,8 @@ def upload(
     dataset_id: str,
     files: list[str],
     max_concurrent_uploads: int,
-    chunk_size_bytes: int = CHUNK_SIZE,
-    chunk_concurrency: int = 6,
+    chunk_size_bytes: int,
+    chunk_concurrency: int,
 ) -> tuple[ResponseUpload, Manifest | None]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
@@ -259,9 +259,9 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
-    max_concurrent_uploads: int = 5,
-    chunk_size_bytes: int = CHUNK_SIZE,
-    chunk_concurrency: int = 6,
+    max_concurrent_uploads: int,
+    chunk_size_bytes: int,
+    chunk_concurrency: int,
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
     pushing_entities = fetch_pushing_entities()

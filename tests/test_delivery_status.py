@@ -5,6 +5,11 @@ from click.testing import CliRunner
 from freezegun import freeze_time
 
 from pusher.command_line_interface import cli
+from pusher.core_functions.constants import (
+    CHUNK_CONCURRENCY,
+    CHUNK_SIZE,
+    MAX_CONCURRENT_UPLOADS,
+)
 from pusher.core_functions.core_functions import upload
 from pusher.python_interface import delivery_status
 
@@ -23,7 +28,9 @@ def test_delivery_status_python_interface(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
-        max_concurrent_uploads=10,
+        max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
+        chunk_size_bytes=CHUNK_SIZE,
+        chunk_concurrency=CHUNK_CONCURRENCY,
     )
     assert manifest is not None
 
