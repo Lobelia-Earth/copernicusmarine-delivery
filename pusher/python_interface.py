@@ -24,8 +24,8 @@ class Upload(BaseOperation):
     """
     Upload ``sources`` to the given dataset and product.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.
-    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).
-    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multi part uploads. Defaults to 6.
+    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).
+    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     """
 
     def __init__(self, files: list[str]):
@@ -86,8 +86,8 @@ class Delivery(BaseModel):
 
     :param operations: A list of operations to be performed. Each operation is a tuple with the operation name as the first element and a list of sources as the second element. Available operations are 'upload' and 'delete'.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
-    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).
-    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multi part uploads. Defaults to 6.
+    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).
+    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     """  # noqa
 
     operations: list[Upload | Delete] = Field(default_factory=list)
@@ -153,8 +153,8 @@ def upload(
 
     Upload ``sources`` to the given dataset and product.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.
-    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).
-    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multi part uploads. Defaults to 6.
+    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).
+    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     """
     if not sources:
         return ResponseUpload(fatal_error="No files added to upload.")
@@ -211,8 +211,8 @@ def delivery(
 
     :param operations: A list of operations to be performed. Each operation is a tuple with the operation name as the first element and a list of sources as the second element. Available operations are 'upload' and 'delete'.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
-    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).
-    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multi part uploads. Defaults to 6.
+    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).
+    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     """  # noqa
 
     if not operations:

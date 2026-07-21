@@ -69,7 +69,7 @@ def cli(max_content_width=200) -> None:
     type=int,
     default=CHUNK_SIZE,
     show_default=True,
-    help="The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).",
+    help="The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).",
 )
 @click.option(
     "--chunk-concurrency",
@@ -136,7 +136,7 @@ def delivery(
     type=int,
     default=CHUNK_SIZE,
     show_default=True,
-    help="The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).",
+    help="The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).",
 )
 @click.option(
     "--chunk-concurrency",
