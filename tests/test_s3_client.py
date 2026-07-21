@@ -2,9 +2,11 @@ from pathlib import Path
 
 import pytest
 
+from pusher.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
 from pusher.core_functions.exceptions import NoSuchBucketException
 from pusher.core_functions.models import ErrorFile, S3File
-from pusher.s3_client import CHUNK_SIZE, S3Client, get_s3_ingestion_client
+from pusher.core_functions.utils import megabytes_to_bytes
+from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 RESOURCES = Path("tests/resources")
 
@@ -20,7 +22,9 @@ def test_no_such_bucket_raises(ministack_endpoint: str, set_env):
 def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str):
     key = "data/test/file1.txt"
     result = service.upload_file(
-        key=key, file=RESOURCES / "file1.txt", chunk_size=CHUNK_SIZE
+        key=key,
+        file=RESOURCES / "file1.txt",
+        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
     )
     assert isinstance(result, S3File)
     assert result.s3_path == key
@@ -34,7 +38,7 @@ def test_upload_file_nonexistent_returns_error(
     result = service.upload_file(
         key="data/test/missing.nc",
         file=Path("nonexistent/file.nc"),
-        chunk_size=CHUNK_SIZE,
+        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
     )
     assert isinstance(result, ErrorFile)
 
@@ -49,7 +53,9 @@ def test_upload_multiple_files(
         RESOURCES / "file2.txt": "data/test/file2.txt",
     }
     result = service.upload_multiple_files(
-        mapping, chunk_size=CHUNK_SIZE, max_concurrent_uploads=10
+        mapping,
+        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        max_concurrent_uploads=10,
     )
     assert len(result.successful_files) == 2
     assert len(result.errored_files) == 0
@@ -65,7 +71,9 @@ def test_upload_multiple_files_partial_failure(
         Path("nonexistent/file.nc"): "data/test/missing.nc",
     }
     result = service.upload_multiple_files(
-        mapping, chunk_size=CHUNK_SIZE, max_concurrent_uploads=10
+        mapping,
+        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        max_concurrent_uploads=10,
     )
     assert len(result.successful_files) == 1
     assert len(result.errored_files) == 1

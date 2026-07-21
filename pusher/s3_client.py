@@ -9,7 +9,6 @@ from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
-from pusher.core_functions.constants import CHUNK_SIZE
 from pusher.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
@@ -156,8 +155,8 @@ class S3Client:
         self,
         key: str,
         file: bytes,
+        chunk_size: int,
         use_multipart: bool = True,
-        chunk_size: int = CHUNK_SIZE,
     ):
         """Upload a file object (bytes) to S3."""
         try:

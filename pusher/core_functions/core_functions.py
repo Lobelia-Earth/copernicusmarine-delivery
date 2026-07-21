@@ -16,6 +16,7 @@ from delivery_common.domain import (
 from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
 from pusher.core_functions.constants import (
+    DEFAULT_CHUNK_SIZE_MB,
     DONE_MANIFESTS_PATH,
     FAILED_MANIFESTS_PATH,
     IN_PROGRESS_MANIFESTS_PATH,
@@ -33,7 +34,7 @@ from pusher.core_functions.models import (
     ResponseDelivery,
     ResponseUpload,
 )
-from pusher.core_functions.utils import get_ingestion_bucket_name
+from pusher.core_functions.utils import get_ingestion_bucket_name, megabytes_to_bytes
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
@@ -415,7 +416,9 @@ def _create_and_upload_manifest(
     manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
     logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
     s3_client.upload_fileobj(
-        key=manifest_bucket_path, file=manifest.model_dump_json().encode()
+        key=manifest_bucket_path,
+        file=manifest.model_dump_json().encode(),
+        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
     )
     return manifest
 
