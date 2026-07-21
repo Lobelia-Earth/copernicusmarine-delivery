@@ -23,9 +23,9 @@ from pusher.core_functions.utils import megabytes_to_bytes
 
 class Upload(BaseOperation):
     """
-    Upload ``sources`` to the given dataset and product.
-    :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.
-    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multipart uploads. Defaults to 16 MB (16777216 bytes).
+    Upload ``files`` to the given dataset and product.
+    :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `files` attribute. Defaults to 5.
+    :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     """
 
