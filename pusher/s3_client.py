@@ -5,7 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from obstore import get, put
+from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
@@ -202,8 +202,8 @@ class S3Client:
         self,
         key: str,
         file: Path,
+        chunk_size: int,
         use_multipart: bool = True,
-        chunk_size: int = CHUNK_SIZE,
     ) -> S3File | ErrorFile:
         """Upload a local file (by Path) to S3."""
         logger.debug(f"Starting upload for {file.name}")
@@ -228,6 +228,7 @@ class S3Client:
     def upload_multiple_files(
         self,
         s3_key_local_file_mapping: dict[Path, str],
+        chunk_size: int,
         max_concurrent_uploads: int,
     ) -> PutFilesResult:
         total = len(s3_key_local_file_mapping)
@@ -240,7 +241,7 @@ class S3Client:
                     key=key,
                     file=path,
                     use_multipart=True,
-                    chunk_size=CHUNK_SIZE,
+                    chunk_size=chunk_size,
                 ): (path, key)
                 for _, (path, key) in enumerate(s3_key_local_file_mapping.items())
             }
@@ -261,3 +262,6 @@ class S3Client:
             path=path_to_file,
         )
         return b"".join(response.stream(min_chunk_size=20 * 1024 * 1024))
+
+    def delete_keys(self, keys: list[str]) -> None:
+        delete(self._store, paths=keys)

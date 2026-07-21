@@ -35,7 +35,7 @@ from pusher.core_functions.models import (
 )
 from pusher.core_functions.utils import get_ingestion_bucket_name
 from pusher.logger import logger
-from pusher.s3_client import S3Client, get_s3_ingestion_client
+from pusher.s3_client import CHUNK_SIZE, S3Client, get_s3_ingestion_client
 
 
 def get_local_path_s3_keys_mapping(
@@ -65,6 +65,7 @@ def upload(
     dataset_id: str,
     files: list[str],
     max_concurrent_uploads: int,
+    chunk_size_bytes: int = CHUNK_SIZE,
     chunk_concurrency: int = 6,
 ) -> tuple[ResponseUpload, Manifest | None]:
     """
@@ -138,6 +139,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         operation=upload_operation,
+        chunk_size=chunk_size_bytes,
         max_concurrent_uploads=max_concurrent_uploads,
     )
 
@@ -258,6 +260,7 @@ def delivery(
     dataset_id: str,
     product_id: str,
     max_concurrent_uploads: int = 5,
+    chunk_size_bytes: int = CHUNK_SIZE,
     chunk_concurrency: int = 6,
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
@@ -325,6 +328,7 @@ def delivery(
                 product_id=product_id,
                 dataset_id=dataset_id,
                 operation=operation,
+                chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
             )
             _update_operation_with_put_results(operation, put_files_result)
@@ -422,6 +426,7 @@ def _put_files_to_ingestion_system(
     product_id: str,
     dataset_id: str,
     operation: Operation,
+    chunk_size: int,
     max_concurrent_uploads: int,
 ) -> PutFilesResult:
 
@@ -433,6 +438,7 @@ def _put_files_to_ingestion_system(
     )
     put_files_result = s3_client.upload_multiple_files(
         local_path_s3_keys_mapping,
+        chunk_size,
         max_concurrent_uploads,
     )
     return put_files_result

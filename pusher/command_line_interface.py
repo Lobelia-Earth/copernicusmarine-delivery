@@ -13,6 +13,7 @@ from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.models import DeliveryFile, ResponseDelete, ResponseUpload
 from pusher.logger import logger
+from pusher.s3_client import CHUNK_SIZE
 
 _shared_options = [
     click.option("--dataset-id", type=str, help="ID of the dataset."),
@@ -52,7 +53,20 @@ def cli(max_content_width=200) -> None:
     "See the documentation for the format of the delivery file",
 )
 @shared_options
-@click.option("--max-concurrent-uploads", type=int, default=5, show_default=True)
+@click.option(
+    "--max-concurrent-uploads",
+    type=int,
+    default=5,
+    show_default=True,
+    help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
+)
+@click.option(
+    "--chunk-size-bytes",
+    type=int,
+    default=CHUNK_SIZE,
+    show_default=True,
+    help="The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).",
+)
 @click.option(
     "--chunk-concurrency",
     type=int,
@@ -67,6 +81,7 @@ def delivery(
     product_id: str,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = 5,
+    chunk_size_bytes: int = CHUNK_SIZE,
     chunk_concurrency: int = 6,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
@@ -82,6 +97,7 @@ def delivery(
         dataset_id=dataset_id,
         product_id=product_id,
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=chunk_size_bytes,
         chunk_concurrency=chunk_concurrency,
     )
     click.echo(
@@ -104,7 +120,20 @@ def delivery(
     help="Relative path to the file. `product_id/dataset_id` are prepended to the file.",
 )
 @shared_options
-@click.option("--max-concurrent-uploads", type=int, default=5, show_default=True)
+@click.option(
+    "--max-concurrent-uploads",
+    type=int,
+    default=5,
+    show_default=True,
+    help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
+)
+@click.option(
+    "--chunk-size-bytes",
+    type=int,
+    default=CHUNK_SIZE,
+    show_default=True,
+    help="The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).",
+)
 @click.option(
     "--chunk-concurrency",
     type=int,
@@ -119,6 +148,7 @@ def upload(
     product_id: str,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = 5,
+    chunk_size_bytes: int = CHUNK_SIZE,
     chunk_concurrency: int = 6,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
@@ -140,6 +170,7 @@ def upload(
         dataset_id=dataset_id,
         files=source,
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=chunk_size_bytes,
         chunk_concurrency=chunk_concurrency,
     )
     click.echo(

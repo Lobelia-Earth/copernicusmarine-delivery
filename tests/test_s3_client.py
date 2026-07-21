@@ -4,7 +4,7 @@ import pytest
 
 from pusher.core_functions.exceptions import NoSuchBucketException
 from pusher.core_functions.models import ErrorFile, S3File
-from pusher.s3_client import S3Client, get_s3_ingestion_client
+from pusher.s3_client import CHUNK_SIZE, S3Client, get_s3_ingestion_client
 
 RESOURCES = Path("tests/resources")
 
@@ -19,7 +19,9 @@ def test_no_such_bucket_raises(ministack_endpoint: str, set_env):
 
 def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str):
     key = "data/test/file1.txt"
-    result = service.upload_file(key=key, file=RESOURCES / "file1.txt")
+    result = service.upload_file(
+        key=key, file=RESOURCES / "file1.txt", chunk_size=CHUNK_SIZE
+    )
     assert isinstance(result, S3File)
     assert result.s3_path == key
     assert result.e_tag
@@ -30,7 +32,9 @@ def test_upload_file_nonexistent_returns_error(
     service: S3Client, ingestion_bucket: str
 ):
     result = service.upload_file(
-        key="data/test/missing.nc", file=Path("nonexistent/file.nc")
+        key="data/test/missing.nc",
+        file=Path("nonexistent/file.nc"),
+        chunk_size=CHUNK_SIZE,
     )
     assert isinstance(result, ErrorFile)
 
@@ -44,7 +48,9 @@ def test_upload_multiple_files(
         RESOURCES / "file1.txt": "data/test/file1.txt",
         RESOURCES / "file2.txt": "data/test/file2.txt",
     }
-    result = service.upload_multiple_files(mapping, 10)
+    result = service.upload_multiple_files(
+        mapping, chunk_size=CHUNK_SIZE, max_concurrent_uploads=10
+    )
     assert len(result.successful_files) == 2
     assert len(result.errored_files) == 0
     for f in result.successful_files:
@@ -58,7 +64,9 @@ def test_upload_multiple_files_partial_failure(
         RESOURCES / "file1.txt": "data/test/file1.txt",
         Path("nonexistent/file.nc"): "data/test/missing.nc",
     }
-    result = service.upload_multiple_files(mapping, 10)
+    result = service.upload_multiple_files(
+        mapping, chunk_size=CHUNK_SIZE, max_concurrent_uploads=10
+    )
     assert len(result.successful_files) == 1
     assert len(result.errored_files) == 1
     assert result.successful_files[0].s3_path == "data/test/file1.txt"

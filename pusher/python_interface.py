@@ -13,6 +13,7 @@ from pusher.core_functions.models import (
     ResponseDelivery,
     ResponseUpload,
 )
+from pusher.s3_client import CHUNK_SIZE
 
 
 class Upload(BaseOperation):
@@ -117,12 +118,16 @@ def upload(
     product_id: str,
     dataset_id: str,
     max_concurrent_uploads: int = 5,
+    chunk_size_bytes: int = CHUNK_SIZE,
     chunk_concurrency: int = 6,
 ) -> ResponseUpload:
     """
     LEGACY: keeping until the result of the internal testing.
 
     Upload ``sources`` to the given dataset and product.
+    :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.
+    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).
+    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multi part uploads. Defaults to 6.
     """
     if not sources:
         return ResponseUpload(fatal_error="No files added to upload.")
@@ -132,6 +137,7 @@ def upload(
         dataset_id=dataset_id,
         files=sources,
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=chunk_size_bytes,
         chunk_concurrency=chunk_concurrency,
     )
     return response
@@ -165,6 +171,7 @@ def delivery(
     dataset_id: str,
     product_id: str,
     max_concurrent_uploads: int = 5,
+    chunk_size_bytes: int = CHUNK_SIZE,
     chunk_concurrency: int = 6,
 ) -> ResponseDelivery:
     """
@@ -176,6 +183,9 @@ def delivery(
     Each operation can have multiple sources (files) to be processed.
 
     :param operations: A list of operations to be performed. Each operation is a tuple with the operation name as the first element and a list of sources as the second element. Available operations are 'upload' and 'delete'.
+    :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
+    :param chunk_size_bytes: The chunk size (in bytes) in which the files will be split into for multi part uploads. Defaults to 16 MB (16777216 bytes).
+    :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multi part uploads. Defaults to 6.
     """  # noqa
 
     if not operations:
@@ -197,6 +207,7 @@ def delivery(
         dataset_id=dataset_id,
         operations=cast(list[tuple[OperationNames, list[str]]], operations),
         max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=chunk_size_bytes,
         chunk_concurrency=chunk_concurrency,
     )
     return response
