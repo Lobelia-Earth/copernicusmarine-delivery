@@ -13,9 +13,13 @@
       dict({
         'files': list([
           dict({
+            'checksum': None,
+            'file_size': None,
             'key_suffix': 'tests/resources/file1.txt',
           }),
           dict({
+            'checksum': None,
+            'file_size': None,
             'key_suffix': 'tests/resources/file2.txt',
           }),
         ]),

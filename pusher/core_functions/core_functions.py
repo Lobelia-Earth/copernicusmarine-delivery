@@ -102,8 +102,8 @@ def upload(
 
     if validation_result.duplicate_files:
         duplicate_files_error_response = (
-            "The following files are duplicated. No manifest will be created.\n"
-            f"{validation_result.duplicate_files}"
+            "The following files are duplicated. No manifest will be created. "
+            f"{','.join(file.as_posix() for file in validation_result.duplicate_files)}"
         )
         logger.error(duplicate_files_error_response)
         return (
@@ -113,7 +113,8 @@ def upload(
 
     if not validation_result.files_valid:
         no_valid_files_fatal_error_response = (
-            "No file passed the validation. No manifest will be created."
+            "No file passed the validation. No manifest will be created.\n"
+            f"{','.join(str(invalid_file) for invalid_file in validation_result.files_invalid)}"
         )
         logger.error(no_valid_files_fatal_error_response)
         return (
