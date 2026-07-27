@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 from pusher.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
+from pusher.core_functions.domain import ErrorFile, S3File
 from pusher.core_functions.exceptions import NoSuchBucketException
-from pusher.core_functions.models import ErrorFile, S3File
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 

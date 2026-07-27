@@ -3,7 +3,7 @@ from pathlib import Path
 
 from delivery_common.domain import DeleteValidationResult, PushingEntities, T
 from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
-from pusher.core_functions.models import (
+from pusher.core_functions.domain import (
     InvalidFile,
     UploadValidationResult,
 )

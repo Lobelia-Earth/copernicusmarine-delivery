@@ -4,11 +4,14 @@ from pathlib import Path
 import yaml
 
 from delivery_common.domain import (
+    DeleteFile,
+    DeleteOperation,
     DeleteValidationResult,
     Manifest,
-    ManifestFile,
     Operation,
     OperationNames,
+    UploadFile,
+    UploadOperation,
     UploadValidationResult,
     ValidationError,
     ValidationResult,
@@ -28,7 +31,7 @@ from pusher.core_functions.delivery_validator import (
     fetch_pushing_entities,
     upload_files_validation,
 )
-from pusher.core_functions.models import (
+from pusher.core_functions.domain import (
     PutFilesResult,
     ResponseDelete,
     ResponseDelivery,
@@ -241,15 +244,11 @@ def delete(
 
 def create_and_validate_delete_operation(
     files: list[str],
-) -> tuple[Operation, DeleteValidationResult]:
+) -> tuple[DeleteOperation, DeleteValidationResult]:
     validation_result = delete_files_validation(files)
     return (
-        Operation(
-            operation="delete",
-            files=[
-                ManifestFile(key_suffix=file, file_size=None, checksum=None)
-                for file in files
-            ],
+        DeleteOperation(
+            files=[DeleteFile(key_suffix=file) for file in files],
         ),
         validation_result,
     )
@@ -322,7 +321,7 @@ def delivery(
         )
     all_responses: list[ResponseUpload | ResponseDelete] = []
     for operation, validation_result in zip(all_operations, validation_results):
-        if operation.operation == "upload":
+        if isinstance(operation, UploadOperation):
             put_files_result = _put_files_to_ingestion_system(
                 s3_client,
                 manifest_id=manifest_id,
@@ -340,7 +339,7 @@ def delivery(
                     result_upload=put_files_result,
                 )
             )
-        elif operation.operation == "delete":
+        elif isinstance(operation, DeleteOperation):
             all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
 
     manifest = _create_and_upload_manifest(
@@ -361,13 +360,12 @@ def delivery(
 
 def create_and_validate_upload_operation(
     files: list[Path],
-) -> tuple[Operation, UploadValidationResult]:
+) -> tuple[UploadOperation, UploadValidationResult]:
     validation_result = upload_files_validation(files)
     return (
-        Operation(
-            operation="upload",
+        UploadOperation(
             files=[
-                ManifestFile(
+                UploadFile(
                     key_suffix=str(file),
                     file_size=os.path.getsize(file) // (1024 * 1024),
                     checksum=None,  # ETag will be filled in after upload
@@ -428,7 +426,7 @@ def _put_files_to_ingestion_system(
     manifest_id: str,
     product_id: str,
     dataset_id: str,
-    operation: Operation,
+    operation: UploadOperation,
     chunk_size: int,
     max_concurrent_uploads: int,
 ) -> PutFilesResult:
@@ -448,7 +446,7 @@ def _put_files_to_ingestion_system(
 
 
 def _update_operation_with_put_results(
-    operation: Operation, put_files_result: PutFilesResult
+    operation: UploadOperation, put_files_result: PutFilesResult
 ) -> None:
     """
     TODO: add the possibility for users to abort the delivery if there are any errors. For now, we just log them and continue.

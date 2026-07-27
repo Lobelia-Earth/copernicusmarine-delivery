@@ -17,7 +17,7 @@ from pusher.core_functions.core_functions import (
     get_local_path_s3_keys_mapping,
     get_manifest_destination_key,
 )
-from pusher.core_functions.models import ResponseUpload
+from pusher.core_functions.domain import ResponseUpload
 
 RESOURCES = Path("tests/resources")
 
