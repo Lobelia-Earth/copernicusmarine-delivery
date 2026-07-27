@@ -268,7 +268,8 @@ def status(
     delivery_json: Path | None = None,
 ) -> None:
     """Get the status of a delivery (upload and/or delete). Specify either ids
-    [delivery_id, pushing_entity_id, product_id, dataset_id] or a path to a delivery json file."""
+    [delivery_id, pushing_entity_id, product_id, dataset_id] or a path to a delivery json file.
+    """
     if (
         not all([delivery_id, pushing_entity_id, product_id, dataset_id])
         and not delivery_json
@@ -297,10 +298,10 @@ def status(
         dataset_id = dataset_id
 
     manifest = get_manifest(
-        delivery_id=delivery_id,  # ty: ignore
-        pushing_entity_id=pushing_entity_id,  # ty: ignore
-        product_id=product_id,  # ty: ignore
-        dataset_id=dataset_id,  # ty: ignore
+        delivery_id=delivery_id,  # type: ignore
+        pushing_entity_id=pushing_entity_id,  # type: ignore
+        product_id=product_id,  # type: ignore
+        dataset_id=dataset_id,  # type: ignore
     )
     click.echo(
         manifest.model_dump_json(

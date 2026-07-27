@@ -2,6 +2,7 @@ import os
 from typing import Generator
 
 import boto3
+import freezegun
 import pytest
 import yaml
 
@@ -36,6 +37,22 @@ _BOTO_KWARGS = {
     "aws_secret_access_key": "test",
     "region_name": "us-east-1",
 }
+
+# not freezing inside threading
+freezegun.configure(
+    default_ignore_list=[
+        "nose.plugins",
+        "six.moves",
+        "django.utils.six.moves",
+        "google.gax",
+        # "threading",
+        "Queue",
+        "selenium",
+        "_pytest.terminal.",
+        "_pytest.runner.",
+        "gi",
+    ]
+)
 
 
 @pytest.fixture(autouse=True)

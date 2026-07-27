@@ -15,6 +15,7 @@ class S3File(BaseModel):
     local_path: Path
     s3_path: S3Path
     e_tag: str
+    upload_time: float
 
 
 class ErrorFile(ErrorResponseFile): ...

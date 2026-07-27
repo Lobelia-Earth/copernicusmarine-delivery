@@ -205,14 +205,19 @@ class S3Client:
         """Upload a local file (by Path) to S3."""
         logger.debug(f"Starting upload for {file.name}")
         try:
+            top = time.time()
             put_result = self._put_with_os_error_retry(
                 key, file, use_multipart, chunk_size
             )
-            logger.debug(f"Successfully uploaded file {file.name}")
+            upload_time = time.time() - top
+            logger.debug(
+                f"Successfully uploaded file {file.name} in {upload_time:.2f} seconds"
+            )
             return S3File(
                 local_path=file,
                 s3_path=S3Path(key),
                 e_tag=put_result["e_tag"].strip('"'),  # type: ignore
+                upload_time=upload_time,
             )
 
         except Exception as e:

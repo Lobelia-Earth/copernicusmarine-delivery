@@ -54,7 +54,8 @@
             "checksum": null,
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": null
           },
           {
             "key_suffix": "tests/resources/file2.txt",
@@ -62,7 +63,8 @@
             "checksum": null,
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": null
           }
         ]
       }

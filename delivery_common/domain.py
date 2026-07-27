@@ -102,6 +102,8 @@ class ManifestFile(BaseModel):
     status_timestamp: str | None = None
     #: Optional error message if the file failed to be uploaded.
     error: str | None = None
+    #: Optional, upload time in seconds to the OPDV system.
+    upload_time: float | None = None
 
 
 class Operation(BaseModel):

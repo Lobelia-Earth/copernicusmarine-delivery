@@ -71,7 +71,8 @@
             "checksum": null,
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": null
           },
           {
             "key_suffix": "tests/resources/file2.txt",
@@ -79,7 +80,8 @@
             "checksum": null,
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": null
           }
         ]
       },
@@ -95,7 +97,8 @@
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": 0.0
           },
           {
             "key_suffix": "tests/resources/file2.txt",
@@ -103,7 +106,8 @@
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": 0.0
           }
         ]
       }
