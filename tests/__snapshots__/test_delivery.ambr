@@ -98,7 +98,7 @@
             "status": "todo",
             "status_timestamp": null,
             "error": null,
-            "upload_time": 0.01896214485168457
+            "upload_time": 0.0
           },
           {
             "key_suffix": "tests/resources/file2.txt",
@@ -107,7 +107,7 @@
             "status": "todo",
             "status_timestamp": null,
             "error": null,
-            "upload_time": 0.021116971969604492
+            "upload_time": 0.0
           }
         ]
       }
