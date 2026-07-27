@@ -464,9 +464,9 @@ def _update_operation_with_put_results(
     index_files_to_remove = []
     for i, manifest_file in enumerate(operation.files):
         if manifest_file.key_suffix in successful_files_dict:
-            manifest_file.checksum = successful_files_dict[
-                manifest_file.key_suffix
-            ].e_tag
+            successful_s3_file = successful_files_dict[manifest_file.key_suffix]
+            manifest_file.checksum = successful_s3_file.e_tag
+            manifest_file.upload_time = successful_s3_file.upload_time
         elif manifest_file.key_suffix in errored_files_dict:
             logger.error(
                 f"File {manifest_file.key_suffix} failed to upload: {errored_files_dict[manifest_file.key_suffix].reason}"

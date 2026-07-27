@@ -20,11 +20,13 @@
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
             'file_size': 0,
             'key_suffix': 'tests/resources/file1.txt',
+            'upload_time': 0.010296106338500977,
           }),
           dict({
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
             'file_size': 0,
             'key_suffix': 'tests/resources/file2.txt',
+            'upload_time': 0.012866973876953125,
           }),
         ]),
         'operation': 'upload',
@@ -67,7 +69,8 @@
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": 0.017113924026489258
           },
           {
             "key_suffix": "tests/resources/file2.txt",
@@ -75,7 +78,8 @@
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
             "status": "todo",
             "status_timestamp": null,
-            "error": null
+            "error": null,
+            "upload_time": 0.01630997657775879
           }
         ]
       }
