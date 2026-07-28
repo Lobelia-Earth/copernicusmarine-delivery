@@ -216,7 +216,7 @@ class S3Client:
             return S3File(
                 local_path=file,
                 s3_path=S3Path(key),
-                e_tag=put_result["e_tag"].strip('"'),  # type: ignore
+                e_tag=put_result["e_tag"].strip('"'),
                 upload_time=upload_time,
             )
 

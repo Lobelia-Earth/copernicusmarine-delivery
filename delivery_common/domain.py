@@ -91,8 +91,16 @@ class ManifestFile(BaseModel):
     status_timestamp: str | None = None
     #: Optional error message if the file failed to be uploaded.
     error: str | None = None
-    #: Optional, upload time in seconds to the OPDV system.
-    upload_time: float | None = None
+
+    def set_success_status(self) -> None:
+        raise NotImplementedError("This method should be implemented in subclasses.")
+
+    def set_backup_success_status(self) -> None:
+        raise NotImplementedError("This method should be implemented in subclasses.")
+
+    def set_error_status(self, error_message: str) -> None:
+        self.status = "error"
+        self.error = error_message
 
 
 class UploadFile(ManifestFile):
@@ -108,13 +116,17 @@ class UploadFile(ManifestFile):
     #: checksum of the file to be uploaded.
     checksum: str | None
     #: Upload time from the users machine to the OPDV system in seconds.
-    upload_time: float | None = None
+    upload_time: float | None
 
     def set_success_status(self) -> None:
         self.status = "published"
 
     def set_backup_success_status(self) -> None:
         self.status = "backed_up"
+
+    def set_error_status(self, error_message: str) -> None:
+        self.status = "error"
+        self.error = error_message
 
 
 class DeleteFile(ManifestFile):
@@ -133,6 +145,10 @@ class DeleteFile(ManifestFile):
 
     def set_backup_success_status(self) -> None:
         self.status = "deleted_from_backed_up"
+
+    def set_error_status(self, error_message: str) -> None:
+        self.status = "error"
+        self.error = error_message
 
 
 class Operation(BaseModel, Generic[F]):
