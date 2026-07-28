@@ -124,10 +124,6 @@ class UploadFile(ManifestFile):
     def set_backup_success_status(self) -> None:
         self.status = "backed_up"
 
-    def set_error_status(self, error_message: str) -> None:
-        self.status = "error"
-        self.error = error_message
-
 
 class DeleteFile(ManifestFile):
     #: Status of the file in the OPDV system
@@ -145,10 +141,6 @@ class DeleteFile(ManifestFile):
 
     def set_backup_success_status(self) -> None:
         self.status = "deleted_from_backed_up"
-
-    def set_error_status(self, error_message: str) -> None:
-        self.status = "error"
-        self.error = error_message
 
 
 class Operation(BaseModel, Generic[F]):
