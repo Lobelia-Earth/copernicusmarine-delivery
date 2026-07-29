@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from random import randint
 
-from delivery_common.domain import Manifest, Operation
+from delivery_common.domain import Manifest, Operation, now_in_utc_isoformat
 
 
 def create_manifest(
@@ -17,7 +17,7 @@ def create_manifest(
         product_id=product_id,
         dataset_id=dataset_id,
         operations=operations,
-        creation_time=datetime.now(timezone.utc).isoformat(),
+        creation_time=now_in_utc_isoformat(),
     )
 
 

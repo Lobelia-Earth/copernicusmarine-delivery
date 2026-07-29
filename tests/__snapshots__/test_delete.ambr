@@ -6,7 +6,7 @@
 # ---
 # name: test_delete_cli_save_delivery_json
   dict({
-    'creation_time': '2012-01-14T12:00:01+00:00',
+    'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',
     'manifest_id': '20120114T120001-product1-2824',
     'operations': list([
@@ -46,6 +46,15 @@
         "status": "todo",
         "status_timestamp": null,
         "error": null,
+        "changelog": [
+          {
+            "step": "creation",
+            "timestamp": "2012-01-14T12:00:01Z",
+            "step_status": "success",
+            "error": null,
+            "comment": null
+          }
+        ],
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
@@ -62,7 +71,7 @@
         ]
       }
     ],
-    "creation_time": "2012-01-14T12:00:01+00:00",
+    "creation_time": "2012-01-14T12:00:01Z",
     "status": "todo",
     "status_timestamp": null,
     "error": null
