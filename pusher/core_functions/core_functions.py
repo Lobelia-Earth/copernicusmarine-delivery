@@ -378,7 +378,7 @@ def create_and_validate_upload_operation(
                 )
                 for file in validation_result.files_valid
             ],
-            upload_time=None,  # will be filled in after upload
+            upload_time=None,  # will be filled in after upload in OPDV
         ),
         validation_result,
     )

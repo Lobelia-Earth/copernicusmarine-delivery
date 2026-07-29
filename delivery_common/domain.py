@@ -6,6 +6,18 @@ from typing import Generic, Literal, NewType, TypeVar
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
+##############
+# Utils
+##############
+
+
+def now_in_utc_isoformat() -> str:
+    """Returns the current time in UTC in ISO 8601 format."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+#############
+
 # TODO: Be sure we use this S3 path where we should
 # i.e only when sending to S3. All the rest, we want a relative path
 # that is used to find the file locally, in the manifest, and
@@ -143,7 +155,7 @@ class OperationChangelogEntry(BaseModel):
     #: backup: The operation is being backed up by the OPDV system.
     step: Literal["creation", "push", "validate", "publish", "delete", "backup"]
     #: ISO 8601 formatted
-    timestamp: str
+    timestamp: str = now_in_utc_isoformat()
     #: status of the operation in the OPDV system
     step_status: Literal["success", "partial_error", "error"]
     #: Optional error message if the operation failed to be processed by the OPDV system.
@@ -192,7 +204,6 @@ class Operation(BaseModel, Generic[F]):
         self.changelog.append(
             OperationChangelogEntry(
                 step=step,
-                timestamp=now_in_utc_isoformat(),
                 step_status=step_status,
                 error=error,
                 comment=comment,
@@ -274,13 +285,3 @@ class ValidationError(BaseModel, Generic[T]):
         return f"{self.reason} - {', '.join(str(f) for f in self.files)}"
 
     __repr__ = __str__
-
-
-##############
-# Utils
-##############
-
-
-def now_in_utc_isoformat() -> str:
-    """Returns the current time in UTC in ISO 8601 format."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
