@@ -155,7 +155,7 @@ class OperationChangelogEntry(BaseModel):
     #: backup: The operation is being backed up by the OPDV system.
     step: Literal["creation", "push", "validate", "publish", "delete", "backup"]
     #: ISO 8601 formatted
-    timestamp: str = now_in_utc_isoformat()
+    timestamp: str = Field(default_factory=now_in_utc_isoformat)
     #: status of the operation in the OPDV system
     step_status: Literal["success", "partial_error", "error"]
     #: Optional error message if the operation failed to be processed by the OPDV system.
