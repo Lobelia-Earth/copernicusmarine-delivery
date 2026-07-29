@@ -19,7 +19,6 @@
             'key_suffix': 'tests/resources/file2.txt',
           }),
         ]),
-        'operation': 'delete',
       }),
     ]),
     'product_id': 'product1',
@@ -50,21 +49,15 @@
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
-            "file_size": null,
-            "checksum": null,
-            "status": "todo",
             "status_timestamp": null,
             "error": null,
-            "upload_time": null
+            "status": "todo"
           },
           {
             "key_suffix": "tests/resources/file2.txt",
-            "file_size": null,
-            "checksum": null,
-            "status": "todo",
             "status_timestamp": null,
             "error": null,
-            "upload_time": null
+            "status": "todo"
           }
         ]
       }

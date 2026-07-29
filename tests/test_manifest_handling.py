@@ -6,8 +6,8 @@ from pydantic import ValidationError
 
 from delivery_common.domain import (
     Manifest,
-    ManifestFile,
     Operation,
+    UploadFile,
 )
 from delivery_common.manifest import (
     create_manifest,
@@ -17,17 +17,12 @@ from pusher.core_functions.core_functions import (
     get_local_path_s3_keys_mapping,
     get_manifest_destination_key,
 )
-from pusher.core_functions.models import ResponseUpload
+from pusher.core_functions.domain import ResponseUpload
 
 RESOURCES = Path("tests/resources")
 
 
 # --- Models ---
-
-
-def test_manifest_file_none_file_size():
-    f = ManifestFile(key_suffix="data/key/file.nc", file_size=None, checksum="abc123")
-    assert f.file_size is None
 
 
 def test_operation_invalid_literal():
@@ -99,7 +94,14 @@ def test_create_manifest(tmp_path):
         operations=[
             Operation(
                 operation="upload",
-                files=[ManifestFile(key_suffix=str(f), file_size=43, checksum="abc-1")],
+                files=[
+                    UploadFile(
+                        key_suffix=str(f),
+                        file_size=43,
+                        checksum="abc-1",
+                        upload_time=1.23,
+                    )
+                ],
             )
         ],
         manifest_id=manifest_id,

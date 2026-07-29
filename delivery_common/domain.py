@@ -14,6 +14,8 @@ S3Path = NewType("S3Path", str)
 OperationNames = Literal["upload", "delete"]
 
 T = TypeVar("T")
+# Generic type for ManifestFile and its subclasses
+F = TypeVar("F", bound="ManifestFile")
 
 
 class Product(BaseModel):
@@ -85,28 +87,63 @@ class ManifestFile(BaseModel):
             )  # disgusting but good enough for now
         return v
 
-    #: Estimation of the size of the file in MB.
-    file_size: int | None
-    #: checksum of the file to be uploaded.
-    checksum: str | None
-    #: Status of the file in the OPDV system
-    #: todo: The file has not been picked up yet by the OPDV system.
-    #: validated: The file has been validated by the OPDV system. Will be processed.
-    #: pushed or deleted: The file has been processed following the operation.
-    #: backed_up: The file has been backed up.
-    #: error: The file failed to be uploaded.
-    status: Literal[
-        "todo", "validated", "published", "deleted", "backed_up", "error"
-    ] = "todo"
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
     #: Optional error message if the file failed to be uploaded.
     error: str | None = None
-    #: Optional, upload time in seconds to the OPDV system.
-    upload_time: float | None = None
+
+    def set_success_status(self) -> None:
+        raise NotImplementedError("This method should be implemented in subclasses.")
+
+    def set_backup_success_status(self) -> None:
+        raise NotImplementedError("This method should be implemented in subclasses.")
+
+    def set_error_status(self, error_message: str) -> None:
+        self.status = "error"
+        self.error = error_message
 
 
-class Operation(BaseModel):
+class UploadFile(ManifestFile):
+    #: Status of the file in the OPDV system
+    #: todo: The file has not been picked up yet by the OPDV system.
+    #: validated: The file has been validated by the OPDV system. Will be processed.
+    #: published: The file has been published to MDS service.
+    #: backed_up: The file has been backed up.
+    #: error: The file failed to be uploaded.
+    status: Literal["todo", "validated", "published", "backed_up", "error"] = "todo"
+    #: Estimation of the size of the file in MB.
+    file_size: int | None
+    #: checksum of the file to be uploaded.
+    checksum: str | None
+    #: Upload time from the users machine to the OPDV system in seconds.
+    upload_time: float | None
+
+    def set_success_status(self) -> None:
+        self.status = "published"
+
+    def set_backup_success_status(self) -> None:
+        self.status = "backed_up"
+
+
+class DeleteFile(ManifestFile):
+    #: Status of the file in the OPDV system
+    #: todo: The file has not been picked up yet by the OPDV system.
+    #: validated: The file has been validated by the OPDV system. Will be processed.
+    #: deleted: The file has been deleted from the MDS service.
+    #: deleted_from_backed_up: The file has been deleted from the backup.
+    #: error: The file failed to be deleted.
+    status: Literal[
+        "todo", "validated", "deleted", "deleted_from_backed_up", "error"
+    ] = "todo"
+
+    def set_success_status(self) -> None:
+        self.status = "deleted"
+
+    def set_backup_success_status(self) -> None:
+        self.status = "deleted_from_backed_up"
+
+
+class Operation(BaseModel, Generic[F]):
     #: Operation type
     #: upload: The operation is to upload new files to MDS storage.
     #: delete: The operation is to delete files from MDS storage.
@@ -123,7 +160,15 @@ class Operation(BaseModel):
     #: Optional error message if the operation failed to be processed by the OPDV system.
     error: str | None = None
     #: List of files associated with the operation.
-    files: list[ManifestFile]
+    files: list[F]
+
+
+class UploadOperation(Operation[UploadFile]):
+    operation: OperationNames = "upload"
+
+
+class DeleteOperation(Operation[DeleteFile]):
+    operation: OperationNames = "delete"
 
 
 class Manifest(BaseModel):

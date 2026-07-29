@@ -9,15 +9,15 @@ from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
-from pusher.core_functions.exceptions import (
-    ConnectionRefusedException,
-    NoSuchBucketException,
-)
-from pusher.core_functions.models import (
+from pusher.core_functions.domain import (
     ErrorFile,
     PutFilesResult,
     S3File,
     S3Path,
+)
+from pusher.core_functions.exceptions import (
+    ConnectionRefusedException,
+    NoSuchBucketException,
 )
 from pusher.environment_variables import (
     ALLOW_HTTP,
@@ -216,7 +216,7 @@ class S3Client:
             return S3File(
                 local_path=file,
                 s3_path=S3Path(key),
-                e_tag=put_result["e_tag"].strip('"'),  # type: ignore
+                e_tag=put_result["e_tag"].strip('"'),
                 upload_time=upload_time,
             )
 

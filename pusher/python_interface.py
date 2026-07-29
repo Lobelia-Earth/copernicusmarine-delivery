@@ -12,7 +12,7 @@ from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.models import (
+from pusher.core_functions.domain import (
     BaseOperation,
     ResponseDelete,
     ResponseDelivery,
