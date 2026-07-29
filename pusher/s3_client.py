@@ -221,7 +221,9 @@ class S3Client:
             )
 
         except Exception as e:
-            logger.error(f"Something went wrong uploading: {file.name}")
+            logger.error(
+                f"Something went wrong uploading: {file.name}. Skipping this file. Error: {e}"
+            )
             return ErrorFile(
                 local_path=file,
                 reason=_extract_error_message(e),

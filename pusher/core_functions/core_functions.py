@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 import yaml
@@ -340,6 +341,10 @@ def delivery(
                 )
             )
         elif isinstance(operation, DeleteOperation):
+            operation.add_changelog_entry(
+                step="push",
+                step_status="success",
+            )
             all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
 
     manifest = _create_and_upload_manifest(
@@ -348,7 +353,7 @@ def delivery(
         product_id,
         dataset_id,
         all_operations,
-        manifest_id,
+        manifest_id=manifest_id,
     )
     return (
         ResponseDelivery.create(
@@ -373,6 +378,7 @@ def create_and_validate_upload_operation(
                 )
                 for file in validation_result.files_valid
             ],
+            upload_time=None,  # will be filled in after upload in OPDV
         ),
         validation_result,
     )
@@ -431,7 +437,7 @@ def _put_files_to_ingestion_system(
     chunk_size: int,
     max_concurrent_uploads: int,
 ) -> PutFilesResult:
-
+    top = time.time()
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
         [file_.key_suffix for file_ in operation.files],
         manifest_id,
@@ -442,6 +448,20 @@ def _put_files_to_ingestion_system(
         local_path_s3_keys_mapping,
         chunk_size,
         max_concurrent_uploads,
+    )
+    elapsed = time.time() - top
+    operation.upload_time = elapsed
+    step_status = "success"
+    if not put_files_result.successful_files:
+        step_status = "error"
+    elif put_files_result.errored_files and put_files_result.successful_files:
+        step_status = "partial_error"
+    operation.add_changelog_entry(
+        step="push",
+        step_status=step_status,
+        comment=f"Upload operation pushed files in {elapsed:.2f} seconds "
+        f"with {len(put_files_result.successful_files)} successful files"
+        f" and {len(put_files_result.errored_files)} errored files.",
     )
     return put_files_result
 

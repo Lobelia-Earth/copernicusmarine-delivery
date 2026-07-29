@@ -1,9 +1,22 @@
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Generic, Literal, NewType, TypeVar
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
+
+##############
+# Utils
+##############
+
+
+def now_in_utc_isoformat() -> str:
+    """Returns the current time in UTC in ISO 8601 format."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+#############
 
 # TODO: Be sure we use this S3 path where we should
 # i.e only when sending to S3. All the rest, we want a relative path
@@ -108,9 +121,8 @@ class UploadFile(ManifestFile):
     #: todo: The file has not been picked up yet by the OPDV system.
     #: validated: The file has been validated by the OPDV system. Will be processed.
     #: published: The file has been published to MDS service.
-    #: backed_up: The file has been backed up.
     #: error: The file failed to be uploaded.
-    status: Literal["todo", "validated", "published", "backed_up", "error"] = "todo"
+    status: Literal["todo", "validated", "published", "error"] = "todo"
     #: Estimation of the size of the file in MB.
     file_size: int | None
     #: checksum of the file to be uploaded.
@@ -121,26 +133,37 @@ class UploadFile(ManifestFile):
     def set_success_status(self) -> None:
         self.status = "published"
 
-    def set_backup_success_status(self) -> None:
-        self.status = "backed_up"
-
 
 class DeleteFile(ManifestFile):
     #: Status of the file in the OPDV system
     #: todo: The file has not been picked up yet by the OPDV system.
     #: validated: The file has been validated by the OPDV system. Will be processed.
     #: deleted: The file has been deleted from the MDS service.
-    #: deleted_from_backed_up: The file has been deleted from the backup.
     #: error: The file failed to be deleted.
-    status: Literal[
-        "todo", "validated", "deleted", "deleted_from_backed_up", "error"
-    ] = "todo"
+    status: Literal["todo", "validated", "deleted", "error"] = "todo"
 
     def set_success_status(self) -> None:
         self.status = "deleted"
 
-    def set_backup_success_status(self) -> None:
-        self.status = "deleted_from_backed_up"
+
+class OperationChangelogEntry(BaseModel):
+    #: Different steps for an operation.
+    #: creation: The operation is being created by the user.
+    #: push: The operation is being push from a user to the OPDV system.
+    #: validate: The operation is being validated by the OPDV system.
+    #: publish and delete: The operation is being processed by the OPDV system.
+    #: backup: The operation is being backed up by the OPDV system.
+    step: Literal["creation", "push", "validate", "publish", "delete", "backup"]
+    #: ISO 8601 formatted
+    timestamp: str = Field(default_factory=now_in_utc_isoformat)
+    #: status of the operation in the OPDV system
+    step_status: Literal["success", "partial_error", "error"]
+    #: Optional error message if the operation failed to be processed by the OPDV system.
+    error: str | None = None
+    #: Optional comment for the operation step.
+    #: Can be especially useful for the backup step, there might be different backup strategies
+    #: and we might want to keep track of which one was used.
+    comment: str | None = None
 
 
 class Operation(BaseModel, Generic[F]):
@@ -159,12 +182,39 @@ class Operation(BaseModel, Generic[F]):
     status_timestamp: str | None = None
     #: Optional error message if the operation failed to be processed by the OPDV system.
     error: str | None = None
+    #: Changelog of the operation. Allows to keep track of the status changes and error messages.
+    #: intended for debugging and auditing purposes. Not intended for the user.
+    changelog: list[OperationChangelogEntry] = []
     #: List of files associated with the operation.
     files: list[F]
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if not self.changelog:
+            self.add_changelog_entry(step="creation", step_status="success")
+
+    def add_changelog_entry(
+        self,
+        step: Literal["creation", "push", "validate", "publish", "delete", "backup"],
+        step_status: Literal["success", "partial_error", "error"],
+        error: str | None = None,
+        comment: str | None = None,
+    ) -> None:
+
+        self.changelog.append(
+            OperationChangelogEntry(
+                step=step,
+                step_status=step_status,
+                error=error,
+                comment=comment,
+            )
+        )
 
 
 class UploadOperation(Operation[UploadFile]):
     operation: OperationNames = "upload"
+    #: Upload time from the users machine to the OPDV system in seconds for the whole operation.
+    upload_time: float | None
 
 
 class DeleteOperation(Operation[DeleteFile]):
@@ -184,7 +234,8 @@ class Manifest(BaseModel):
     #: These operations will be done sequentially in the order they are listed.
     operations: list[Operation]
 
-    #: ISO 8601 formatted timestamp in UTC
+    #: ISO 8601 formatted timestamp in UTC for the creation of the delivery.
+    #: It corresponds to the moment the manifest is sent to the OPDV system.
     creation_time: str
     #: status of the manifest in the OPDV system.
     #: todo: The manifest has not been picked up yet by the OPDV system.
