@@ -284,8 +284,3 @@ class ValidationError(BaseModel, Generic[T]):
 def now_in_utc_isoformat() -> str:
     """Returns the current time in UTC in ISO 8601 format."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def datetime_to_utc_isoformat(dt: datetime) -> str:
-    """Converts a datetime object to UTC in ISO 8601 format."""
-    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
