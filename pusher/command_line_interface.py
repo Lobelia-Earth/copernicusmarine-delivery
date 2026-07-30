@@ -1,6 +1,10 @@
 import json
 import sys
+from functools import wraps
+from itertools import chain
 from pathlib import Path
+from re import finditer
+from typing import Any, Callable
 
 import click
 import yaml
@@ -20,10 +24,57 @@ from pusher.core_functions.domain import DeliveryFile, ResponseDelete, ResponseU
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.logger import logger
 
+
+def _exception_to_sentence(exception: Exception) -> str:
+    return _camel_case_to_sentence(exception.__class__.__name__)
+
+
+def _title_case_to_lower_case(identifier: str) -> str:
+    return identifier.lower() if identifier.istitle() else identifier
+
+
+def _camel_case_to_sentence(identifier: str) -> str:
+    matches = finditer(
+        ".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier
+    )
+    capital_words = list(map(lambda match: match.group(0), matches))
+    first_word = capital_words[:1]
+    other_words = capital_words[1:]
+    sentence = chain(first_word, map(_title_case_to_lower_case, other_words))
+    return " ".join(sentence)
+
+
+def _log_exception(log_function: Callable, exception: Exception):
+    exception_string = str(exception).strip('"')
+    details = f": {exception_string}" if exception_string else ""
+    message = _exception_to_sentence(exception) + details
+    log_function(message)
+
+
+def log_exception_and_exit(function: Callable) -> Any:
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Exception as exception:
+            try:
+                custom_exception_message = exception.__getattribute__(
+                    "custom_exception_message"
+                )
+                logger.error(custom_exception_message)
+            except AttributeError:
+                _log_exception(logger.error, exception)
+            exit(1)
+
+    return wrapper
+
+
 _shared_options = [
-    click.option("--dataset-id", type=str, help="ID of the dataset."),
-    click.option("--product-id", type=str, help="ID of the product."),
-    click.option("--pushing-entity-id", type=str, help="ID of the pushing entity."),
+    click.option("--dataset-id", type=str, help="ID of the dataset.", required=True),
+    click.option("--product-id", type=str, help="ID of the product.", required=True),
+    click.option(
+        "--pushing-entity-id", type=str, help="ID of the pushing entity.", required=True
+    ),
     click.option(
         "--save-delivery-json",
         is_flag=True,
@@ -79,6 +130,7 @@ def cli(max_content_width=200) -> None:
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
+@log_exception_and_exit
 def delivery(
     file: Path,
     pushing_entity_id: str,
@@ -146,6 +198,7 @@ def delivery(
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
+@log_exception_and_exit
 def upload(
     source: list[str],
     pushing_entity_id: str,
@@ -198,6 +251,7 @@ def upload(
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
 @shared_options
+@log_exception_and_exit
 def delete(
     source: list[str],
     pushing_entity_id: str,
@@ -260,6 +314,7 @@ def saving_delivery_file(manifest: Manifest) -> None:
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Path to an existing delivery json file",
 )
+@log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     pushing_entity_id: str | None = None,

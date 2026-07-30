@@ -42,8 +42,9 @@ class PushingEntity(BaseModel):
     products: list[Product]
 
 
-class InvalidDeliveryIds(BaseModel):
-    reason: str
+class InvalidDeliveryIdsError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
 
 
 class PushingEntities(BaseModel):
@@ -216,6 +217,10 @@ class UploadOperation(Operation[UploadFile]):
     #: Upload time from the users machine to the OPDV system in seconds for the whole operation.
     upload_time: float | None
 
+    def total_size(self) -> int:
+        """Returns the total size of the files in the operation in MB."""
+        return sum(f.file_size or 0 for f in self.files)
+
 
 class DeleteOperation(Operation[DeleteFile]):
     operation: OperationNames = "delete"
@@ -268,13 +273,8 @@ class InvalidFile(ErrorResponseFile): ...
 class ValidationResult(BaseModel, Generic[T]):
     duplicate_files: list[T]
 
-
-class DeleteValidationResult(ValidationResult): ...
-
-
-class UploadValidationResult(ValidationResult):
-    files_valid: list[Path]
-    files_invalid: list[InvalidFile]
+    def raise_for_errors(self, logger) -> None:
+        raise NotImplementedError("This method should be implemented in subclasses.")
 
 
 class ValidationError(BaseModel, Generic[T]):

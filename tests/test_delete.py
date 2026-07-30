@@ -2,10 +2,12 @@ import glob
 import json
 import random
 
+import pytest
 import yaml
 from click.testing import CliRunner
 from freezegun import freeze_time
 
+from pusher import InvalidDeliveryIdsError
 from pusher.command_line_interface import cli
 from pusher.core_functions.core_functions import delete
 from pusher.s3_client import S3Client
@@ -126,19 +128,18 @@ def test_delete_cli_no_source_exits(cli_env):
     assert result.exit_code == 1
 
 
-def test_delete_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
+def test_delete_raises_on_invalid_delivery_ids(monkeypatch):
     monkeypatch.setattr(
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
 
-    response, manifest = delete(
-        pushing_entity_id=PUSHING_ENTITY_ID,
-        files=MOCK_FILES,
-        dataset_id="dataset1",
-        product_id="product1",
+    with pytest.raises(InvalidDeliveryIdsError) as exc_info:
+        delete(
+            pushing_entity_id=PUSHING_ENTITY_ID,
+            files=MOCK_FILES,
+            dataset_id="dataset1",
+            product_id="product1",
+        )
+    assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
+        exc_info.value
     )
-    assert (
-        response.fatal_error
-        == f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity"
-    )
-    assert manifest is None

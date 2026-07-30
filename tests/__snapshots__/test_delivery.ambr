@@ -18,15 +18,6 @@
   }
   '''
 # ---
-# name: test_delivery_early_exit_with_validation_error
-  '''
-  {
-    "delivery_id": null,
-    "fatal_error": "Some files failed validation: [invalid - extra_file.txt: File path does not exist.]. Delivery cancelled. No manifest will be created.",
-    "operations_responses": []
-  }
-  '''
-# ---
 # name: test_delivery_python_interface
   '''
   {
@@ -44,7 +35,6 @@
           "tests/resources/file1.txt",
           "tests/resources/file2.txt"
         ],
-        "files_invalid": [],
         "files_failed": []
       }
     ]

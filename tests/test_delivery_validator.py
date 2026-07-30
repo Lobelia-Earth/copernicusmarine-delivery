@@ -3,6 +3,7 @@ import yaml
 
 from delivery_common.domain import PushingEntities
 from delivery_common.validation import validate_delivery_ids
+from pusher import InvalidDeliveryIdsError
 from pusher.core_functions.delivery_validator import duplicate_files
 from pusher.s3_client import S3Client
 
@@ -44,36 +45,36 @@ def test_valid_delivery_ids():
 
 
 def test_invalid_pushing_entity():
-    result = validate_delivery_ids(
-        pushing_entity_id="UNKNOWN-ENTITY",
-        product_id="product1",
-        dataset_id="dataset1",
-        pushing_entities=_PUSHING_ENTIES,
-    )
-    assert result is not None
-    assert "UNKNOWN-ENTITY" in result.reason
+    with pytest.raises(InvalidDeliveryIdsError) as exc_info:
+        validate_delivery_ids(
+            pushing_entity_id="UNKNOWN-ENTITY",
+            product_id="product1",
+            dataset_id="dataset1",
+            pushing_entities=_PUSHING_ENTIES,
+        )
+    assert "UNKNOWN-ENTITY" in str(exc_info.value)
 
 
 def test_invalid_product_id():
-    result = validate_delivery_ids(
-        pushing_entity_id="TEST-ENTITY-FR",
-        product_id="nonexistent-product",
-        dataset_id="dataset1",
-        pushing_entities=_PUSHING_ENTIES,
-    )
-    assert result is not None
-    assert "nonexistent-product" in result.reason
+    with pytest.raises(InvalidDeliveryIdsError) as exc_info:
+        validate_delivery_ids(
+            pushing_entity_id="TEST-ENTITY-FR",
+            product_id="nonexistent-product",
+            dataset_id="dataset1",
+            pushing_entities=_PUSHING_ENTIES,
+        )
+    assert "nonexistent-product" in str(exc_info.value)
 
 
 def test_invalid_dataset_id():
-    result = validate_delivery_ids(
-        pushing_entity_id="TEST-ENTITY-FR",
-        product_id="product1",
-        dataset_id="nonexistent-dataset",
-        pushing_entities=_PUSHING_ENTIES,
-    )
-    assert result is not None
-    assert "nonexistent-dataset" in result.reason
+    with pytest.raises(InvalidDeliveryIdsError) as exc_info:
+        validate_delivery_ids(
+            pushing_entity_id="TEST-ENTITY-FR",
+            product_id="product1",
+            dataset_id="nonexistent-dataset",
+            pushing_entities=_PUSHING_ENTIES,
+        )
+    assert "nonexistent-dataset" in str(exc_info.value)
 
 
 def test_duplicate_files():
