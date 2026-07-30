@@ -273,9 +273,6 @@ class InvalidFile(ErrorResponseFile): ...
 class ValidationResult(BaseModel, Generic[T]):
     duplicate_files: list[T]
 
-    def raise_for_errors(self, logger) -> None:
-        raise NotImplementedError("This method should be implemented in subclasses.")
-
 
 class ValidationError(BaseModel, Generic[T]):
     reason: str  # invalid, duplicates, etc
