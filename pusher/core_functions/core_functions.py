@@ -109,8 +109,6 @@ def upload(
         max_concurrent_uploads=max_concurrent_uploads,
     )
 
-    _update_operation_with_put_results(upload_operation, put_files_result)
-
     manifest = _create_and_upload_manifest(
         s3_client,
         pushing_entity_id=pushing_entity_id,
@@ -213,7 +211,6 @@ def delivery(
                 chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
             )
-            _update_operation_with_put_results(operation, put_files_result)
             all_responses.append(
                 ResponseUpload.create(
                     delivery_id=manifest_id,
@@ -313,6 +310,8 @@ def _put_files_to_ingestion_system(
     if not put_files_result.successful_files:
         raise UploadError(put_files_result.errored_files)
 
+    _update_operation_with_put_results(operation, put_files_result)
+
     total_size = operation.total_size()
     logger.info(
         f"Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
@@ -324,6 +323,7 @@ def _put_files_to_ingestion_system(
         step_status = "error"
     elif put_files_result.errored_files and put_files_result.successful_files:
         step_status = "partial_error"
+
     operation.add_changelog_entry(
         step="push",
         step_status=step_status,
@@ -355,8 +355,8 @@ def _update_operation_with_put_results(
             manifest_file.checksum = successful_s3_file.e_tag
             manifest_file.upload_time = successful_s3_file.upload_time
         elif manifest_file.key_suffix in errored_files_dict:
-            logger.error(
-                f"File {manifest_file.key_suffix} failed to upload: {errored_files_dict[manifest_file.key_suffix].reason}"
+            logger.debug(
+                f"Removing file {manifest_file.key_suffix} from upload operation."
             )
             index_files_to_remove.append(i)
     for index in reversed(index_files_to_remove):
