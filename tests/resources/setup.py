@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
 """
 Quick setup script for local development with LocalStack.
-Creates a bucket, uploads the pushing_entities config and sample files.
+Creates a bucket, uploads the pushing_entities config.
 
 Usage:
-    python tests/resources/setup.py
+    pixi run -e dev setup-local
+    pixi run -e dev list-local
+    pixi run -e dev clean-local
 """
 
 import argparse
