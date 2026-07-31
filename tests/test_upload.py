@@ -3,10 +3,12 @@ import json
 import os
 import random
 
+import pytest
 import yaml
 from click.testing import CliRunner
 from freezegun import freeze_time
 
+from pusher import InvalidDeliveryIdsError
 from pusher.command_line_interface import cli
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -149,25 +151,23 @@ def test_upload_cli_no_source_exits(cli_env):
     assert result.exit_code == 1
 
 
-def test_upload_returns_fatal_error_on_invalid_delivery_ids(monkeypatch):
+def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
     monkeypatch.setattr(
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
-
-    response, manifest = upload(
-        pushing_entity_id=PUSHING_ENTITY_ID,
-        files=MOCK_FILES,
-        dataset_id="dataset1",
-        product_id="product1",
-        max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
-        chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
-        chunk_concurrency=CHUNK_CONCURRENCY,
+    with pytest.raises(InvalidDeliveryIdsError) as exc_info:
+        upload(
+            pushing_entity_id=PUSHING_ENTITY_ID,
+            files=MOCK_FILES,
+            dataset_id="dataset1",
+            product_id="product1",
+            max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
+            chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+            chunk_concurrency=CHUNK_CONCURRENCY,
+        )
+    assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
+        exc_info.value
     )
-    assert (
-        response.fatal_error
-        == f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity"
-    )
-    assert manifest is None
 
 
 @freeze_time("2012-01-14 12:00:01")

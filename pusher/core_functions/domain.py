@@ -7,8 +7,8 @@ from delivery_common.domain import (
     InvalidFile,
     OperationNames,
     S3Path,
-    UploadValidationResult,
 )
+from pusher.logger import logger
 
 
 class S3File(BaseModel):
@@ -38,9 +38,6 @@ class ResponseUpload(BaseResponse):
 
     #: Successful uploaded file names
     files_uploaded: list[Path] = Field(default_factory=list)
-    #: Potential user errors (user must fix).
-    #: TODO: I think validation errors should be fatal contrary to upload errors.
-    files_invalid: list[InvalidFile] = Field(default_factory=list)
     #: Potential I/O errors, might be on the user side, not necessarily user fault
     files_failed: list[ErrorFile] = Field(default_factory=list)
 
@@ -54,7 +51,6 @@ class ResponseUpload(BaseResponse):
     def create(
         cls,
         delivery_id: str,
-        result_validation: UploadValidationResult,
         result_upload: PutFilesResult,
     ) -> "ResponseUpload":
         return cls(
@@ -62,13 +58,8 @@ class ResponseUpload(BaseResponse):
             files_uploaded=[
                 file_.local_path for file_ in result_upload.successful_files
             ],
-            files_invalid=result_validation.files_invalid,
             files_failed=result_upload.errored_files,
         )
-
-    @classmethod
-    def create_from_fatal_error(cls, fatal_error: str) -> "ResponseUpload":
-        return cls(fatal_error=fatal_error)
 
 
 class ResponseDelete(BaseResponse):
@@ -107,10 +98,6 @@ class ResponseDelivery(BaseResponse):
             operations_responses=operations_responses,
         )
 
-    @classmethod
-    def create_from_fatal_error(cls, fatal_error: str) -> "ResponseDelivery":
-        return cls(fatal_error=fatal_error)
-
 
 class BaseOperation(BaseModel):
     operation: OperationNames
@@ -122,3 +109,48 @@ class BaseOperation(BaseModel):
 
 class DeliveryFile(BaseModel):
     delivery: list[BaseOperation]
+
+
+######
+# Exceptions
+######
+
+
+class NoSuccessfulUploadsError(Exception):
+    """
+    Raised when an error occurs during the upload process.
+    Will list the files and their errors that failed to upload.
+    """
+
+    def __init__(self, error_files: list[ErrorFile]):
+        for file in error_files:
+            logger.error(f"Invalid file: {file}")
+        super().__init__(
+            f"All uploads failed. Errored files: {[file.local_path for file in error_files]}"
+        )
+
+
+class NoIngestionBucketError(Exception):
+    """
+    Raised when the ingestion bucket is not found.
+    """
+
+    def __init__(self, pushing_entity_id: str):
+        super().__init__(
+            f"No ingestion bucket found for pushing entity: {pushing_entity_id} "
+            f"Please contact User Support."
+        )
+
+
+class InvalidFilesError(Exception):
+    """
+    Raised when an error occurs during the validation of files.
+    Will list the files and their errors that failed validation.
+    """
+
+    def __init__(self, invalid_files: list[InvalidFile]):
+        for file in invalid_files:
+            logger.error(f"Invalid file: {file}")
+        super().__init__(
+            f"Found {len(invalid_files)} invalid files. See logs for details."
+        )

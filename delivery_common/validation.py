@@ -1,4 +1,4 @@
-from delivery_common.domain import InvalidDeliveryIds, PushingEntities
+from delivery_common.domain import InvalidDeliveryIdsError, PushingEntities
 
 
 def validate_delivery_ids(
@@ -6,14 +6,15 @@ def validate_delivery_ids(
     product_id: str,
     dataset_id: str,
     pushing_entities: PushingEntities,
-) -> InvalidDeliveryIds | None:
+) -> None:
     valid_pushing_entity = next(
         (e for e in pushing_entities.pushing_entities if e.name == pushing_entity_id),
         None,
     )
     if not valid_pushing_entity:
-        return InvalidDeliveryIds(
-            reason=f"{pushing_entity_id} is not a valid registered Pushing Entity"
+        raise InvalidDeliveryIdsError(
+            f"{pushing_entity_id} is not a valid registered Pushing Entity. "
+            "Please ask User Support to register your Pushing Entity or to give you the ID."
         )
     valid_product = next(
         (
@@ -24,10 +25,12 @@ def validate_delivery_ids(
         None,
     )
     if not valid_product:
-        return InvalidDeliveryIds(
-            reason=f"{product_id} is not a valid Product ID for {pushing_entity_id}"
+        raise InvalidDeliveryIdsError(
+            f"{product_id} is not a valid Product ID for {pushing_entity_id}. "
+            "Please ask User Support to register your Product if it is new."
         )
     if dataset_id not in valid_product.datasets:
-        return InvalidDeliveryIds(
-            reason=f"{dataset_id} is not a valid Dataset ID for any Product for {pushing_entity_id}"
+        raise InvalidDeliveryIdsError(
+            f"{dataset_id} is not a valid Dataset ID for any Product for {pushing_entity_id}. "
+            "Please ask User Support to register your Dataset if it is new."
         )

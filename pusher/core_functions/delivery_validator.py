@@ -1,12 +1,9 @@
 from collections import Counter
 from pathlib import Path
 
-from delivery_common.domain import DeleteValidationResult, PushingEntities, T
+from delivery_common.domain import InvalidFile, PushingEntities, T
 from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
-from pusher.core_functions.domain import (
-    InvalidFile,
-    UploadValidationResult,
-)
+from pusher.core_functions.domain import InvalidFilesError
 from pusher.logger import logger
 from pusher.s3_client import get_s3_metadata_client
 
@@ -29,23 +26,30 @@ def duplicate_files(files: list[T]) -> list[T]:
     return [path for path, count in Counter(files).items() if count > 1]
 
 
-def delete_files_validation(files: list[str]) -> DeleteValidationResult:
-    return DeleteValidationResult(duplicate_files=duplicate_files(files))
+def validate_delete_files(files: list[str]) -> None:
+    invalid_files = [
+        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
+        for file_ in duplicate_files(files)
+    ]
+    if invalid_files:
+        raise InvalidFilesError(
+            invalid_files=invalid_files,
+        )
 
 
-def upload_files_validation(files: list[Path]) -> UploadValidationResult:
-    valid_files = []
+def validate_upload_files(files: list[str]) -> None:
     invalid_files = []
-    for file_ in files:
-        if not file_exists(file_):
+    for file_str in files:
+        file = Path(file_str)
+        if not file_exists(file):
             invalid_files.append(
-                InvalidFile(local_path=file_, reason="File path does not exist.")
+                InvalidFile(local_path=file, reason="File path does not exist.")
             )
             continue
-        if not file_not_empty(file_):
-            invalid_files.append(InvalidFile(local_path=file_, reason="File is empty."))
+        if not file_not_empty(file):
+            invalid_files.append(InvalidFile(local_path=file, reason="File is empty."))
             continue
-        if not file_type_supported(file_):
+        if not file_type_supported(file):
             # Just a warning for now
             logger.warning(
                 "File extension is not supported. There might be some issues downstream. "
@@ -58,13 +62,14 @@ def upload_files_validation(files: list[Path]) -> UploadValidationResult:
             #     )
             # )
             # continue
-        valid_files.append(file_)
-
-    return UploadValidationResult(
-        duplicate_files=duplicate_files(files),
-        files_valid=valid_files,
-        files_invalid=invalid_files,
-    )
+    invalid_files += [
+        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
+        for file_ in duplicate_files(files)
+    ]
+    if invalid_files:
+        raise InvalidFilesError(
+            invalid_files=invalid_files,
+        )
 
 
 def fetch_pushing_entities():

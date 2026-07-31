@@ -45,6 +45,9 @@ format-check = "ruff format --check .; ruff check ."
 type-check = "ty check ."
 test-local = "pytest --snapshot-update"
 test = "pytest"
+setup-local = "python tests/resources/setup.py"
+list-local = "python tests/resources/setup.py --list"
+clean-local = "python tests/resources/setup.py --clean"
 
 [tool.pixi.feature.dev.activation.env]
 ALLOW_HTTP = "true"

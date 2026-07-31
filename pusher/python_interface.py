@@ -35,8 +35,8 @@ class Upload(BaseOperation):
     def submit(
         self,
         pushing_entity_id: str,
-        dataset_id: str,
         product_id: str,
+        dataset_id: str,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
@@ -63,8 +63,8 @@ class Delete(BaseOperation):
     def submit(
         self,
         pushing_entity_id: str,
-        dataset_id: str,
         product_id: str,
+        dataset_id: str,
     ) -> ResponseDelete:
 
         if not self.files:
@@ -99,8 +99,8 @@ class Delivery(BaseModel):
     def submit(
         self,
         pushing_entity_id: str,
-        dataset_id: str,
         product_id: str,
+        dataset_id: str,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,

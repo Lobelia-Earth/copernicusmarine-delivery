@@ -7,15 +7,11 @@ import yaml
 from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
-    DeleteValidationResult,
     Manifest,
     Operation,
     OperationNames,
     UploadFile,
     UploadOperation,
-    UploadValidationResult,
-    ValidationError,
-    ValidationResult,
 )
 from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
@@ -28,17 +24,22 @@ from pusher.core_functions.constants import (
     NEW_MANIFESTS_PATH,
 )
 from pusher.core_functions.delivery_validator import (
-    delete_files_validation,
     fetch_pushing_entities,
-    upload_files_validation,
+    validate_delete_files,
+    validate_upload_files,
 )
 from pusher.core_functions.domain import (
+    NoSuccessfulUploadsError,
     PutFilesResult,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
 )
-from pusher.core_functions.utils import get_ingestion_bucket_name, megabytes_to_bytes
+from pusher.core_functions.utils import (
+    get_ingestion_bucket_name,
+    human_readable_size,
+    megabytes_to_bytes,
+)
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
@@ -80,60 +81,20 @@ def upload(
     """
 
     logger.debug(
-        f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
+        f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
 
     pushing_entities = fetch_pushing_entities()
-    invalid_delivery_ids_response = validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id, pushing_entities
-    )
-    if invalid_delivery_ids_response:
-        logger.error(
-            "The ids provided for this delivery did not match our records, "
-            f"see: {invalid_delivery_ids_response.reason}"
-        )
-        return (
-            ResponseUpload.create_from_fatal_error(
-                invalid_delivery_ids_response.reason
-            ),
-            None,
-        )
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
-    upload_operation, validation_result = create_and_validate_upload_operation(
-        [Path(file_) for file_ in files]
+    upload_operation = create_and_validate_upload_operation(
+        files,
     )
 
-    if validation_result.duplicate_files:
-        duplicate_files_error_response = (
-            "The following files are duplicated. No manifest will be created.\n"
-            f"{validation_result.duplicate_files}"
-        )
-        logger.error(duplicate_files_error_response)
-        return (
-            ResponseUpload.create_from_fatal_error(duplicate_files_error_response),
-            None,
-        )
-
-    if not validation_result.files_valid:
-        no_valid_files_fatal_error_response = (
-            "No file passed the validation. No manifest will be created."
-        )
-        logger.error(no_valid_files_fatal_error_response)
-        return (
-            ResponseUpload.create_from_fatal_error(no_valid_files_fatal_error_response),
-            None,
-        )
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
-    if not ingestion_bucket_name:
-        return (
-            ResponseUpload.create_from_fatal_error(
-                f"{pushing_entity_id} is not associated with any ingestion bucket."
-            ),
-            None,
-        )
     s3_client = get_s3_ingestion_client(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
@@ -148,17 +109,6 @@ def upload(
         max_concurrent_uploads=max_concurrent_uploads,
     )
 
-    if not put_files_result.successful_files:
-        no_valid_files_fatal_error_response = (
-            "No successful uploads - no data were sent."
-        )
-        logger.error(no_valid_files_fatal_error_response)
-        return (
-            ResponseUpload.create_from_fatal_error(no_valid_files_fatal_error_response),
-            None,
-        )
-    _update_operation_with_put_results(upload_operation, put_files_result)
-
     manifest = _create_and_upload_manifest(
         s3_client,
         pushing_entity_id=pushing_entity_id,
@@ -171,7 +121,6 @@ def upload(
     return (
         ResponseUpload.create(
             delivery_id=manifest.manifest_id,
-            result_validation=validation_result,
             result_upload=put_files_result,
         ),
         manifest,
@@ -188,49 +137,17 @@ def delete(
     Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
     logger.debug(
-        f"Creating release for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
+        f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
     )
     pushing_entities = fetch_pushing_entities()
-    invalid_delivery_ids_response = validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id, pushing_entities
-    )
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
-    delete_operation, validation_result = create_and_validate_delete_operation(files)
-
-    if validation_result.duplicate_files:
-        duplicate_files_error_response = (
-            "The following files are duplicated. No manifest will be created.\n"
-            f"{validation_result.duplicate_files}"
-        )
-        logger.error(duplicate_files_error_response)
-        return (
-            ResponseDelete.create_from_fatal_error(duplicate_files_error_response),
-            None,
-        )
-
-    if invalid_delivery_ids_response:
-        logger.error(
-            "The ids provided for this delivery did not match our records, "
-            f"see: {invalid_delivery_ids_response.reason}"
-        )
-        return (
-            ResponseDelete.create_from_fatal_error(
-                invalid_delivery_ids_response.reason
-            ),
-            None,
-        )
+    delete_operation = create_and_validate_delete_operation(files)
 
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
-    if not ingestion_bucket_name:
-        return (
-            ResponseDelete.create_from_fatal_error(
-                f"{pushing_entity_id} is not associated with any ingestion bucket."
-            ),
-            None,
-        )
     s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
 
     manifest = _create_and_upload_manifest(
@@ -245,13 +162,10 @@ def delete(
 
 def create_and_validate_delete_operation(
     files: list[str],
-) -> tuple[DeleteOperation, DeleteValidationResult]:
-    validation_result = delete_files_validation(files)
-    return (
-        DeleteOperation(
-            files=[DeleteFile(key_suffix=file) for file in files],
-        ),
-        validation_result,
+) -> DeleteOperation:
+    validate_delete_files(files)
+    return DeleteOperation(
+        files=[DeleteFile(key_suffix=file) for file in files],
     )
 
 
@@ -266,62 +180,25 @@ def delivery(
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
     pushing_entities = fetch_pushing_entities()
-    invalid_delivery_ids_response = validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id, pushing_entities
-    )
-    if invalid_delivery_ids_response:
-        logger.error(
-            "The ids provided for this delivery did not match our records, "
-            f"see: {invalid_delivery_ids_response.reason}"
-        )
-        return (
-            ResponseDelivery.create_from_fatal_error(
-                invalid_delivery_ids_response.reason
-            ),
-            None,
-        )
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
     manifest_id = create_manifest_id(product_id)
     all_operations: list[Operation] = []
-    validation_results: list[ValidationResult] = []
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
-    if not ingestion_bucket_name:
-        return (
-            ResponseDelivery.create_from_fatal_error(
-                f"{pushing_entity_id} is not associated with any ingestion bucket."
-            ),
-            None,
-        )
     s3_client = get_s3_ingestion_client(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
     for operation_name, sources in operations:
         if operation_name == "delete":
-            operation, validation_result = create_and_validate_delete_operation(sources)
+            operation = create_and_validate_delete_operation(sources)
             all_operations.append(operation)
-            validation_results.append(validation_result)
         elif operation_name == "upload":
-            operation, validation_result = create_and_validate_upload_operation(
-                [Path(file_) for file_ in sources]
-            )
+            operation = create_and_validate_upload_operation(sources)
             all_operations.append(operation)
-            validation_results.append(validation_result)
-    if validation_errors := _get_validation_errors(validation_results):
-        # TODO: this needs to be consistent accross the toolbox.
-        # For now, any validation error will cancel the delivery.
-        logger.error(
-            f"Some files failed validation: {validation_errors}. Delivery cancelled. No manifest will be created."
-        )
-        return (
-            ResponseDelivery.create_from_fatal_error(
-                fatal_error=f"Some files failed validation: {validation_errors}. Delivery cancelled. No manifest will be created."
-            ),
-            None,
-        )
     all_responses: list[ResponseUpload | ResponseDelete] = []
-    for operation, validation_result in zip(all_operations, validation_results):
+    for operation in all_operations:
         if isinstance(operation, UploadOperation):
             put_files_result = _put_files_to_ingestion_system(
                 s3_client,
@@ -332,11 +209,9 @@ def delivery(
                 chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
             )
-            _update_operation_with_put_results(operation, put_files_result)
             all_responses.append(
                 ResponseUpload.create(
                     delivery_id=manifest_id,
-                    result_validation=validation_result,  # type: ignore
                     result_upload=put_files_result,
                 )
             )
@@ -364,41 +239,21 @@ def delivery(
 
 
 def create_and_validate_upload_operation(
-    files: list[Path],
-) -> tuple[UploadOperation, UploadValidationResult]:
-    validation_result = upload_files_validation(files)
-    return (
-        UploadOperation(
-            files=[
-                UploadFile(
-                    key_suffix=str(file),
-                    file_size_mb=os.path.getsize(file) // (1024 * 1024),
-                    checksum=None,  # ETag will be filled in after upload
-                    upload_duration_seconds=None,  # will be filled in after upload
-                )
-                for file in validation_result.files_valid
-            ],
-            upload_duration_seconds=None,  # will be filled in after upload in OPDV
-        ),
-        validation_result,
+    files: list[str],
+) -> UploadOperation:
+    validate_upload_files(files)
+    return UploadOperation(
+        files=[
+            UploadFile(
+                key_suffix=file,
+                file_size_mb=os.path.getsize(file) // (1024 * 1024),
+                checksum=None,  # ETag will be filled in after upload
+                upload_duration_seconds=None,  # will be filled in after upload
+            )
+            for file in files
+        ],
+        upload_duration_seconds=None,  # will be filled in after upload in OPDV
     )
-
-
-def _get_validation_errors(
-    validation_results: list[ValidationResult],
-) -> list[ValidationError]:
-    errors = [
-        ValidationError(reason="duplicates", files=validation_result.duplicate_files)
-        for validation_result in validation_results
-        if validation_result.duplicate_files
-    ]
-    errors += [
-        ValidationError(reason="invalid", files=validation_result.files_invalid)
-        for validation_result in validation_results
-        if isinstance(validation_result, UploadValidationResult)
-        and validation_result.files_invalid
-    ]
-    return errors
 
 
 def _create_and_upload_manifest(
@@ -450,12 +305,23 @@ def _put_files_to_ingestion_system(
         max_concurrent_uploads,
     )
     elapsed = time.time() - top
+    if not put_files_result.successful_files:
+        raise NoSuccessfulUploadsError(put_files_result.errored_files)
+
+    _update_operation_with_put_results(operation, put_files_result)
+
+    total_size = operation.total_size()
+    logger.info(
+        f"Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
+        f"for a total size of {human_readable_size(total_size)}."
+    )
     operation.upload_duration_seconds = elapsed
     step_status = "success"
     if not put_files_result.successful_files:
         step_status = "error"
     elif put_files_result.errored_files and put_files_result.successful_files:
         step_status = "partial_error"
+
     operation.add_changelog_entry(
         step="push",
         step_status=step_status,
@@ -487,8 +353,8 @@ def _update_operation_with_put_results(
             manifest_file.checksum = successful_s3_file.e_tag
             manifest_file.upload_duration_seconds = successful_s3_file.upload_time
         elif manifest_file.key_suffix in errored_files_dict:
-            logger.error(
-                f"File {manifest_file.key_suffix} failed to upload: {errored_files_dict[manifest_file.key_suffix].reason}"
+            logger.debug(
+                f"Removing file {manifest_file.key_suffix} from upload operation."
             )
             index_files_to_remove.append(i)
     for index in reversed(index_files_to_remove):
@@ -505,10 +371,6 @@ def get_manifest(
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
-    if not ingestion_bucket_name:
-        raise ValueError(
-            f"{pushing_entity_id} is not associated with any ingestion bucket."
-        )
     s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
     manifest_new = _get_manifest(
         s3_client, NEW_MANIFESTS_PATH.format(manifest_id=delivery_id)

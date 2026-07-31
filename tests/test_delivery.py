@@ -1,8 +1,10 @@
 import random
 
+import pytest
 from click.testing import CliRunner
 from freezegun import freeze_time
 
+from pusher import InvalidFilesError
 from pusher.command_line_interface import cli
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -42,22 +44,21 @@ def test_delivery_python_interface(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_early_exit_with_validation_error(
-    snapshot, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    glo_mercator_bucket, set_env, skip_delivery_ids_validation
 ):
     random.seed(42)
     operations = [("delete", MOCK_FILES), ("upload", MOCK_FILES + ["extra_file.txt"])]
-
-    response, manifest = delivery(
-        operations=operations,  # type: ignore
-        pushing_entity_id=PUSHING_ENTITY_ID,
-        dataset_id="dataset1",
-        product_id="product1",
-        max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
-        chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
-        chunk_concurrency=CHUNK_CONCURRENCY,
-    )
-    assert response.model_dump_json(indent=2) == snapshot
-    assert manifest is None
+    with pytest.raises(InvalidFilesError) as exc_info:
+        delivery(
+            operations=operations,  # type: ignore
+            pushing_entity_id=PUSHING_ENTITY_ID,
+            dataset_id="dataset1",
+            product_id="product1",
+            max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
+            chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+            chunk_concurrency=CHUNK_CONCURRENCY,
+        )
+    assert "Found 1 invalid files." in str(exc_info.value)
 
 
 @freeze_time("2012-01-14 12:00:01")

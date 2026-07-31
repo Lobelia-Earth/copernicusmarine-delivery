@@ -222,7 +222,8 @@ class S3Client:
 
         except Exception as e:
             logger.error(
-                f"Something went wrong uploading: {file.name}. Skipping this file. Error: {e}"
+                f"Something went wrong uploading: {file.name}. "
+                f"Skipping this file. Error: {_extract_error_message(e)}"
             )
             return ErrorFile(
                 local_path=file,
@@ -238,6 +239,7 @@ class S3Client:
         total = len(s3_key_local_file_mapping)
         success_results = []
         error_results = []
+        logger.info(f"Starting to upload {len(s3_key_local_file_mapping)} files ...")
         with ThreadPoolExecutor(max_workers=max_concurrent_uploads) as executor:
             futures = {
                 executor.submit(
@@ -253,9 +255,12 @@ class S3Client:
                 result = future.result()
                 if isinstance(result, S3File):
                     success_results.append(result)
-                    logger.info(f"Uploaded file {i + 1}/{total}")
+                    logger.info(
+                        f"Uploaded [{i + 1}/{total}] file {result.local_path.name}"
+                    )
                 else:
                     error_results.append(result)
+
         return PutFilesResult(
             successful_files=success_results, errored_files=error_results
         )
