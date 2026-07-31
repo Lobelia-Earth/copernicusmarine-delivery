@@ -97,7 +97,7 @@ def test_create_manifest(tmp_path):
                 files=[
                     UploadFile(
                         key_suffix=str(f),
-                        file_size=43,
+                        file_size_mb=43,
                         checksum="abc-1",
                         upload_duration_seconds=1.23,
                     )

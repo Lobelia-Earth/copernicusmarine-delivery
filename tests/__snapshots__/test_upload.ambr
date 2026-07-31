@@ -37,7 +37,7 @@
           dict({
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
             'error': None,
-            'file_size': 0,
+            'file_size_mb': 0,
             'key_suffix': 'tests/resources/file1.txt',
             'status': 'todo',
             'status_timestamp': None,
@@ -46,7 +46,7 @@
           dict({
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
             'error': None,
-            'file_size': 0,
+            'file_size_mb': 0,
             'key_suffix': 'tests/resources/file2.txt',
             'status': 'todo',
             'status_timestamp': None,
@@ -99,7 +99,7 @@
             "status_timestamp": null,
             "error": null,
             "status": "todo",
-            "file_size": 0,
+            "file_size_mb": 0,
             "checksum": "mock-etag",
             "upload_duration_seconds": 0.0
           }
@@ -161,7 +161,7 @@
             "status_timestamp": null,
             "error": null,
             "status": "todo",
-            "file_size": 0,
+            "file_size_mb": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
             "upload_duration_seconds": 0.0
           },
@@ -170,7 +170,7 @@
             "status_timestamp": null,
             "error": null,
             "status": "todo",
-            "file_size": 0,
+            "file_size_mb": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
             "upload_duration_seconds": 0.0
           }

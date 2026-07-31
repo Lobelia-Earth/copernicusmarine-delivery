@@ -372,7 +372,7 @@ def create_and_validate_upload_operation(
             files=[
                 UploadFile(
                     key_suffix=str(file),
-                    file_size=os.path.getsize(file) // (1024 * 1024),
+                    file_size_mb=os.path.getsize(file) // (1024 * 1024),
                     checksum=None,  # ETag will be filled in after upload
                     upload_duration_seconds=None,  # will be filled in after upload
                 )

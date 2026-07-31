@@ -124,7 +124,7 @@ class UploadFile(ManifestFile):
     #: error: The file failed to be uploaded.
     status: Literal["todo", "validated", "published", "error"] = "todo"
     #: Estimation of the size of the file in MB.
-    file_size: int | None
+    file_size_mb: int | None
     #: checksum of the file to be uploaded.
     checksum: str | None
     #: Upload time from the users machine to the OPDV system in seconds.
