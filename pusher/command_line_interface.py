@@ -297,9 +297,6 @@ def saving_delivery_file(manifest: Manifest) -> None:
         output_file.write(
             manifest.model_dump_json(
                 indent=2,
-                exclude_none=True,
-                exclude_unset=True,
-                exclude_defaults=True,
             )
         )
 

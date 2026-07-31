@@ -125,11 +125,11 @@ class UploadFile(ManifestFile):
     #: error: The file failed to be uploaded.
     status: Literal["todo", "validated", "published", "error"] = "todo"
     #: Estimation of the size of the file in MB.
-    file_size: int | None
+    file_size_mb: int | None
     #: checksum of the file to be uploaded.
     checksum: str | None
     #: Upload time from the users machine to the OPDV system in seconds.
-    upload_time: float | None
+    upload_duration_seconds: float | None
 
     def set_success_status(self) -> None:
         self.status = "published"
@@ -215,7 +215,7 @@ class Operation(BaseModel, Generic[F]):
 class UploadOperation(Operation[UploadFile]):
     operation: OperationNames = "upload"
     #: Upload time from the users machine to the OPDV system in seconds for the whole operation.
-    upload_time: float | None
+    upload_duration_seconds: float | None
 
     def total_size(self) -> int:
         """Returns the total size of the files in the operation in MB."""
