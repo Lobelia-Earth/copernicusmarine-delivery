@@ -8,21 +8,43 @@
   dict({
     'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',
+    'error': None,
     'manifest_id': '20120114T120001-product1-2824',
     'operations': list([
       dict({
-        'files': list([
+        'changelog': list([
           dict({
-            'key_suffix': 'tests/resources/file1.txt',
-          }),
-          dict({
-            'key_suffix': 'tests/resources/file2.txt',
+            'comment': None,
+            'error': None,
+            'step': 'creation',
+            'step_status': 'success',
+            'timestamp': '2012-01-14T12:00:01Z',
           }),
         ]),
+        'error': None,
+        'files': list([
+          dict({
+            'error': None,
+            'key_suffix': 'tests/resources/file1.txt',
+            'status': 'todo',
+            'status_timestamp': None,
+          }),
+          dict({
+            'error': None,
+            'key_suffix': 'tests/resources/file2.txt',
+            'status': 'todo',
+            'status_timestamp': None,
+          }),
+        ]),
+        'operation': 'delete',
+        'status': 'todo',
+        'status_timestamp': None,
       }),
     ]),
     'product_id': 'product1',
     'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
+    'status': 'todo',
+    'status_timestamp': None,
   })
 # ---
 # name: test_delete_python_interface

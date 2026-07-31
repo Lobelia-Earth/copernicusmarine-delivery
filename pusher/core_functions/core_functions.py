@@ -372,13 +372,13 @@ def create_and_validate_upload_operation(
             files=[
                 UploadFile(
                     key_suffix=str(file),
-                    file_size=os.path.getsize(file) // (1024 * 1024),
+                    file_size_mb=os.path.getsize(file) // (1024 * 1024),
                     checksum=None,  # ETag will be filled in after upload
-                    upload_time=None,  # will be filled in after upload
+                    upload_duration_seconds=None,  # will be filled in after upload
                 )
                 for file in validation_result.files_valid
             ],
-            upload_time=None,  # will be filled in after upload in OPDV
+            upload_duration_seconds=None,  # will be filled in after upload in OPDV
         ),
         validation_result,
     )
@@ -450,7 +450,7 @@ def _put_files_to_ingestion_system(
         max_concurrent_uploads,
     )
     elapsed = time.time() - top
-    operation.upload_time = elapsed
+    operation.upload_duration_seconds = elapsed
     step_status = "success"
     if not put_files_result.successful_files:
         step_status = "error"
@@ -485,7 +485,7 @@ def _update_operation_with_put_results(
         if manifest_file.key_suffix in successful_files_dict:
             successful_s3_file = successful_files_dict[manifest_file.key_suffix]
             manifest_file.checksum = successful_s3_file.e_tag
-            manifest_file.upload_time = successful_s3_file.upload_time
+            manifest_file.upload_duration_seconds = successful_s3_file.upload_time
         elif manifest_file.key_suffix in errored_files_dict:
             logger.error(
                 f"File {manifest_file.key_suffix} failed to upload: {errored_files_dict[manifest_file.key_suffix].reason}"
