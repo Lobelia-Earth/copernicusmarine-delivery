@@ -3,8 +3,11 @@ import yaml
 
 from delivery_common.domain import PushingEntities
 from delivery_common.validation import validate_delivery_ids
-from pusher import InvalidDeliveryIdsError
-from pusher.core_functions.delivery_validator import duplicate_files
+from pusher import InvalidDeliveryIdsError, InvalidFilesError
+from pusher.core_functions.delivery_validator import (
+    validate_delete_files,
+    validate_upload_files,
+)
 from pusher.s3_client import S3Client
 
 _PUSHING_ENTITIES_YAML = yaml.dump(
@@ -77,11 +80,21 @@ def test_invalid_dataset_id():
     assert "nonexistent-dataset" in str(exc_info.value)
 
 
-def test_duplicate_files():
-    result = duplicate_files(["test.txt", "test.txt"])
-    assert result is not None
-    assert result == ["test.txt"]
+DUPLICATED_FILES = ["file1.txt", "file2.txt", "file1.txt"]
+MORE_DUPLICATED_FILES = ["file2.txt"] + [f"file1.txt" for i in range(10)]
 
-    result = duplicate_files(["test.txt", "test.txt", "test1.txt", "test2.txt"])
-    assert result is not None
-    assert result == ["test.txt"]
+
+@pytest.mark.parametrize("file_list", [DUPLICATED_FILES, MORE_DUPLICATED_FILES])
+def test_duplicate_files_upload(file_list, caplog):
+    with caplog.at_level("ERROR"):
+        with pytest.raises(InvalidFilesError):
+            validate_upload_files(file_list)
+        assert caplog.text.count("Duplicate file path") == 1
+
+
+@pytest.mark.parametrize("file_list", [DUPLICATED_FILES, MORE_DUPLICATED_FILES])
+def test_duplicate_files_delete(file_list, caplog):
+    with caplog.at_level("ERROR"):
+        with pytest.raises(InvalidFilesError):
+            validate_delete_files(file_list)
+        assert caplog.text.count("Duplicate file path") == 1

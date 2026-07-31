@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from delivery_common.domain import (
     ErrorResponseFile,
+    InvalidFile,
     OperationNames,
     S3Path,
 )
@@ -115,7 +116,7 @@ class DeliveryFile(BaseModel):
 ######
 
 
-class UploadError(Exception):
+class NoSuccessfulUploadsError(Exception):
     """
     Raised when an error occurs during the upload process.
     Will list the files and their errors that failed to upload.
@@ -125,7 +126,7 @@ class UploadError(Exception):
         for file in error_files:
             logger.error(f"Invalid file: {file}")
         super().__init__(
-            f"All uploads failed. Errored files: {[file_.local_path for file_ in error_files]}"
+            f"All uploads failed. Errored files: {[file.local_path for file in error_files]}"
         )
 
 
@@ -138,4 +139,18 @@ class NoIngestionBucketError(Exception):
         super().__init__(
             f"No ingestion bucket found for pushing entity: {pushing_entity_id} "
             f"Please contact User Support."
+        )
+
+
+class InvalidFilesError(Exception):
+    """
+    Raised when an error occurs during the validation of files.
+    Will list the files and their errors that failed validation.
+    """
+
+    def __init__(self, invalid_files: list[InvalidFile]):
+        for file in invalid_files:
+            logger.error(f"Invalid file: {file}")
+        super().__init__(
+            f"Found {len(invalid_files)} invalid files. See logs for details."
         )

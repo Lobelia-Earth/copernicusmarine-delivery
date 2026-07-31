@@ -219,7 +219,7 @@ class UploadOperation(Operation[UploadFile]):
 
     def total_size(self) -> int:
         """Returns the total size of the files in the operation in MB."""
-        return sum(f.file_size or 0 for f in self.files)
+        return sum(f.file_size_mb or 0 for f in self.files)
 
 
 class DeleteOperation(Operation[DeleteFile]):

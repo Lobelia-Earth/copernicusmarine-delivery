@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 from freezegun import freeze_time
 
+from pusher import InvalidFilesError
 from pusher.command_line_interface import cli
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -47,7 +48,7 @@ def test_delivery_early_exit_with_validation_error(
 ):
     random.seed(42)
     operations = [("delete", MOCK_FILES), ("upload", MOCK_FILES + ["extra_file.txt"])]
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(InvalidFilesError) as exc_info:
         delivery(
             operations=operations,  # type: ignore
             pushing_entity_id=PUSHING_ENTITY_ID,

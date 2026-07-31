@@ -1,12 +1,9 @@
 from collections import Counter
 from pathlib import Path
 
-from delivery_common.domain import (
-    InvalidFile,
-    PushingEntities,
-    T,
-)
+from delivery_common.domain import InvalidFile, PushingEntities, T
 from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
+from pusher.core_functions.domain import InvalidFilesError
 from pusher.logger import logger
 from pusher.s3_client import get_s3_metadata_client
 
@@ -30,12 +27,20 @@ def duplicate_files(files: list[T]) -> list[T]:
 
 
 def validate_delete_files(files: list[str]) -> None:
-    pass
+    invalid_files = [
+        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
+        for file_ in duplicate_files(files)
+    ]
+    if invalid_files:
+        raise InvalidFilesError(
+            invalid_files=invalid_files,
+        )
 
 
-def validate_upload_files(files: list[Path]) -> None:
+def validate_upload_files(files: list[str]) -> None:
     invalid_files = []
-    for file in files:
+    for file_str in files:
+        file = Path(file_str)
         if not file_exists(file):
             invalid_files.append(
                 InvalidFile(local_path=file, reason="File path does not exist.")
@@ -57,12 +62,13 @@ def validate_upload_files(files: list[Path]) -> None:
             #     )
             # )
             # continue
-
-    for invalid_file in invalid_files:
-        logger.error(f"Invalid file: {invalid_file}")
+    invalid_files += [
+        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
+        for file_ in duplicate_files(files)
+    ]
     if invalid_files:
-        raise ValueError(
-            f"Found {len(invalid_files)} invalid files. See logs for details."
+        raise InvalidFilesError(
+            invalid_files=invalid_files,
         )
 
 

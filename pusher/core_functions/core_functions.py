@@ -29,11 +29,11 @@ from pusher.core_functions.delivery_validator import (
     validate_upload_files,
 )
 from pusher.core_functions.domain import (
+    NoSuccessfulUploadsError,
     PutFilesResult,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
-    UploadError,
 )
 from pusher.core_functions.utils import (
     get_ingestion_bucket_name,
@@ -89,7 +89,7 @@ def upload(
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
     upload_operation = create_and_validate_upload_operation(
-        [Path(file_) for file_ in files]
+        files,
     )
 
     ingestion_bucket_name = get_ingestion_bucket_name(
@@ -195,9 +195,7 @@ def delivery(
             operation = create_and_validate_delete_operation(sources)
             all_operations.append(operation)
         elif operation_name == "upload":
-            operation = create_and_validate_upload_operation(
-                [Path(file_) for file_ in sources]
-            )
+            operation = create_and_validate_upload_operation(sources)
             all_operations.append(operation)
     all_responses: list[ResponseUpload | ResponseDelete] = []
     for operation in all_operations:
@@ -241,13 +239,13 @@ def delivery(
 
 
 def create_and_validate_upload_operation(
-    files: list[Path],
+    files: list[str],
 ) -> UploadOperation:
     validate_upload_files(files)
     return UploadOperation(
         files=[
             UploadFile(
-                key_suffix=str(file),
+                key_suffix=file,
                 file_size_mb=os.path.getsize(file) // (1024 * 1024),
                 checksum=None,  # ETag will be filled in after upload
                 upload_duration_seconds=None,  # will be filled in after upload
@@ -308,7 +306,7 @@ def _put_files_to_ingestion_system(
     )
     elapsed = time.time() - top
     if not put_files_result.successful_files:
-        raise UploadError(put_files_result.errored_files)
+        raise NoSuccessfulUploadsError(put_files_result.errored_files)
 
     _update_operation_with_put_results(operation, put_files_result)
 
