@@ -12,27 +12,56 @@
   dict({
     'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',
+    'error': None,
     'manifest_id': '20120114T120001-product1-2824',
     'operations': list([
       dict({
+        'changelog': list([
+          dict({
+            'comment': None,
+            'error': None,
+            'step': 'creation',
+            'step_status': 'success',
+            'timestamp': '2012-01-14T12:00:01Z',
+          }),
+          dict({
+            'comment': 'Upload operation pushed files in 0.00 seconds with 2 successful files and 0 errored files.',
+            'error': None,
+            'step': 'push',
+            'step_status': 'success',
+            'timestamp': '2012-01-14T12:00:01Z',
+          }),
+        ]),
+        'error': None,
         'files': list([
           dict({
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
+            'error': None,
             'file_size': 0,
             'key_suffix': 'tests/resources/file1.txt',
-            'upload_time': 0.0,
+            'status': 'todo',
+            'status_timestamp': None,
+            'upload_duration_seconds': 0.0,
           }),
           dict({
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
+            'error': None,
             'file_size': 0,
             'key_suffix': 'tests/resources/file2.txt',
-            'upload_time': 0.0,
+            'status': 'todo',
+            'status_timestamp': None,
+            'upload_duration_seconds': 0.0,
           }),
         ]),
+        'operation': 'upload',
+        'status': 'todo',
+        'status_timestamp': None,
       }),
     ]),
     'product_id': 'product1',
     'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
+    'status': 'todo',
+    'status_timestamp': None,
   })
 # ---
 # name: test_upload_one_file_cannot_be_uploaded
@@ -72,7 +101,7 @@
             "status": "todo",
             "file_size": 0,
             "checksum": "mock-etag",
-            "upload_time": 0.0
+            "upload_duration_seconds": 0.0
           }
         ]
       }
@@ -134,7 +163,7 @@
             "status": "todo",
             "file_size": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
-            "upload_time": 0.0
+            "upload_duration_seconds": 0.0
           },
           {
             "key_suffix": "tests/resources/file2.txt",
@@ -143,7 +172,7 @@
             "status": "todo",
             "file_size": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
-            "upload_time": 0.0
+            "upload_duration_seconds": 0.0
           }
         ]
       }
