@@ -332,21 +332,21 @@ def saving_delivery_file(manifest: Manifest) -> None:
 
 
 def print_dry_run_summary(manifest: Manifest) -> None:
-    print("\n[DRY RUN] The following operations would be submitted:")
+    click.echo("\n[DRY RUN] The following operations would be submitted:")
     uploads, deletes = 0, 0
     for operation in manifest.operations:
         if operation.operation == "upload":
             uploads += 1
-            print("\n")
+            click.echo("\n")
             for file in operation.files:
-                print(f"\t[UPLOAD] {file.key_suffix} -> {file.key_suffix}")
+                click.echo(f"\t[UPLOAD] {file.key_suffix} -> {file.key_suffix}")
         elif operation.operation == "delete":
-            print("\n")
+            click.echo("\n")
             deletes += 1
             for file in operation.files:
-                print(f"\t[DELETE] {file.key_suffix}")
+                click.echo(f"\t[DELETE] {file.key_suffix}")
 
-    print(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
+    click.echo(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
 
 
 @cli.command()
