@@ -73,6 +73,7 @@ def upload(
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
+    dry_run: bool,
 ) -> tuple[ResponseUpload, Manifest | None]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
@@ -99,15 +100,18 @@ def upload(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
     manifest_id = create_manifest_id(product_id)
-    put_files_result = _put_files_to_ingestion_system(
-        s3_client,
-        manifest_id=manifest_id,
-        product_id=product_id,
-        dataset_id=dataset_id,
-        operation=upload_operation,
-        chunk_size=chunk_size_bytes,
-        max_concurrent_uploads=max_concurrent_uploads,
-    )
+    if dry_run:
+        put_files_result = PutFilesResult()
+    else:
+        put_files_result = _put_files_to_ingestion_system(
+            s3_client,
+            manifest_id=manifest_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            operation=upload_operation,
+            chunk_size=chunk_size_bytes,
+            max_concurrent_uploads=max_concurrent_uploads,
+        )
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -116,6 +120,7 @@ def upload(
         dataset_id=dataset_id,
         operations=[upload_operation],
         manifest_id=manifest_id,
+        dry_run=dry_run,
     )
 
     return (
@@ -132,6 +137,7 @@ def delete(
     product_id: str,
     dataset_id: str,
     files: list[str],
+    dry_run: bool,
 ) -> tuple[ResponseDelete, Manifest | None]:
     """
     Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
@@ -156,6 +162,7 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[delete_operation],
+        dry_run=dry_run,
     )
     return ResponseDelete.create(delivery_id=manifest.manifest_id), manifest
 
@@ -177,6 +184,7 @@ def delivery(
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
+    dry_run: bool,
 ) -> tuple[ResponseDelivery, Manifest | None]:
 
     pushing_entities = fetch_pushing_entities()
@@ -198,29 +206,30 @@ def delivery(
             operation = create_and_validate_upload_operation(sources)
             all_operations.append(operation)
     all_responses: list[ResponseUpload | ResponseDelete] = []
-    for operation in all_operations:
-        if isinstance(operation, UploadOperation):
-            put_files_result = _put_files_to_ingestion_system(
-                s3_client,
-                manifest_id=manifest_id,
-                product_id=product_id,
-                dataset_id=dataset_id,
-                operation=operation,
-                chunk_size=chunk_size_bytes,
-                max_concurrent_uploads=max_concurrent_uploads,
-            )
-            all_responses.append(
-                ResponseUpload.create(
-                    delivery_id=manifest_id,
-                    result_upload=put_files_result,
+    if not dry_run:
+        for operation in all_operations:
+            if isinstance(operation, UploadOperation):
+                put_files_result = _put_files_to_ingestion_system(
+                    s3_client,
+                    manifest_id=manifest_id,
+                    product_id=product_id,
+                    dataset_id=dataset_id,
+                    operation=operation,
+                    chunk_size=chunk_size_bytes,
+                    max_concurrent_uploads=max_concurrent_uploads,
                 )
-            )
-        elif isinstance(operation, DeleteOperation):
-            operation.add_changelog_entry(
-                step="push",
-                step_status="success",
-            )
-            all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
+                all_responses.append(
+                    ResponseUpload.create(
+                        delivery_id=manifest_id,
+                        result_upload=put_files_result,
+                    )
+                )
+            elif isinstance(operation, DeleteOperation):
+                operation.add_changelog_entry(
+                    step="push",
+                    step_status="success",
+                )
+                all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -228,6 +237,7 @@ def delivery(
         product_id,
         dataset_id,
         all_operations,
+        dry_run,
         manifest_id=manifest_id,
     )
     return (
@@ -262,6 +272,7 @@ def _create_and_upload_manifest(
     product_id: str,
     dataset_id: str,
     operations: list[Operation],
+    dry_run: bool,
     manifest_id: str | None = None,
 ) -> Manifest:
     if not manifest_id:
@@ -273,13 +284,14 @@ def _create_and_upload_manifest(
         operations=operations,
         manifest_id=manifest_id,
     )
-    manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
-    logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
-    s3_client.upload_fileobj(
-        key=manifest_bucket_path,
-        file=manifest.model_dump_json().encode(),
-        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
-    )
+    if not dry_run:
+        manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
+        logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
+        s3_client.upload_fileobj(
+            key=manifest_bucket_path,
+            file=manifest.model_dump_json().encode(),
+            chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        )
     return manifest
 
 

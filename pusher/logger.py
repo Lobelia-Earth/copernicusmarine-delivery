@@ -10,7 +10,7 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-if os.getenv("PYTHON_LOG_DEBUG"):
+if os.getenv("PYTHON_LOG_DEBUG", "").lower() in ("1", "true", "yes"):
     level = logging.DEBUG
 else:
     level = logging.INFO

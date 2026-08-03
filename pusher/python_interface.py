@@ -27,6 +27,7 @@ class Upload(BaseOperation):
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `files` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
+    :param dry_run: Validate the upload and return response without performing any actual operation in S3.
     """
 
     def __init__(self, files: list[str]):
@@ -40,6 +41,7 @@ class Upload(BaseOperation):
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
+        dry_run: bool = False,
     ) -> ResponseUpload:
 
         if not self.files:
@@ -52,6 +54,7 @@ class Upload(BaseOperation):
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
+            dry_run=dry_run,
         )
         return response
 
@@ -65,6 +68,7 @@ class Delete(BaseOperation):
         pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
+        dry_run: bool = False,
     ) -> ResponseDelete:
 
         if not self.files:
@@ -74,6 +78,7 @@ class Delete(BaseOperation):
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
+            dry_run=dry_run,
         )
         return response
 
@@ -89,6 +94,7 @@ class Delivery(BaseModel):
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
+    :param dry_run: Validate the delivery and return response without performing any actual operation in S3.
     """  # noqa
 
     operations: list[Upload | Delete] = Field(default_factory=list)
@@ -104,6 +110,7 @@ class Delivery(BaseModel):
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
+        dry_run: bool = False,
     ) -> ResponseDelivery:
 
         if not self.operations:
@@ -116,6 +123,7 @@ class Delivery(BaseModel):
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
+            dry_run=dry_run,
         )
         return response
 
@@ -148,6 +156,7 @@ def upload(
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
+    dry_run: bool = False,
 ) -> ResponseUpload:
     """
     LEGACY: keeping until the result of the internal testing.
@@ -156,6 +165,7 @@ def upload(
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
+    :param dry_run: Validate the delivery and return response without performing any actual operation in S3.
     """
     if not sources:
         return ResponseUpload(fatal_error="No files added to upload.")
@@ -167,6 +177,7 @@ def upload(
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
     )
     return response
 
@@ -176,6 +187,7 @@ def delete(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
+    dry_run: bool = False,
 ) -> ResponseDelete:
     """
     LEGACY: keeping until the result of the internal testing.
@@ -189,6 +201,7 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         files=sources,
+        dry_run=dry_run,
     )
     return response
 
@@ -201,6 +214,7 @@ def delivery(
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
+    dry_run: bool = False,
 ) -> ResponseDelivery:
     """
     LEGACY: keeping until the result of the internal testing.
@@ -214,6 +228,7 @@ def delivery(
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
+    :param dry_run: Validate the delivery and return response without performing any actual operation in S3.
     """  # noqa
 
     if not operations:
@@ -237,5 +252,6 @@ def delivery(
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
     )
     return response

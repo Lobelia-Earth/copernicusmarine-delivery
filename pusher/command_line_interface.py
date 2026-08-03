@@ -130,6 +130,11 @@ def cli(max_content_width=200) -> None:
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate the delivery and print out the expected operations.",
+)
 @log_exception_and_exit
 def delivery(
     file: Path,
@@ -140,6 +145,7 @@ def delivery(
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
+    dry_run: bool = False,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
     with open(file) as f:
@@ -156,15 +162,19 @@ def delivery(
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
     )
-    click.echo(
-        response_delivery.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
+    if dry_run and manifest:
+        print_dry_run_summary(manifest)
+    else:
+        click.echo(
+            response_delivery.model_dump_json(
+                indent=2,
+                exclude_none=True,
+                exclude_unset=True,
+                exclude_defaults=True,
+            )
         )
-    )
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -198,6 +208,11 @@ def delivery(
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate the upload and print out the expected operations.",
+)
 @log_exception_and_exit
 def upload(
     source: list[str],
@@ -208,6 +223,7 @@ def upload(
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
+    dry_run: bool = False,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -230,15 +246,19 @@ def upload(
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
     )
-    click.echo(
-        response.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
+    if dry_run and manifest:
+        print_dry_run_summary(manifest)
+    else:
+        click.echo(
+            response.model_dump_json(
+                indent=2,
+                exclude_none=True,
+                exclude_unset=True,
+                exclude_defaults=True,
+            )
         )
-    )
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -251,6 +271,11 @@ def upload(
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
 @shared_options
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate the delivery and print out the expected operations.",
+)
 @log_exception_and_exit
 def delete(
     source: list[str],
@@ -258,6 +283,7 @@ def delete(
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
+    dry_run: bool = False,
 ) -> None:
     """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
@@ -277,15 +303,19 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
+        dry_run=dry_run,
     )
-    click.echo(
-        response.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
+    if dry_run and manifest:
+        print_dry_run_summary(manifest)
+    else:
+        click.echo(
+            response.model_dump_json(
+                indent=2,
+                exclude_none=True,
+                exclude_unset=True,
+                exclude_defaults=True,
+            )
         )
-    )
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -299,6 +329,24 @@ def saving_delivery_file(manifest: Manifest) -> None:
                 indent=2,
             )
         )
+
+
+def print_dry_run_summary(manifest: Manifest) -> None:
+    print("\n[DRY RUN] The following operations would be submitted:")
+    uploads, deletes = 0, 0
+    for operation in manifest.operations:
+        if operation.operation == "upload":
+            uploads += 1
+            print("\n")
+            for file in operation.files:
+                print(f"\t[UPLOAD] {file.key_suffix} -> {file.key_suffix}")
+        elif operation.operation == "delete":
+            print("\n")
+            deletes += 1
+            for file in operation.files:
+                print(f"\t[DELETE] {file.key_suffix}")
+
+    print(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
 
 
 @cli.command()

@@ -49,6 +49,7 @@ def test_upload_python_interface(
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_concurrency=CHUNK_CONCURRENCY,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        dry_run=False,
     )
     result = response.model_dump(exclude_none=True)
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
@@ -164,6 +165,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
+            dry_run=False,
         )
     assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
         exc_info.value
@@ -189,6 +191,7 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
+        dry_run=False,
     )
 
     assert response.fatal_error is None

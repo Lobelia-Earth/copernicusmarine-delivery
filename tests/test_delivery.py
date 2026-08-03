@@ -36,6 +36,7 @@ def test_delivery_python_interface(
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
+        dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
     assert manifest is not None
@@ -57,6 +58,7 @@ def test_delivery_early_exit_with_validation_error(
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
+            dry_run=False,
         )
     assert "Found 1 invalid files." in str(exc_info.value)
 

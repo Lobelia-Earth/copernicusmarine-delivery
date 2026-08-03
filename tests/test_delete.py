@@ -39,6 +39,7 @@ def test_delete_python_interface(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
     assert manifest is not None
@@ -139,6 +140,7 @@ def test_delete_raises_on_invalid_delivery_ids(monkeypatch):
             files=MOCK_FILES,
             dataset_id="dataset1",
             product_id="product1",
+            dry_run=False,
         )
     assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
         exc_info.value
