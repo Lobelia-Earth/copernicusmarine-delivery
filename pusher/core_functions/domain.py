@@ -3,6 +3,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, field_validator
 
 from delivery_common.domain import (
+    DeleteFile,
     ErrorResponseFile,
     InvalidFile,
     OperationNames,
@@ -37,7 +38,7 @@ class ResponseUpload(BaseResponse):
     """Metadata returned when using :func:`~pusher.upload`"""
 
     #: Successful uploaded file names
-    files_uploaded: list[Path] = Field(default_factory=list)
+    files_uploaded: list[tuple[Path, S3Path]] = Field(default_factory=list)
     #: Potential I/O errors, might be on the user side, not necessarily user fault
     files_failed: list[ErrorFile] = Field(default_factory=list)
 
@@ -56,7 +57,8 @@ class ResponseUpload(BaseResponse):
         return cls(
             delivery_id=delivery_id,
             files_uploaded=[
-                file_.local_path for file_ in result_upload.successful_files
+                (file.local_path, file.s3_path)
+                for file in result_upload.successful_files
             ],
             files_failed=result_upload.errored_files,
         )
@@ -65,17 +67,19 @@ class ResponseUpload(BaseResponse):
 class ResponseDelete(BaseResponse):
     """Metadata returned when using :func:`~pusher.delete`"""
 
+    files_deleted: list[DeleteFile] = Field(default_factory=list)
+
     @classmethod
     def create_from_fatal_error(cls, fatal_error: str) -> "ResponseDelete":
         return cls(fatal_error=fatal_error)
 
     @classmethod
     def create(
-        cls,
-        delivery_id: str,
+        cls, delivery_id: str, files_deleted: list[DeleteFile]
     ) -> "ResponseDelete":
         return cls(
             delivery_id=delivery_id,
+            files_deleted=files_deleted,
         )
 
 

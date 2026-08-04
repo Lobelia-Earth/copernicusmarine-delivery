@@ -20,7 +20,12 @@ from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.domain import DeliveryFile, ResponseDelete, ResponseUpload
+from pusher.core_functions.domain import (
+    DeliveryFile,
+    ResponseDelete,
+    ResponseDelivery,
+    ResponseUpload,
+)
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.logger import logger
 
@@ -133,7 +138,7 @@ def cli(max_content_width=200) -> None:
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Validate the delivery and print out the expected operations.",
+    help="Validate the delivery without performing any actual operation in S3.",
 )
 @log_exception_and_exit
 def delivery(
@@ -165,7 +170,7 @@ def delivery(
         dry_run=dry_run,
     )
     if dry_run and manifest:
-        print_dry_run_summary(manifest)
+        print_dry_run_delivery_summary(response_delivery)
     else:
         click.echo(
             response_delivery.model_dump_json(
@@ -211,7 +216,7 @@ def delivery(
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Validate the upload and print out the expected operations.",
+    help="Validate the upload without performing any actual operation in S3.",
 )
 @log_exception_and_exit
 def upload(
@@ -249,7 +254,7 @@ def upload(
         dry_run=dry_run,
     )
     if dry_run and manifest:
-        print_dry_run_summary(manifest)
+        print_dry_run_upload_summary(response, manifest)
     else:
         click.echo(
             response.model_dump_json(
@@ -274,7 +279,7 @@ def upload(
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Validate the delivery and print out the expected operations.",
+    help="Validate the delete without performing any actual operation in S3.",
 )
 @log_exception_and_exit
 def delete(
@@ -306,7 +311,7 @@ def delete(
         dry_run=dry_run,
     )
     if dry_run and manifest:
-        print_dry_run_summary(manifest)
+        print_dry_run_delete_summary(response, manifest)
     else:
         click.echo(
             response.model_dump_json(
@@ -331,22 +336,41 @@ def saving_delivery_file(manifest: Manifest) -> None:
         )
 
 
-def print_dry_run_summary(manifest: Manifest) -> None:
-    click.echo("\n[DRY RUN] The following operations would be submitted:")
+def print_dry_run_delivery_summary(response: ResponseDelivery) -> None:
+    click.echo("\n[DRY RUN] The following operations would be submitted:\n")
     uploads, deletes = 0, 0
-    for operation in manifest.operations:
-        if operation.operation == "upload":
+    for operation_response in response.operations_responses:
+        if isinstance(operation_response, ResponseUpload):
             uploads += 1
-            click.echo("\n")
-            for file in operation.files:
-                click.echo(f"\t[UPLOAD] {file.key_suffix} -> {file.key_suffix}")
-        elif operation.operation == "delete":
-            click.echo("\n")
+            print_dry_run_upload_summary(operation_response, single_operation=False)
+        elif isinstance(operation_response, ResponseDelete):
             deletes += 1
-            for file in operation.files:
-                click.echo(f"\t[DELETE] {file.key_suffix}")
+            print_dry_run_delete_summary(operation_response, single_operation=False)
 
     click.echo(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
+
+
+def print_dry_run_upload_summary(
+    response: ResponseUpload, single_operation=True
+) -> None:
+    if single_operation:
+        click.echo("\n[DRY RUN] The following upload operation would be submitted:")
+    for local_file_path, s3_path in response.files_uploaded:
+        # Remove OPDV-specific (not helpful) `data/` prefix?
+        click.echo(f"\t[UPLOAD] {local_file_path} -> {s3_path.replace('data/','')}")
+    if single_operation:
+        click.echo(f"\nTotal: 1 uploads, 0 deletes.\n")
+
+
+def print_dry_run_delete_summary(
+    response: ResponseDelete, single_operation=True
+) -> None:
+    if single_operation:
+        click.echo("\n[DRY RUN] The following delete operation would be submitted:")
+    for file in response.files_deleted:
+        click.echo(f"\t[DELETE] {file.key_suffix}")
+    if single_operation:
+        click.echo(f"\nTotal: 0 uploads, 1 deletes.\n")
 
 
 @cli.command()

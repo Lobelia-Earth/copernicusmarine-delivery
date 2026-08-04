@@ -5,13 +5,27 @@
     "delivery_id": "20120114T120001-product1-2824",
     "operations_responses": [
       {
-        "delivery_id": "20120114T120001-product1-2824"
+        "delivery_id": "20120114T120001-product1-2824",
+        "files_deleted": [
+          {
+            "key_suffix": "tests/resources/file1.txt"
+          },
+          {
+            "key_suffix": "tests/resources/file2.txt"
+          }
+        ]
       },
       {
         "delivery_id": "20120114T120001-product1-2824",
         "files_uploaded": [
-          "tests/resources/file1.txt",
-          "tests/resources/file2.txt"
+          [
+            "tests/resources/file1.txt",
+            "data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file1.txt"
+          ],
+          [
+            "tests/resources/file2.txt",
+            "data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file2.txt"
+          ]
         ]
       }
     ]
@@ -26,14 +40,34 @@
     "operations_responses": [
       {
         "delivery_id": "20120114T120001-product1-2824",
-        "fatal_error": null
+        "fatal_error": null,
+        "files_deleted": [
+          {
+            "key_suffix": "tests/resources/file1.txt",
+            "status_timestamp": null,
+            "error": null,
+            "status": "todo"
+          },
+          {
+            "key_suffix": "tests/resources/file2.txt",
+            "status_timestamp": null,
+            "error": null,
+            "status": "todo"
+          }
+        ]
       },
       {
         "delivery_id": "20120114T120001-product1-2824",
         "fatal_error": null,
         "files_uploaded": [
-          "tests/resources/file1.txt",
-          "tests/resources/file2.txt"
+          [
+            "tests/resources/file1.txt",
+            "data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file1.txt"
+          ],
+          [
+            "tests/resources/file2.txt",
+            "data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file2.txt"
+          ]
         ],
         "files_failed": []
       }

@@ -100,18 +100,16 @@ def upload(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
     manifest_id = create_manifest_id(product_id)
-    if dry_run:
-        put_files_result = PutFilesResult()
-    else:
-        put_files_result = _put_files_to_ingestion_system(
-            s3_client,
-            manifest_id=manifest_id,
-            product_id=product_id,
-            dataset_id=dataset_id,
-            operation=upload_operation,
-            chunk_size=chunk_size_bytes,
-            max_concurrent_uploads=max_concurrent_uploads,
-        )
+    put_files_result = _put_files_to_ingestion_system(
+        s3_client,
+        manifest_id=manifest_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operation=upload_operation,
+        chunk_size=chunk_size_bytes,
+        max_concurrent_uploads=max_concurrent_uploads,
+        dry_run=dry_run,
+    )
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -164,7 +162,9 @@ def delete(
         operations=[delete_operation],
         dry_run=dry_run,
     )
-    return ResponseDelete.create(delivery_id=manifest.manifest_id), manifest
+    return ResponseDelete.create(
+        delivery_id=manifest.manifest_id, files_deleted=delete_operation.files
+    ), manifest
 
 
 def create_and_validate_delete_operation(
@@ -206,30 +206,34 @@ def delivery(
             operation = create_and_validate_upload_operation(sources)
             all_operations.append(operation)
     all_responses: list[ResponseUpload | ResponseDelete] = []
-    if not dry_run:
-        for operation in all_operations:
-            if isinstance(operation, UploadOperation):
-                put_files_result = _put_files_to_ingestion_system(
-                    s3_client,
-                    manifest_id=manifest_id,
-                    product_id=product_id,
-                    dataset_id=dataset_id,
-                    operation=operation,
-                    chunk_size=chunk_size_bytes,
-                    max_concurrent_uploads=max_concurrent_uploads,
+    for operation in all_operations:
+        if isinstance(operation, UploadOperation):
+            put_files_result = _put_files_to_ingestion_system(
+                s3_client,
+                manifest_id=manifest_id,
+                product_id=product_id,
+                dataset_id=dataset_id,
+                operation=operation,
+                chunk_size=chunk_size_bytes,
+                max_concurrent_uploads=max_concurrent_uploads,
+                dry_run=dry_run,
+            )
+            all_responses.append(
+                ResponseUpload.create(
+                    delivery_id=manifest_id,
+                    result_upload=put_files_result,
                 )
-                all_responses.append(
-                    ResponseUpload.create(
-                        delivery_id=manifest_id,
-                        result_upload=put_files_result,
-                    )
+            )
+        elif isinstance(operation, DeleteOperation):
+            operation.add_changelog_entry(
+                step="push",
+                step_status="success",
+            )
+            all_responses.append(
+                ResponseDelete.create(
+                    delivery_id=manifest_id, files_deleted=operation.files
                 )
-            elif isinstance(operation, DeleteOperation):
-                operation.add_changelog_entry(
-                    step="push",
-                    step_status="success",
-                )
-                all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
+            )
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -303,18 +307,17 @@ def _put_files_to_ingestion_system(
     operation: UploadOperation,
     chunk_size: int,
     max_concurrent_uploads: int,
+    dry_run: bool,
 ) -> PutFilesResult:
     top = time.time()
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
-        [file_.key_suffix for file_ in operation.files],
+        [file.key_suffix for file in operation.files],
         manifest_id,
         product_id,
         dataset_id,
     )
     put_files_result = s3_client.upload_multiple_files(
-        local_path_s3_keys_mapping,
-        chunk_size,
-        max_concurrent_uploads,
+        local_path_s3_keys_mapping, chunk_size, max_concurrent_uploads, dry_run
     )
     elapsed = time.time() - top
     if not put_files_result.successful_files:
@@ -322,11 +325,12 @@ def _put_files_to_ingestion_system(
 
     _update_operation_with_put_results(operation, put_files_result)
 
-    total_size = operation.total_size()
-    logger.info(
-        f"Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
-        f"for a total size of {human_readable_size(total_size)}."
-    )
+    if not dry_run:
+        total_size = operation.total_size()
+        logger.info(
+            f"Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
+            f"for a total size of {human_readable_size(total_size)}."
+        )
     operation.upload_duration_seconds = elapsed
     step_status = "success"
     if not put_files_result.successful_files:

@@ -2,6 +2,14 @@
 # name: test_delete_cli
   dict({
     'delivery_id': '20120114T120001-product1-2824',
+    'files_deleted': list([
+      dict({
+        'key_suffix': 'tests/resources/file1.txt',
+      }),
+      dict({
+        'key_suffix': 'tests/resources/file2.txt',
+      }),
+    ]),
   })
 # ---
 # name: test_delete_cli_save_delivery_json
@@ -51,7 +59,21 @@
   '''
   {
     "delivery_id": "20120114T120001-product1-2824",
-    "fatal_error": null
+    "fatal_error": null,
+    "files_deleted": [
+      {
+        "key_suffix": "tests/resources/file1.txt",
+        "status_timestamp": null,
+        "error": null,
+        "status": "todo"
+      },
+      {
+        "key_suffix": "tests/resources/file2.txt",
+        "status_timestamp": null,
+        "error": null,
+        "status": "todo"
+      }
+    ]
   }
   '''
 # ---

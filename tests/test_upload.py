@@ -174,6 +174,8 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
 
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_bucket):
+    random.seed(42)
+
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")
@@ -197,7 +199,7 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
     assert response.fatal_error is None
     assert manifest is not None
     assert len(response.files_uploaded) == 1
-    assert str(response.files_uploaded[0]).endswith("file2.txt")
+    assert str(response.files_uploaded[0][0]).endswith("file2.txt")
     assert len(response.files_failed) == 1
     assert str(response.files_failed[0].local_path).endswith("file1.txt")
     assert manifest.model_dump_json(indent=2) == snapshot
