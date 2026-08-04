@@ -2,7 +2,7 @@
 # name: test_save_manifest_and_load
   '''
   {
-    "manifest_id": "20260804T083218-product1-5012",
+    "manifest_id": "20240315T120001-product1-5012",
     "pushing_entity_id": "TEST-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
@@ -15,7 +15,7 @@
         "changelog": [
           {
             "step": "creation",
-            "timestamp": "2026-08-04T06:32:18Z",
+            "timestamp": "2024-03-15T12:00:01Z",
             "step_status": "success",
             "error": null,
             "comment": null
@@ -42,7 +42,7 @@
         "changelog": [
           {
             "step": "creation",
-            "timestamp": "2026-08-04T06:32:18Z",
+            "timestamp": "2024-03-15T12:00:01Z",
             "step_status": "success",
             "error": null,
             "comment": null
@@ -58,7 +58,7 @@
         ]
       }
     ],
-    "creation_time": "2026-08-04T06:32:18Z",
+    "creation_time": "2024-03-15T12:00:01Z",
     "status": "todo",
     "status_timestamp": null,
     "error": null

@@ -115,6 +115,7 @@ def test_create_manifest(tmp_path):
     assert manifest.operations[0].files[0].checksum == "abc-1"
 
 
+@freeze_time("2024-03-15 12:00:01")
 def test_save_manifest_and_load(tmp_path, snapshot):
     manifest_id = create_manifest_id("product1")
     manifest = create_manifest(
