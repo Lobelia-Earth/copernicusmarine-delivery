@@ -1,10 +1,10 @@
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Generic, Literal, NewType, TypeVar
+from typing import Any, Generic, Literal, NewType, TypeVar
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, SerializeAsAny, field_validator, model_validator
 
 ##############
 # Utils
@@ -237,7 +237,27 @@ class Manifest(BaseModel):
     dataset_id: str
     #: List of operations associated with the manifest.
     #: These operations will be done sequentially in the order they are listed.
-    operations: list[Operation]
+    operations: list[SerializeAsAny[Operation]]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_operations(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "operations" in data:
+            parsed = []
+            for op in data["operations"]:
+                if isinstance(op, dict):
+                    op_type = op.get("operation")
+                    if op_type == "upload":
+                        model_cls = UploadOperation
+                    elif op_type == "delete":
+                        model_cls = DeleteOperation
+                    else:
+                        model_cls = Operation
+                    parsed.append(model_cls(**op))
+                else:
+                    parsed.append(op)
+            data["operations"] = parsed
+        return data
 
     #: ISO 8601 formatted timestamp in UTC for the creation of the delivery.
     #: It corresponds to the moment the manifest is sent to the OPDV system.
