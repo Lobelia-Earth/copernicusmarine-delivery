@@ -1,13 +1,17 @@
 from pathlib import Path
 
 import pytest
+import yaml
 from freezegun import freeze_time
 from pydantic import ValidationError
 
 from delivery_common.domain import (
+    DeleteFile,
+    DeleteOperation,
     Manifest,
     Operation,
     UploadFile,
+    UploadOperation,
 )
 from delivery_common.manifest import (
     create_manifest,
@@ -27,7 +31,7 @@ RESOURCES = Path("tests/resources")
 
 def test_operation_invalid_literal():
     with pytest.raises(ValidationError):
-        Operation(operation="copy", files=[])  # type: ignore
+        Operation(operation="copy", files=[])
 
 
 def test_manifest_round_trip():
@@ -109,3 +113,47 @@ def test_create_manifest(tmp_path):
     assert manifest.pushing_entity_id == "TEST-FR"
     assert manifest.operations[0].operation == "upload"
     assert manifest.operations[0].files[0].checksum == "abc-1"
+
+
+def test_save_manifest_and_load(tmp_path, snapshot):
+    manifest_id = create_manifest_id("product1")
+    manifest = create_manifest(
+        pushing_entity_id="TEST-FR",
+        product_id="product1",
+        dataset_id="dataset1",
+        operations=[
+            UploadOperation(
+                operation="upload",
+                files=[
+                    UploadFile(
+                        key_suffix="file.nc",
+                        file_size_mb=43,
+                        checksum="abc-1",
+                        upload_duration_seconds=1.23,
+                        status="published",
+                    )
+                ],
+                upload_duration_seconds=1.23,
+            ),
+            DeleteOperation(
+                operation="delete",
+                files=[
+                    DeleteFile(
+                        key_suffix="file2.nc",
+                        status="deleted",
+                    )
+                ],
+            ),
+        ],
+        manifest_id=manifest_id,
+    )
+    manifest_path = tmp_path / "manifest.yaml"
+    # dump
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest.model_dump(), f)
+
+    # load
+    with open(manifest_path, "r") as f:
+        loaded_manifest_data = yaml.safe_load(f)
+    loaded_manifest = Manifest.model_validate(loaded_manifest_data)
+    assert loaded_manifest.model_dump_json(indent=2) == snapshot

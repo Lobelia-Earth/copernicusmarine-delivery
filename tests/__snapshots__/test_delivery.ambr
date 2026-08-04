@@ -125,7 +125,8 @@
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
             "upload_duration_seconds": 0.0
           }
-        ]
+        ],
+        "upload_duration_seconds": 0.0
       }
     ],
     "creation_time": "2012-01-14T12:00:01Z",
