@@ -86,11 +86,7 @@ def test_upload_cli(
         env=cli_env,
     )
     assert result.exit_code == 0
-    output = json.loads(result.output)
-    output["files_uploaded"] = sorted(output.get("files_uploaded", []))
-    for op in output.get("manifest", {}).get("operations", []):
-        op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
-    assert output == snapshot
+    assert result.output.strip() == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
@@ -118,8 +114,7 @@ def test_upload_cli_save_delivery_json(
         env=cli_env,
     )
     assert result.exit_code == 0
-    output = json.loads(result.output)
-    assert "delivery" not in output
+    assert result.output.strip() == snapshot
 
     json_files = glob.glob("*.json")
     assert len(json_files) == 1

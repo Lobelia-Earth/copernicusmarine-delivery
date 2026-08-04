@@ -1,18 +1,39 @@
 # serializer version: 1
 # name: test_delete_cli
-  dict({
-    'delivery_id': '20120114T120001-product1-2824',
-    'files_deleted': list([
-      dict({
-        'key_suffix': 'tests/resources/file1.txt',
-      }),
-      dict({
-        'key_suffix': 'tests/resources/file2.txt',
-      }),
-    ]),
-  })
+  '''
+  Delivery summary:
+  
+  	delivery_id: 20120114T120001-product1-2824
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  
+  The following delete operation have been submitted:
+  
+  	[DELETE] tests/resources/file1.txt
+  	[DELETE] tests/resources/file2.txt
+  
+  Total: 0 uploads, 2 deletes.
+  '''
 # ---
 # name: test_delete_cli_save_delivery_json
+  '''
+  Delivery summary:
+  
+  	delivery_id: 20120114T120001-product1-2824
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  
+  The following delete operation have been submitted:
+  
+  	[DELETE] tests/resources/file1.txt
+  	[DELETE] tests/resources/file2.txt
+  
+  Total: 0 uploads, 2 deletes.
+  '''
+# ---
+# name: test_delete_cli_save_delivery_json.1
   dict({
     'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',

@@ -74,7 +74,7 @@ def upload(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-) -> tuple[ResponseUpload, Manifest | None]:
+) -> tuple[ResponseUpload, Manifest]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
@@ -136,7 +136,7 @@ def delete(
     dataset_id: str,
     files: list[str],
     dry_run: bool,
-) -> tuple[ResponseDelete, Manifest | None]:
+) -> tuple[ResponseDelete, Manifest]:
     """
     Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
@@ -185,7 +185,7 @@ def delivery(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-) -> tuple[ResponseDelivery, Manifest | None]:
+) -> tuple[ResponseDelivery, Manifest]:
 
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)

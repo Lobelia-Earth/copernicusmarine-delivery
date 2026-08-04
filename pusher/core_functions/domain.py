@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import NewType
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -10,6 +11,13 @@ from delivery_common.domain import (
     S3Path,
 )
 from pusher.logger import logger
+
+# Represents an S3 Path stripped of `data/manifest_id`
+S3KeySuffix = NewType("S3KeySuffix", str)
+
+
+def get_s3_key_suffix(s3_path: S3Path) -> S3KeySuffix:
+    return S3KeySuffix("/".join(s3_path.split("/")[2:]))
 
 
 class S3File(BaseModel):
@@ -38,7 +46,7 @@ class ResponseUpload(BaseResponse):
     """Metadata returned when using :func:`~pusher.upload`"""
 
     #: Successful uploaded file names
-    files_uploaded: list[tuple[Path, S3Path]] = Field(default_factory=list)
+    files_uploaded: list[tuple[Path, S3KeySuffix]] = Field(default_factory=list)
     #: Potential I/O errors, might be on the user side, not necessarily user fault
     files_failed: list[ErrorFile] = Field(default_factory=list)
 
@@ -57,7 +65,7 @@ class ResponseUpload(BaseResponse):
         return cls(
             delivery_id=delivery_id,
             files_uploaded=[
-                (file.local_path, file.s3_path)
+                (file.local_path, get_s3_key_suffix(file.s3_path))
                 for file in result_upload.successful_files
             ],
             files_failed=result_upload.errored_files,

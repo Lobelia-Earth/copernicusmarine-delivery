@@ -169,17 +169,8 @@ def delivery(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    if dry_run and manifest:
-        print_dry_run_delivery_summary(response_delivery)
-    else:
-        click.echo(
-            response_delivery.model_dump_json(
-                indent=2,
-                exclude_none=True,
-                exclude_unset=True,
-                exclude_defaults=True,
-            )
-        )
+    print_id_header(manifest)
+    print_delivery_summary(response_delivery, dry_run)
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -253,17 +244,8 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    if dry_run and manifest:
-        print_dry_run_upload_summary(response, manifest)
-    else:
-        click.echo(
-            response.model_dump_json(
-                indent=2,
-                exclude_none=True,
-                exclude_unset=True,
-                exclude_defaults=True,
-            )
-        )
+    print_id_header(manifest)
+    print_operation_summary(response, dry_run)
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -310,18 +292,11 @@ def delete(
         files=source,
         dry_run=dry_run,
     )
-    if dry_run and manifest:
-        print_dry_run_delete_summary(response, manifest)
-    else:
-        click.echo(
-            response.model_dump_json(
-                indent=2,
-                exclude_none=True,
-                exclude_unset=True,
-                exclude_defaults=True,
-            )
-        )
-    if save_delivery_json and manifest:
+
+    print_id_header(manifest)
+    print_operation_summary(response, dry_run)
+
+    if save_delivery_json:
         saving_delivery_file(manifest)
 
 
@@ -336,41 +311,52 @@ def saving_delivery_file(manifest: Manifest) -> None:
         )
 
 
-def print_dry_run_delivery_summary(response: ResponseDelivery) -> None:
-    click.echo("\n[DRY RUN] The following operations would be submitted:\n")
+def print_id_header(manifest: Manifest) -> None:
+    click.echo("\nDelivery summary:\n")
+    click.echo(f"\tdelivery_id: {manifest.manifest_id}")
+    click.echo(f"\tpushing_entity_id: {manifest.pushing_entity_id}")
+    click.echo(f"\tproduct_id: {manifest.product_id}")
+    click.echo(f"\tdataset_id: {manifest.dataset_id}")
+
+
+def print_delivery_summary(response: ResponseDelivery, dry_run: bool) -> None:
+    prefix = "[DRY RUN] " if dry_run else ""
+    verb = "would be" if dry_run else "have been"
+    click.echo(f"\n{prefix}The following operations {verb} submitted:\n")
     uploads, deletes = 0, 0
     for operation_response in response.operations_responses:
         if isinstance(operation_response, ResponseUpload):
             uploads += 1
-            print_dry_run_upload_summary(operation_response, single_operation=False)
         elif isinstance(operation_response, ResponseDelete):
             deletes += 1
-            print_dry_run_delete_summary(operation_response, single_operation=False)
+        print_operation_summary(operation_response, dry_run, single_operation=False)
 
     click.echo(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
 
 
-def print_dry_run_upload_summary(
-    response: ResponseUpload, single_operation=True
+def print_operation_summary(
+    response: ResponseUpload | ResponseDelete,
+    dry_run: bool,
+    single_operation: bool = True,
 ) -> None:
-    if single_operation:
-        click.echo("\n[DRY RUN] The following upload operation would be submitted:")
-    for local_file_path, s3_path in response.files_uploaded:
-        # Remove OPDV-specific (not helpful) `data/` prefix?
-        click.echo(f"\t[UPLOAD] {local_file_path} -> {s3_path.replace('data/','')}")
-    if single_operation:
-        click.echo(f"\nTotal: 1 uploads, 0 deletes.\n")
+    kind = "upload" if isinstance(response, ResponseUpload) else "delete"
 
+    if single_operation:
+        prefix = "[DRY RUN] " if dry_run else ""
+        verb = "would be" if dry_run else "have been"
+        click.echo(f"\n{prefix}The following {kind} operation {verb} submitted:\n")
 
-def print_dry_run_delete_summary(
-    response: ResponseDelete, single_operation=True
-) -> None:
+    if isinstance(response, ResponseUpload):
+        for local_file_path, s3_key_suffix in response.files_uploaded:
+            click.echo(f"\t[UPLOAD] {local_file_path} -> {s3_key_suffix}")
+        num_uploads, num_deletes = len(response.files_uploaded), 0
+    else:
+        for file in response.files_deleted:
+            click.echo(f"\t[DELETE] {file.key_suffix}")
+        num_uploads, num_deletes = 0, len(response.files_deleted)
+
     if single_operation:
-        click.echo("\n[DRY RUN] The following delete operation would be submitted:")
-    for file in response.files_deleted:
-        click.echo(f"\t[DELETE] {file.key_suffix}")
-    if single_operation:
-        click.echo(f"\nTotal: 0 uploads, 1 deletes.\n")
+        click.echo(f"\nTotal: {num_uploads} uploads, {num_deletes} deletes.\n")
 
 
 @cli.command()

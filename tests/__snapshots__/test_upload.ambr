@@ -1,20 +1,39 @@
 # serializer version: 1
 # name: test_upload_cli
-  dict({
-    'delivery_id': '20120114T120001-product1-2824',
-    'files_uploaded': list([
-      list([
-        'tests/resources/file1.txt',
-        'data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file1.txt',
-      ]),
-      list([
-        'tests/resources/file2.txt',
-        'data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file2.txt',
-      ]),
-    ]),
-  })
+  '''
+  Delivery summary:
+  
+  	delivery_id: 20120114T120001-product1-2824
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  
+  The following upload operation have been submitted:
+  
+  	[UPLOAD] tests/resources/file1.txt -> product1/dataset1/tests/resources/file1.txt
+  	[UPLOAD] tests/resources/file2.txt -> product1/dataset1/tests/resources/file2.txt
+  
+  Total: 2 uploads, 0 deletes.
+  '''
 # ---
 # name: test_upload_cli_save_delivery_json
+  '''
+  Delivery summary:
+  
+  	delivery_id: 20120114T120001-product1-2824
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  
+  The following upload operation have been submitted:
+  
+  	[UPLOAD] tests/resources/file1.txt -> product1/dataset1/tests/resources/file1.txt
+  	[UPLOAD] tests/resources/file2.txt -> product1/dataset1/tests/resources/file2.txt
+  
+  Total: 2 uploads, 0 deletes.
+  '''
+# ---
+# name: test_upload_cli_save_delivery_json.1
   dict({
     'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',
@@ -129,11 +148,11 @@
     'files_uploaded': list([
       tuple(
         PosixPath('tests/resources/file1.txt'),
-        'data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file1.txt',
+        'product1/dataset1/tests/resources/file1.txt',
       ),
       tuple(
         PosixPath('tests/resources/file2.txt'),
-        'data/20120114T120001-product1-2824/product1/dataset1/tests/resources/file2.txt',
+        'product1/dataset1/tests/resources/file2.txt',
       ),
     ]),
   })
