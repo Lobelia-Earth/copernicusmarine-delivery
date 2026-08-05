@@ -166,7 +166,7 @@ def delete(
     )
     return (
         ResponseDelete.create(
-            delivery_id=manifest.manifest_id, files_deleted=delete_operation.files
+            delivery_id=manifest.manifest_id, files_to_delete=delete_operation.files
         ),
         manifest,
     )
@@ -238,7 +238,7 @@ def delivery(
             )
             all_responses.append(
                 ResponseDelete.create(
-                    delivery_id=manifest_id, files_deleted=operation.files
+                    delivery_id=manifest_id, files_to_delete=operation.files
                 )
             )
 

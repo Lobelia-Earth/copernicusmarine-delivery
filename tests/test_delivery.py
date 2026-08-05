@@ -115,6 +115,7 @@ def test_delivery_dry_run_does_not_call_s3(
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
+        raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,

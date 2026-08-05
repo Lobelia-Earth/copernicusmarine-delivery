@@ -322,12 +322,15 @@ def print_delivery_summary(response: ResponseDelivery, dry_run: bool) -> None:
     uploads, deletes = 0, 0
     for operation_response in response.operations_responses:
         if isinstance(operation_response, ResponseUpload):
-            uploads += 1
+            uploads += len(operation_response.files_uploaded)
         elif isinstance(operation_response, ResponseDelete):
-            deletes += 1
+            deletes += len(operation_response.files_to_delete)
         print_operation_summary(operation_response, dry_run, single_operation=False)
-
-    click.echo(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
+    uploads_message = (
+        f"{uploads} file to upload" if dry_run else f"{uploads} file uploaded"
+    )
+    deletes_message = f"{deletes} file to delete"
+    click.echo(f"\nTotal: {uploads_message}, {deletes_message}.\n")
 
 
 def print_operation_summary(
@@ -347,12 +350,18 @@ def print_operation_summary(
             click.echo(f"\t[UPLOAD] {local_file_path} -> {s3_key_suffix}")
         num_uploads, num_deletes = len(response.files_uploaded), 0
     else:
-        for file in response.files_deleted:
+        for file in response.files_to_delete:
             click.echo(f"\t[DELETE] {file.key_suffix}")
-        num_uploads, num_deletes = 0, len(response.files_deleted)
+        num_uploads, num_deletes = 0, len(response.files_to_delete)
 
     if single_operation:
-        click.echo(f"\nTotal: {num_uploads} uploads, {num_deletes} deletes.\n")
+        uploads_message = (
+            f"{num_uploads} file to upload"
+            if dry_run
+            else f"{num_uploads} file uploaded"
+        )
+        deletes_message = f"{num_deletes} file to delete"
+        click.echo(f"\nTotal: {uploads_message}, {deletes_message}.\n")
 
 
 @cli.command()

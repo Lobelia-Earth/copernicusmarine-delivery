@@ -29,6 +29,7 @@ def test_delivery_status_python_interface(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
