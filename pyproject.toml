@@ -9,6 +9,7 @@ dependencies = [
     "obstore>=0.10.0,<1",
     "pydantic>=2.13.4,<3",
     "pyyaml>=6.0.3,<7",
+    "textual>=8.2.8,<9",
     "tqdm>=4,<5",
 ]
 
@@ -28,6 +29,9 @@ platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 pusher = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+delivery-ui = "python -m pusher.tui_app"
 
 [tool.pixi.feature.dev.dependencies]
 pytest = "*"
