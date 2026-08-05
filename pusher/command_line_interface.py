@@ -20,7 +20,12 @@ from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.domain import DeliveryFile, ResponseDelete, ResponseUpload
+from pusher.core_functions.domain import (
+    DeliveryFile,
+    ResponseDelete,
+    ResponseDelivery,
+    ResponseUpload,
+)
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.logger import logger
 
@@ -130,6 +135,11 @@ def cli(max_content_width=200) -> None:
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate the delivery without performing any actual operation in S3.",
+)
 @log_exception_and_exit
 def delivery(
     file: Path,
@@ -140,6 +150,7 @@ def delivery(
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
+    dry_run: bool = False,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
     with open(file) as f:
@@ -156,15 +167,10 @@ def delivery(
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
     )
-    click.echo(
-        response_delivery.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
-        )
-    )
+    print_id_header(manifest, dry_run)
+    print_delivery_summary(response_delivery, dry_run)
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -198,6 +204,11 @@ def delivery(
     show_default=True,
     help="Number of parts uploaded in parallel per file (multipart upload).",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate the upload without performing any actual operation in S3.",
+)
 @log_exception_and_exit
 def upload(
     source: list[str],
@@ -208,6 +219,7 @@ def upload(
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
+    dry_run: bool = False,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -230,15 +242,10 @@ def upload(
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
     )
-    click.echo(
-        response.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
-        )
-    )
+    print_id_header(manifest, dry_run)
+    print_operation_summary(response, dry_run)
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
 
@@ -251,6 +258,11 @@ def upload(
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
 @shared_options
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate the delete without performing any actual operation in S3.",
+)
 @log_exception_and_exit
 def delete(
     source: list[str],
@@ -258,6 +270,7 @@ def delete(
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
+    dry_run: bool = False,
 ) -> None:
     """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
@@ -277,16 +290,13 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
+        dry_run=dry_run,
     )
-    click.echo(
-        response.model_dump_json(
-            indent=2,
-            exclude_none=True,
-            exclude_unset=True,
-            exclude_defaults=True,
-        )
-    )
-    if save_delivery_json and manifest:
+
+    print_id_header(manifest, dry_run)
+    print_operation_summary(response, dry_run)
+
+    if save_delivery_json:
         saving_delivery_file(manifest)
 
 
@@ -299,6 +309,54 @@ def saving_delivery_file(manifest: Manifest) -> None:
                 indent=2,
             )
         )
+
+
+def print_id_header(manifest: Manifest, dry_run: bool) -> None:
+    click.echo(f"\n{'[DRY RUN]: ' if dry_run else ''}Delivery summary:\n")
+    click.echo(f"\tdelivery_id: {manifest.manifest_id}")
+    click.echo(f"\tpushing_entity_id: {manifest.pushing_entity_id}")
+    click.echo(f"\tproduct_id: {manifest.product_id}")
+    click.echo(f"\tdataset_id: {manifest.dataset_id}")
+
+
+def print_delivery_summary(response: ResponseDelivery, dry_run: bool) -> None:
+    prefix = "[DRY RUN] " if dry_run else ""
+    verb = "would be" if dry_run else "have been"
+    click.echo(f"\n{prefix}The following operations {verb} submitted:\n")
+    uploads, deletes = 0, 0
+    for operation_response in response.operations_responses:
+        if isinstance(operation_response, ResponseUpload):
+            uploads += 1
+        elif isinstance(operation_response, ResponseDelete):
+            deletes += 1
+        print_operation_summary(operation_response, dry_run, single_operation=False)
+
+    click.echo(f"\nTotal: {uploads} uploads, {deletes} deletes.\n")
+
+
+def print_operation_summary(
+    response: ResponseUpload | ResponseDelete,
+    dry_run: bool,
+    single_operation: bool = True,
+) -> None:
+    kind = "upload" if isinstance(response, ResponseUpload) else "delete"
+
+    if single_operation:
+        prefix = "[DRY RUN] " if dry_run else ""
+        verb = "would be" if dry_run else "have been"
+        click.echo(f"\n{prefix}The following {kind} operation {verb} submitted:\n")
+
+    if isinstance(response, ResponseUpload):
+        for local_file_path, s3_key_suffix in response.files_uploaded:
+            click.echo(f"\t[UPLOAD] {local_file_path} -> {s3_key_suffix}")
+        num_uploads, num_deletes = len(response.files_uploaded), 0
+    else:
+        for file in response.files_deleted:
+            click.echo(f"\t[DELETE] {file.key_suffix}")
+        num_uploads, num_deletes = 0, len(response.files_deleted)
+
+    if single_operation:
+        click.echo(f"\nTotal: {num_uploads} uploads, {num_deletes} deletes.\n")
 
 
 @cli.command()

@@ -1,21 +1,21 @@
 # serializer version: 1
 # name: test_delivery_cli_with_delivery_file
   '''
-  {
-    "delivery_id": "20120114T120001-product1-2824",
-    "operations_responses": [
-      {
-        "delivery_id": "20120114T120001-product1-2824"
-      },
-      {
-        "delivery_id": "20120114T120001-product1-2824",
-        "files_uploaded": [
-          "tests/resources/file1.txt",
-          "tests/resources/file2.txt"
-        ]
-      }
-    ]
-  }
+  Delivery summary:
+  
+  	delivery_id: 20120114T120001-product1-2824
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  
+  The following operations have been submitted:
+  
+  	[DELETE] tests/resources/file1.txt
+  	[DELETE] tests/resources/file2.txt
+  	[UPLOAD] tests/resources/file1.txt -> product1/dataset1/tests/resources/file1.txt
+  	[UPLOAD] tests/resources/file2.txt -> product1/dataset1/tests/resources/file2.txt
+  
+  Total: 1 uploads, 1 deletes.
   '''
 # ---
 # name: test_delivery_python_interface
@@ -26,14 +26,34 @@
     "operations_responses": [
       {
         "delivery_id": "20120114T120001-product1-2824",
-        "fatal_error": null
+        "fatal_error": null,
+        "files_deleted": [
+          {
+            "key_suffix": "tests/resources/file1.txt",
+            "status_timestamp": null,
+            "error": null,
+            "status": "todo"
+          },
+          {
+            "key_suffix": "tests/resources/file2.txt",
+            "status_timestamp": null,
+            "error": null,
+            "status": "todo"
+          }
+        ]
       },
       {
         "delivery_id": "20120114T120001-product1-2824",
         "fatal_error": null,
         "files_uploaded": [
-          "tests/resources/file1.txt",
-          "tests/resources/file2.txt"
+          [
+            "tests/resources/file1.txt",
+            "product1/dataset1/tests/resources/file1.txt"
+          ],
+          [
+            "tests/resources/file2.txt",
+            "product1/dataset1/tests/resources/file2.txt"
+          ]
         ],
         "files_failed": []
       }

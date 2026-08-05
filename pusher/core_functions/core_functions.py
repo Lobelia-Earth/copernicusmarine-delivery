@@ -73,7 +73,8 @@ def upload(
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
-) -> tuple[ResponseUpload, Manifest | None]:
+    dry_run: bool,
+) -> tuple[ResponseUpload, Manifest]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
@@ -107,6 +108,7 @@ def upload(
         operation=upload_operation,
         chunk_size=chunk_size_bytes,
         max_concurrent_uploads=max_concurrent_uploads,
+        dry_run=dry_run,
     )
 
     manifest = _create_and_upload_manifest(
@@ -116,6 +118,7 @@ def upload(
         dataset_id=dataset_id,
         operations=[upload_operation],
         manifest_id=manifest_id,
+        dry_run=dry_run,
     )
 
     return (
@@ -132,7 +135,8 @@ def delete(
     product_id: str,
     dataset_id: str,
     files: list[str],
-) -> tuple[ResponseDelete, Manifest | None]:
+    dry_run: bool,
+) -> tuple[ResponseDelete, Manifest]:
     """
     Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
@@ -156,8 +160,11 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[delete_operation],
+        dry_run=dry_run,
     )
-    return ResponseDelete.create(delivery_id=manifest.manifest_id), manifest
+    return ResponseDelete.create(
+        delivery_id=manifest.manifest_id, files_deleted=delete_operation.files
+    ), manifest
 
 
 def create_and_validate_delete_operation(
@@ -177,7 +184,8 @@ def delivery(
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
-) -> tuple[ResponseDelivery, Manifest | None]:
+    dry_run: bool,
+) -> tuple[ResponseDelivery, Manifest]:
 
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
@@ -208,6 +216,7 @@ def delivery(
                 operation=operation,
                 chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
+                dry_run=dry_run,
             )
             all_responses.append(
                 ResponseUpload.create(
@@ -220,7 +229,11 @@ def delivery(
                 step="push",
                 step_status="success",
             )
-            all_responses.append(ResponseDelete.create(delivery_id=manifest_id))
+            all_responses.append(
+                ResponseDelete.create(
+                    delivery_id=manifest_id, files_deleted=operation.files
+                )
+            )
 
     manifest = _create_and_upload_manifest(
         s3_client,
@@ -228,6 +241,7 @@ def delivery(
         product_id,
         dataset_id,
         all_operations,
+        dry_run,
         manifest_id=manifest_id,
     )
     return (
@@ -262,6 +276,7 @@ def _create_and_upload_manifest(
     product_id: str,
     dataset_id: str,
     operations: list[Operation],
+    dry_run: bool,
     manifest_id: str | None = None,
 ) -> Manifest:
     if not manifest_id:
@@ -273,13 +288,14 @@ def _create_and_upload_manifest(
         operations=operations,
         manifest_id=manifest_id,
     )
-    manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
-    logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
-    s3_client.upload_fileobj(
-        key=manifest_bucket_path,
-        file=manifest.model_dump_json().encode(),
-        chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
-    )
+    if not dry_run:
+        manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
+        logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
+        s3_client.upload_fileobj(
+            key=manifest_bucket_path,
+            file=manifest.model_dump_json().encode(),
+            chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        )
     return manifest
 
 
@@ -291,18 +307,17 @@ def _put_files_to_ingestion_system(
     operation: UploadOperation,
     chunk_size: int,
     max_concurrent_uploads: int,
+    dry_run: bool,
 ) -> PutFilesResult:
     top = time.time()
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
-        [file_.key_suffix for file_ in operation.files],
+        [file.key_suffix for file in operation.files],
         manifest_id,
         product_id,
         dataset_id,
     )
     put_files_result = s3_client.upload_multiple_files(
-        local_path_s3_keys_mapping,
-        chunk_size,
-        max_concurrent_uploads,
+        local_path_s3_keys_mapping, chunk_size, max_concurrent_uploads, dry_run
     )
     elapsed = time.time() - top
     if not put_files_result.successful_files:
@@ -312,7 +327,7 @@ def _put_files_to_ingestion_system(
 
     total_size = operation.total_size()
     logger.info(
-        f"Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
+        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
         f"for a total size of {human_readable_size(total_size)}."
     )
     operation.upload_duration_seconds = elapsed

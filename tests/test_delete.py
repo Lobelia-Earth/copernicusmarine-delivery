@@ -39,6 +39,7 @@ def test_delete_python_interface(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
     assert manifest is not None
@@ -69,9 +70,7 @@ def test_delete_cli(
         env=cli_env,
     )
     assert result.exit_code == 0
-    output = json.loads(result.output)
-    assert "delivery" not in output
-    assert output == snapshot
+    assert result.output.strip() == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
@@ -100,8 +99,7 @@ def test_delete_cli_save_delivery_json(
             env=cli_env,
         )
         assert result.exit_code == 0
-        output = json.loads(result.output)
-        assert "delivery" not in output
+        assert result.output.strip() == snapshot
 
         json_files = glob.glob("*.json")
         assert len(json_files) == 1
@@ -139,6 +137,7 @@ def test_delete_raises_on_invalid_delivery_ids(monkeypatch):
             files=MOCK_FILES,
             dataset_id="dataset1",
             product_id="product1",
+            dry_run=False,
         )
     assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
         exc_info.value

@@ -200,23 +200,29 @@ class S3Client:
         key: str,
         file: Path,
         chunk_size: int,
+        dry_run: bool,
         use_multipart: bool = True,
     ) -> S3File | ErrorFile:
         """Upload a local file (by Path) to S3."""
-        logger.debug(f"Starting upload for {file.name}")
         try:
-            top = time.time()
-            put_result = self._put_with_os_error_retry(
-                key, file, use_multipart, chunk_size
-            )
-            upload_time = time.time() - top
-            logger.debug(
-                f"Successfully uploaded file {file.name} in {upload_time:.2f} seconds"
-            )
+            if dry_run:
+                e_tag = "dry-run"
+                upload_time = 0.0
+            else:
+                logger.debug(f"Starting upload for {file.name}")
+                top = time.time()
+                put_result = self._put_with_os_error_retry(
+                    key, file, use_multipart, chunk_size
+                )
+                upload_time = time.time() - top
+                logger.debug(
+                    f"Successfully uploaded file {file.name} in {upload_time:.2f} seconds"
+                )
+                e_tag = put_result["e_tag"].strip('"')
             return S3File(
                 local_path=file,
                 s3_path=S3Path(key),
-                e_tag=put_result["e_tag"].strip('"'),
+                e_tag=e_tag,
                 upload_time=upload_time,
             )
 
@@ -235,11 +241,15 @@ class S3Client:
         s3_key_local_file_mapping: dict[Path, str],
         chunk_size: int,
         max_concurrent_uploads: int,
+        dry_run: bool,
     ) -> PutFilesResult:
         total = len(s3_key_local_file_mapping)
         success_results = []
         error_results = []
-        logger.info(f"Starting to upload {len(s3_key_local_file_mapping)} files ...")
+
+        logger.info(
+            f"{'[DRY RUN]: ' if dry_run else ''}Starting to upload {len(s3_key_local_file_mapping)} files ..."
+        )
         with ThreadPoolExecutor(max_workers=max_concurrent_uploads) as executor:
             futures = {
                 executor.submit(
@@ -248,6 +258,7 @@ class S3Client:
                     file=path,
                     use_multipart=True,
                     chunk_size=chunk_size,
+                    dry_run=dry_run,
                 ): (path, key)
                 for _, (path, key) in enumerate(s3_key_local_file_mapping.items())
             }
@@ -255,9 +266,10 @@ class S3Client:
                 result = future.result()
                 if isinstance(result, S3File):
                     success_results.append(result)
-                    logger.info(
-                        f"Uploaded [{i + 1}/{total}] file {result.local_path.name}"
-                    )
+                    if not dry_run:
+                        logger.info(
+                            f"{'[DRY RUN]: ' if dry_run else ''}Uploaded [{i + 1}/{total}] file {result.local_path.name}"
+                        )
                 else:
                     error_results.append(result)
 

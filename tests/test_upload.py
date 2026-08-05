@@ -49,6 +49,7 @@ def test_upload_python_interface(
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_concurrency=CHUNK_CONCURRENCY,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        dry_run=False,
     )
     result = response.model_dump(exclude_none=True)
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
@@ -85,11 +86,7 @@ def test_upload_cli(
         env=cli_env,
     )
     assert result.exit_code == 0
-    output = json.loads(result.output)
-    output["files_uploaded"] = sorted(output.get("files_uploaded", []))
-    for op in output.get("manifest", {}).get("operations", []):
-        op["files"] = sorted(op["files"], key=lambda f: f["s3_path"])
-    assert output == snapshot
+    assert result.output.strip() == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
@@ -117,8 +114,7 @@ def test_upload_cli_save_delivery_json(
         env=cli_env,
     )
     assert result.exit_code == 0
-    output = json.loads(result.output)
-    assert "delivery" not in output
+    assert result.output.strip() == snapshot
 
     json_files = glob.glob("*.json")
     assert len(json_files) == 1
@@ -164,6 +160,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
+            dry_run=False,
         )
     assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
         exc_info.value
@@ -172,6 +169,8 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
 
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_bucket):
+    random.seed(42)
+
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")
@@ -189,12 +188,13 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
+        dry_run=False,
     )
 
     assert response.fatal_error is None
     assert manifest is not None
     assert len(response.files_uploaded) == 1
-    assert str(response.files_uploaded[0]).endswith("file2.txt")
+    assert str(response.files_uploaded[0][0]).endswith("file2.txt")
     assert len(response.files_failed) == 1
     assert str(response.files_failed[0].local_path).endswith("file1.txt")
     assert manifest.model_dump_json(indent=2) == snapshot

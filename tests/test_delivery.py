@@ -1,4 +1,5 @@
 import random
+from unittest.mock import Mock
 
 import pytest
 from click.testing import CliRunner
@@ -13,6 +14,7 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delivery
 from pusher.core_functions.utils import megabytes_to_bytes
+from pusher.s3_client import S3Client
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
@@ -36,6 +38,7 @@ def test_delivery_python_interface(
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
+        dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
     assert manifest is not None
@@ -57,6 +60,7 @@ def test_delivery_early_exit_with_validation_error(
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
+            dry_run=False,
         )
     assert "Found 1 invalid files." in str(exc_info.value)
 
@@ -86,3 +90,35 @@ def test_delivery_cli_with_delivery_file(
 
     assert result.exit_code == 0
     assert result.output.strip() == snapshot
+
+
+@freeze_time("2012-01-14 12:00:01")
+def test_delivery_dry_run_does_not_call_s3(
+    monkeypatch, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+):
+    random.seed(42)
+    mock_put = Mock()
+    mock_upload_fileobj = Mock()
+    monkeypatch.setattr(S3Client, "_put_with_os_error_retry", mock_put)
+    monkeypatch.setattr(S3Client, "upload_fileobj", mock_upload_fileobj)
+
+    operations = [
+        ("delete", MOCK_FILES),
+        ("upload", MOCK_FILES),
+    ]
+
+    response, manifest = delivery(
+        operations=operations,  # type: ignore
+        pushing_entity_id=PUSHING_ENTITY_ID,
+        dataset_id="dataset1",
+        product_id="product1",
+        max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
+        chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
+        chunk_concurrency=CHUNK_CONCURRENCY,
+        dry_run=True,
+    )
+
+    mock_put.assert_not_called()
+    mock_upload_fileobj.assert_not_called()
+    assert manifest is not None
+    assert len(response.operations_responses) == 2

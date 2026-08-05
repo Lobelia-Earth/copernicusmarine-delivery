@@ -1,5 +1,5 @@
-import json
 import random
+import re
 
 from click.testing import CliRunner
 from freezegun import freeze_time
@@ -32,6 +32,7 @@ def test_delivery_status_python_interface(
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
+        dry_run=False,
     )
     assert manifest is not None
 
@@ -70,8 +71,7 @@ def test_delivery_status_cli(
         env=cli_env,
     )
     assert upload_result.exit_code == 0
-    upload_output = json.loads(upload_result.output)
-    delivery_id = upload_output["delivery_id"]
+    delivery_id = re.search(r"delivery_id: (\S+)", upload_result.output).group(1)  # type: ignore
 
     # Now check the delivery status
     result = runner.invoke(
