@@ -85,12 +85,54 @@ _shared_options = [
         is_flag=True,
         help="Output delivery document to a json file named with the deliveryID.",
     ),
+    click.option(
+        "--dry-run",
+        is_flag=True,
+        help="Validate the upload without performing any actual operation in S3.",
+    ),
+]
+
+_upload_shared_options = [
+    click.option(
+        "--raise-on-upload-error",
+        is_flag=True,
+        help="Raise an exception and stop the delivery if any file fails to upload. "
+        "By default, the delivery will continue and skip any files that fail to upload.",
+    ),
+    click.option(
+        "--max-concurrent-uploads",
+        type=int,
+        default=MAX_CONCURRENT_UPLOADS,
+        show_default=True,
+        help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
+    ),
+    click.option(
+        "--chunk-size-mb",
+        type=int,
+        default=DEFAULT_CHUNK_SIZE_MB,
+        show_default=True,
+        help="The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.",
+    ),
+    click.option(
+        "--chunk-concurrency",
+        type=int,
+        default=CHUNK_CONCURRENCY,
+        show_default=True,
+        help="Number of parts uploaded in parallel per file (multipart upload).",
+    ),
 ]
 
 
 def shared_options(func):
     """Prepend in reversed order, as click applies from bottom-up"""
     for option in reversed(_shared_options):
+        func = option(func)
+    return func
+
+
+def upload_shared_options(func):
+    """Prepend in reversed order, as click applies from bottom-up"""
+    for option in reversed(_upload_shared_options):
         func = option(func)
     return func
 
@@ -114,38 +156,14 @@ def cli(max_content_width=200) -> None:
     "See the documentation for the format of the delivery file",
 )
 @shared_options
-@click.option(
-    "--max-concurrent-uploads",
-    type=int,
-    default=MAX_CONCURRENT_UPLOADS,
-    show_default=True,
-    help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
-)
-@click.option(
-    "--chunk-size-mb",
-    type=int,
-    default=DEFAULT_CHUNK_SIZE_MB,
-    show_default=True,
-    help="The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.",
-)
-@click.option(
-    "--chunk-concurrency",
-    type=int,
-    default=CHUNK_CONCURRENCY,
-    show_default=True,
-    help="Number of parts uploaded in parallel per file (multipart upload).",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Validate the delivery without performing any actual operation in S3.",
-)
+@upload_shared_options
 @log_exception_and_exit
 def delivery(
     file: Path,
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
+    raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
@@ -164,6 +182,7 @@ def delivery(
         pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
+        raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
@@ -183,32 +202,7 @@ def delivery(
     help="Relative path to the file. `product_id/dataset_id` are prepended to the file.",
 )
 @shared_options
-@click.option(
-    "--max-concurrent-uploads",
-    type=int,
-    default=MAX_CONCURRENT_UPLOADS,
-    show_default=True,
-    help="The maximum number of parallel threads that will be used to upload files defined in the `sources` attribute. Defaults to 5.",
-)
-@click.option(
-    "--chunk-size-mb",
-    type=int,
-    default=DEFAULT_CHUNK_SIZE_MB,
-    show_default=True,
-    help="The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.",
-)
-@click.option(
-    "--chunk-concurrency",
-    type=int,
-    default=CHUNK_CONCURRENCY,
-    show_default=True,
-    help="Number of parts uploaded in parallel per file (multipart upload).",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Validate the upload without performing any actual operation in S3.",
-)
+@upload_shared_options
 @log_exception_and_exit
 def upload(
     source: list[str],
@@ -216,6 +210,7 @@ def upload(
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
+    raise_on_upload_error: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
@@ -239,6 +234,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
+        raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,

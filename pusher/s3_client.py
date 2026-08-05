@@ -201,7 +201,8 @@ class S3Client:
         file: Path,
         chunk_size: int,
         dry_run: bool,
-        use_multipart: bool = True,
+        raise_on_error: bool,
+        use_multipart: bool,
     ) -> S3File | ErrorFile:
         """Upload a local file (by Path) to S3."""
         try:
@@ -227,6 +228,12 @@ class S3Client:
             )
 
         except Exception as e:
+            if raise_on_error:
+                logger.error(
+                    f"Something went wrong uploading: {file.name}. "
+                    f"There won't be any delivery."
+                )
+                raise e
             logger.error(
                 f"Something went wrong uploading: {file.name}. "
                 f"Skipping this file. Error: {_extract_error_message(e)}"
@@ -239,6 +246,7 @@ class S3Client:
     def upload_multiple_files(
         self,
         s3_key_local_file_mapping: dict[Path, str],
+        raise_on_error: bool,
         chunk_size: int,
         max_concurrent_uploads: int,
         dry_run: bool,
@@ -257,6 +265,7 @@ class S3Client:
                     key=key,
                     file=path,
                     use_multipart=True,
+                    raise_on_error=raise_on_error,
                     chunk_size=chunk_size,
                     dry_run=dry_run,
                 ): (path, key)

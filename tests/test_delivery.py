@@ -14,6 +14,7 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delivery
 from pusher.core_functions.utils import megabytes_to_bytes
+from pusher.python_interface import Delivery, Upload
 from pusher.s3_client import S3Client
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
@@ -35,6 +36,7 @@ def test_delivery_python_interface(
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
+        raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
@@ -57,6 +59,7 @@ def test_delivery_early_exit_with_validation_error(
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
             product_id="product1",
+            raise_on_upload_error=False,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
@@ -122,3 +125,29 @@ def test_delivery_dry_run_does_not_call_s3(
     mock_upload_fileobj.assert_not_called()
     assert manifest is not None
     assert len(response.operations_responses) == 2
+
+
+def test_upload_one_file_cannot_be_uploaded_with_raise(
+    monkeypatch, glo_mercator_bucket
+):
+    def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
+        if "file1.txt" in key:
+            raise Exception("Simulated upload failure for file1.txt")
+        return {"e_tag": "mock-etag", "VersionId": "mock-version-id"}
+
+    upload = Upload(files=MOCK_FILES)
+    delivery = Delivery(operations=[upload])
+    monkeypatch.setattr(
+        S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry
+    )
+    with pytest.raises(Exception) as exc_info:
+        delivery.submit(
+            pushing_entity_id=PUSHING_ENTITY_ID,
+            dataset_id="dataset1",
+            product_id="product1",
+            raise_on_upload_error=True,
+            max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
+            chunk_size_mb=DEFAULT_CHUNK_SIZE_MB,
+            chunk_concurrency=CHUNK_CONCURRENCY,
+        )
+    assert "Simulated upload failure for file1.txt" in str(exc_info.value)
