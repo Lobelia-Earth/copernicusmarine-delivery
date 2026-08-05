@@ -247,10 +247,9 @@ class S3Client:
         success_results = []
         error_results = []
 
-        if not dry_run:
-            logger.info(
-                f"Starting to upload {len(s3_key_local_file_mapping)} files ..."
-            )
+        logger.info(
+            f"{'[DRY RUN]: ' if dry_run else ''}Starting to upload {len(s3_key_local_file_mapping)} files ..."
+        )
         with ThreadPoolExecutor(max_workers=max_concurrent_uploads) as executor:
             futures = {
                 executor.submit(
@@ -269,7 +268,7 @@ class S3Client:
                     success_results.append(result)
                     if not dry_run:
                         logger.info(
-                            f"Uploaded [{i + 1}/{total}] file {result.local_path.name}"
+                            f"{'[DRY RUN]: ' if dry_run else ''}Uploaded [{i + 1}/{total}] file {result.local_path.name}"
                         )
                 else:
                     error_results.append(result)

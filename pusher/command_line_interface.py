@@ -169,7 +169,7 @@ def delivery(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    print_id_header(manifest)
+    print_id_header(manifest, dry_run)
     print_delivery_summary(response_delivery, dry_run)
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
@@ -244,7 +244,7 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    print_id_header(manifest)
+    print_id_header(manifest, dry_run)
     print_operation_summary(response, dry_run)
     if save_delivery_json and manifest:
         saving_delivery_file(manifest)
@@ -293,7 +293,7 @@ def delete(
         dry_run=dry_run,
     )
 
-    print_id_header(manifest)
+    print_id_header(manifest, dry_run)
     print_operation_summary(response, dry_run)
 
     if save_delivery_json:
@@ -311,8 +311,8 @@ def saving_delivery_file(manifest: Manifest) -> None:
         )
 
 
-def print_id_header(manifest: Manifest) -> None:
-    click.echo("\nDelivery summary:\n")
+def print_id_header(manifest: Manifest, dry_run: bool) -> None:
+    click.echo(f"\n{'[DRY RUN]: ' if dry_run else ''}Delivery summary:\n")
     click.echo(f"\tdelivery_id: {manifest.manifest_id}")
     click.echo(f"\tpushing_entity_id: {manifest.pushing_entity_id}")
     click.echo(f"\tproduct_id: {manifest.product_id}")

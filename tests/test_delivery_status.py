@@ -71,9 +71,7 @@ def test_delivery_status_cli(
         env=cli_env,
     )
     assert upload_result.exit_code == 0
-    delivery_id = re.search(
-        r"delivery_id: (\S+)", upload_result.output
-    ).group(1)  # type: ignore
+    delivery_id = re.search(r"delivery_id: (\S+)", upload_result.output).group(1)  # type: ignore
 
     # Now check the delivery status
     result = runner.invoke(

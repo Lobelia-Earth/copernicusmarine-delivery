@@ -325,12 +325,11 @@ def _put_files_to_ingestion_system(
 
     _update_operation_with_put_results(operation, put_files_result)
 
-    if not dry_run:
-        total_size = operation.total_size()
-        logger.info(
-            f"Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
-            f"for a total size of {human_readable_size(total_size)}."
-        )
+    total_size = operation.total_size()
+    logger.info(
+        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
+        f"for a total size of {human_readable_size(total_size)}."
+    )
     operation.upload_duration_seconds = elapsed
     step_status = "success"
     if not put_files_result.successful_files:
