@@ -13,7 +13,7 @@
   	[DELETE] tests/resources/file1.txt
   	[DELETE] tests/resources/file2.txt
   
-  Total: 0 uploads, 2 deletes.
+  Total: 0 file uploaded, 2 file to delete.
   '''
 # ---
 # name: test_delete_cli_save_delivery_json
@@ -30,7 +30,7 @@
   	[DELETE] tests/resources/file1.txt
   	[DELETE] tests/resources/file2.txt
   
-  Total: 0 uploads, 2 deletes.
+  Total: 0 file uploaded, 2 file to delete.
   '''
 # ---
 # name: test_delete_cli_save_delivery_json.1
@@ -81,7 +81,7 @@
   {
     "delivery_id": "20120114T120001-product1-2824",
     "fatal_error": null,
-    "files_deleted": [
+    "files_to_delete": [
       {
         "key_suffix": "tests/resources/file1.txt",
         "status_timestamp": null,

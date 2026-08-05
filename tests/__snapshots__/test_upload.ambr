@@ -13,7 +13,7 @@
   	[UPLOAD] tests/resources/file1.txt -> product1/dataset1/tests/resources/file1.txt
   	[UPLOAD] tests/resources/file2.txt -> product1/dataset1/tests/resources/file2.txt
   
-  Total: 2 uploads, 0 deletes.
+  Total: 2 file uploaded, 0 file to delete.
   '''
 # ---
 # name: test_upload_cli_save_delivery_json
@@ -30,7 +30,7 @@
   	[UPLOAD] tests/resources/file1.txt -> product1/dataset1/tests/resources/file1.txt
   	[UPLOAD] tests/resources/file2.txt -> product1/dataset1/tests/resources/file2.txt
   
-  Total: 2 uploads, 0 deletes.
+  Total: 2 file uploaded, 0 file to delete.
   '''
 # ---
 # name: test_upload_cli_save_delivery_json.1

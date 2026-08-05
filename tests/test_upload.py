@@ -8,7 +8,7 @@ import yaml
 from click.testing import CliRunner
 from freezegun import freeze_time
 
-from pusher import InvalidDeliveryIdsError
+from pusher import InvalidDeliveryIdsError, Upload
 from pusher.command_line_interface import cli
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -46,6 +46,7 @@ def test_upload_python_interface(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_concurrency=CHUNK_CONCURRENCY,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -157,6 +158,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
             files=MOCK_FILES,
             dataset_id="dataset1",
             product_id="product1",
+            raise_on_upload_error=False,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
@@ -185,6 +187,7 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
@@ -198,3 +201,28 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
     assert len(response.files_failed) == 1
     assert str(response.files_failed[0].local_path).endswith("file1.txt")
     assert manifest.model_dump_json(indent=2) == snapshot
+
+
+def test_upload_one_file_cannot_be_uploaded_with_raise(
+    monkeypatch, glo_mercator_bucket
+):
+    def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
+        if "file1.txt" in key:
+            raise Exception("Simulated upload failure for file1.txt")
+        return {"e_tag": "mock-etag", "VersionId": "mock-version-id"}
+
+    upload = Upload(files=MOCK_FILES)
+    monkeypatch.setattr(
+        S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry
+    )
+    with pytest.raises(Exception) as exc_info:
+        upload.submit(
+            pushing_entity_id=PUSHING_ENTITY_ID,
+            dataset_id="dataset1",
+            product_id="product1",
+            raise_on_upload_error=True,
+            max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
+            chunk_size_mb=DEFAULT_CHUNK_SIZE_MB,
+            chunk_concurrency=CHUNK_CONCURRENCY,
+        )
+    assert "Simulated upload failure for file1.txt" in str(exc_info.value)

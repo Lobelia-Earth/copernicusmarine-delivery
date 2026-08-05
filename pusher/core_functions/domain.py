@@ -75,7 +75,7 @@ class ResponseUpload(BaseResponse):
 class ResponseDelete(BaseResponse):
     """Metadata returned when using :func:`~pusher.delete`"""
 
-    files_deleted: list[DeleteFile] = Field(default_factory=list)
+    files_to_delete: list[DeleteFile] = Field(default_factory=list)
 
     @classmethod
     def create_from_fatal_error(cls, fatal_error: str) -> "ResponseDelete":
@@ -83,11 +83,11 @@ class ResponseDelete(BaseResponse):
 
     @classmethod
     def create(
-        cls, delivery_id: str, files_deleted: list[DeleteFile]
+        cls, delivery_id: str, files_to_delete: list[DeleteFile]
     ) -> "ResponseDelete":
         return cls(
             delivery_id=delivery_id,
-            files_deleted=files_deleted,
+            files_to_delete=files_to_delete,
         )
 
 

@@ -26,6 +26,8 @@ def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str
         file=RESOURCES / "file1.txt",
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
+        raise_on_error=False,
+        use_multipart=True,
     )
     assert isinstance(result, S3File)
     assert result.s3_path == key
@@ -41,6 +43,8 @@ def test_upload_file_nonexistent_returns_error(
         file=Path("nonexistent/file.nc"),
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
+        raise_on_error=False,
+        use_multipart=True,
     )
     assert isinstance(result, ErrorFile)
 
@@ -59,6 +63,7 @@ def test_upload_multiple_files(
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         max_concurrent_uploads=10,
         dry_run=False,
+        raise_on_error=False,
     )
     assert len(result.successful_files) == 2
     assert len(result.errored_files) == 0
@@ -78,6 +83,7 @@ def test_upload_multiple_files_partial_failure(
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         max_concurrent_uploads=10,
         dry_run=False,
+        raise_on_error=False,
     )
     assert len(result.successful_files) == 1
     assert len(result.errored_files) == 1

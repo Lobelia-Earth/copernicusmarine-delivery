@@ -259,8 +259,17 @@ pusher delivery-status --delivery-id some-delivery-id --dataset-id hello --produ
 
 ## Error handling
 
+This package will raise in the following cases:
+
+- Wrong IDs: if the pushing entity ID, product ID or dataset ID are wrong, the package will raise an error.
+- Wrong file paths: if the file paths are wrong and any of the files cannot be found locally, the package will raise an error. Applies for the "upload" operation.
+- Duplicate files: if the same file is added twice to the same operation, the package will raise an error.
+- All the uploads for an operation fail: if all the uploads for an operation fail, the package will raise an error.
+
+Optionally, you can set the `raise_on_upload_error` flag to `True` when submitting a delivery. In that case, if any of the uploads fail, the package will raise an error. No delivery will be submitted in that case.
+By default, the package will not raise an error if an upload fails. Instead, it will return a manifest without the failed uploads. The failed uploads will be logged and in the response.
+
 > The error handling right now might be inconsistent across the package. Please report any inconsistency.
-> For example, sometimes we return a fatal error in a response object, sometimes we raise an exception.
 
 ## Features to come
 
@@ -269,7 +278,6 @@ Here is a list of features we intend to implement in the near future:
 - Pass a folder instead of a list of files for the upload.
 - Pass a glob pattern for the upload.
 - Define the published S3 path of the data while pointing to a local file with a different folder structure.
-- Dry-run.
 - Batching: divide the upload into several smaller ones.
 - Retry/rerun system: if an upload fails, you can rerun the delivery and only the failed operations will be rerun and only the failed uploads will be retried.
 - Work on error consistency and documentation.

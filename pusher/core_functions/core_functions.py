@@ -70,6 +70,7 @@ def upload(
     product_id: str,
     dataset_id: str,
     files: list[str],
+    raise_on_upload_error: bool,
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
@@ -106,6 +107,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         operation=upload_operation,
+        raise_on_error=raise_on_upload_error,
         chunk_size=chunk_size_bytes,
         max_concurrent_uploads=max_concurrent_uploads,
         dry_run=dry_run,
@@ -162,9 +164,12 @@ def delete(
         operations=[delete_operation],
         dry_run=dry_run,
     )
-    return ResponseDelete.create(
-        delivery_id=manifest.manifest_id, files_deleted=delete_operation.files
-    ), manifest
+    return (
+        ResponseDelete.create(
+            delivery_id=manifest.manifest_id, files_to_delete=delete_operation.files
+        ),
+        manifest,
+    )
 
 
 def create_and_validate_delete_operation(
@@ -181,6 +186,7 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
+    raise_on_upload_error: bool,
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
@@ -214,6 +220,7 @@ def delivery(
                 product_id=product_id,
                 dataset_id=dataset_id,
                 operation=operation,
+                raise_on_error=raise_on_upload_error,
                 chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
                 dry_run=dry_run,
@@ -231,7 +238,7 @@ def delivery(
             )
             all_responses.append(
                 ResponseDelete.create(
-                    delivery_id=manifest_id, files_deleted=operation.files
+                    delivery_id=manifest_id, files_to_delete=operation.files
                 )
             )
 
@@ -305,6 +312,7 @@ def _put_files_to_ingestion_system(
     product_id: str,
     dataset_id: str,
     operation: UploadOperation,
+    raise_on_error: bool,
     chunk_size: int,
     max_concurrent_uploads: int,
     dry_run: bool,
@@ -317,7 +325,11 @@ def _put_files_to_ingestion_system(
         dataset_id,
     )
     put_files_result = s3_client.upload_multiple_files(
-        local_path_s3_keys_mapping, chunk_size, max_concurrent_uploads, dry_run
+        local_path_s3_keys_mapping,
+        raise_on_error=raise_on_error,
+        chunk_size=chunk_size,
+        max_concurrent_uploads=max_concurrent_uploads,
+        dry_run=dry_run,
     )
     elapsed = time.time() - top
     if not put_files_result.successful_files:
