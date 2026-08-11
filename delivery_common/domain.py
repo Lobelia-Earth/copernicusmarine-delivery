@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal, TypeVar, Union
 
@@ -61,8 +62,20 @@ class PushingEntities(BaseModel):
         return cls(**data)
 
 
-DeliveryStatus = Literal["pending", "validated", "completed", "failed"]
-OperationNames = Literal["upload", "delete"]
+# DeliveryStatus = Literal["pending", "validated", "completed", "failed"]
+# OperationNames = Literal["upload", "delete"]
+
+
+class DeliveryStatus(str, Enum):
+    pending = "pending"
+    validated = "validated"
+    completed = "completed"
+    failed = "failed"
+
+
+class OperationNames(str, Enum):
+    upload = "upload"
+    delete = "delete"
 
 
 class DeliveryFile(BaseModel):
@@ -156,7 +169,7 @@ class Delivery(BaseModel):
     #: done: The delivery has been processed successfully by the OPDV system.
     #: partial_error: The delivery has been partially processed by the OPDV system. Some files or operations may have failed.
     #: error: The delivery failed to be processed by the OPDV system.
-    status: DeliveryStatus = "pending"
+    status: DeliveryStatus = Field(default=DeliveryStatus.pending)
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
     #: Optional error message if something failed or partially failed.

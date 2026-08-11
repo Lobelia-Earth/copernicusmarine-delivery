@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from delivery_common.domain import Delivery as DeliveryModel
+from delivery_common.domain import OperationNames
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -29,7 +30,7 @@ class Upload(BaseOperation):
     """
 
     def __init__(self, files: list[str]):
-        super().__init__(operation="upload", files=files)
+        super().__init__(operation=OperationNames.upload, files=files)
 
     def submit(
         self,
@@ -79,7 +80,7 @@ class Delete(BaseOperation):
     """
 
     def __init__(self, files: list[str]):
-        super().__init__(operation="delete", files=files)
+        super().__init__(operation=OperationNames.delete, files=files)
 
     def submit(
         self,

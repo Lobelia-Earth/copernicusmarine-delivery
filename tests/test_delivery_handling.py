@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import yaml
@@ -82,6 +83,7 @@ def test_create_delivery(tmp_path):
 
 @freeze_time("2024-03-15 12:00:01")
 def test_save_delivery_and_load(tmp_path, snapshot):
+    random.seed(42)
     delivery_id = create_delivery_id("product1")
     delivery = create_delivery(
         pushing_entity_id="TEST-FR",
@@ -114,7 +116,7 @@ def test_save_delivery_and_load(tmp_path, snapshot):
     delivery_path = tmp_path / "delivery.yaml"
     # dump
     with open(delivery_path, "w") as f:
-        yaml.dump(delivery.model_dump(), f)
+        yaml.dump(delivery.model_dump(mode="json"), f)
 
     # load
     with open(delivery_path, "r") as f:
