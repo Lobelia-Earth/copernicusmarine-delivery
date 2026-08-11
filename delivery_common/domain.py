@@ -1,10 +1,10 @@
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Generic, Literal, NewType, TypeVar
+from typing import Annotated, Literal, TypeVar, Union
 
 import yaml
-from pydantic import BaseModel, Field, SerializeAsAny, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 ##############
 # Utils
@@ -18,17 +18,8 @@ def now_in_utc_isoformat() -> str:
 
 #############
 
-# TODO: Be sure we use this S3 path where we should
-# i.e only when sending to S3. All the rest, we want a relative path
-# that is used to find the file locally, in the manifest, and
-# as the suffix of the S3 key.
-S3Path = NewType("S3Path", str)
-# TODO: see if an Enum wouldn't be better to avoid the type ignore
-OperationNames = Literal["upload", "delete"]
 
 T = TypeVar("T")
-# Generic type for ManifestFile and its subclasses
-F = TypeVar("F", bound="ManifestFile")
 
 
 class Product(BaseModel):
@@ -48,6 +39,10 @@ class InvalidDeliveryIdsError(Exception):
 
 
 class PushingEntities(BaseModel):
+    """
+    TODO: create an endpoint on OPDV side to get this information.
+    """
+
     pushing_entities: list[PushingEntity] = Field(..., alias="pushing-entities")
 
     @classmethod
@@ -66,7 +61,11 @@ class PushingEntities(BaseModel):
         return cls(**data)
 
 
-class ManifestFile(BaseModel):
+DeliveryStatus = Literal["pending", "validated", "completed", "failed"]
+OperationNames = Literal["upload", "delete"]
+
+
+class DeliveryFile(BaseModel):
     #: File path. Only the part specific to the dataset and defined by the pushing entity.
     #: Example: "subfolder/file.nc" or "file.nc"
     #: In the case of an upload, it will be uploaded to the Marine datastore as "/{product_id}/{dataset_id}/{key_suffix}".
@@ -79,7 +78,7 @@ class ManifestFile(BaseModel):
         """
         From Claude. Not sure it is a good idea but I will leave it there as a TODO.
 
-        We need to make sure we retrieve and save the right path in the manifest.
+        We need to make sure we retrieve and save the right path in the delivery.
         The right path is the relative path that we will apply in S3. Without product/dataset prefix.
         Examples:
         - datasetID/filename.txt => wrong s3 path
@@ -101,178 +100,69 @@ class ManifestFile(BaseModel):
             )  # disgusting but good enough for now
         return v
 
-    #: last updated status timestamp in ISO 8601 format (UTC)
-    status_timestamp: str | None = None
-    #: Optional error message if the file failed to be uploaded.
-    error: str | None = None
-
-    def set_success_status(self) -> None:
-        raise NotImplementedError("This method should be implemented in subclasses.")
-
-    def set_backup_success_status(self) -> None:
-        raise NotImplementedError("This method should be implemented in subclasses.")
-
-    def set_error_status(self, error_message: str) -> None:
-        self.status = "error"
-        self.error = error_message
+    #: Optional error message if the file failed.
+    error_message: str | None = None
 
 
-class UploadFile(ManifestFile):
-    #: Status of the file in the OPDV system
-    #: todo: The file has not been picked up yet by the OPDV system.
-    #: validated: The file has been validated by the OPDV system. Will be processed.
-    #: published: The file has been published to MDS service.
-    #: error: The file failed to be uploaded.
-    status: Literal["todo", "validated", "published", "error"] = "todo"
-    #: Estimation of the size of the file in MB.
+class UploadFile(DeliveryFile):
     file_size_mb: int | None
     #: checksum of the file to be uploaded.
     checksum: str | None
-    #: Upload time from the users machine to the OPDV system in seconds.
-    upload_duration_seconds: float | None
-
-    def set_success_status(self) -> None:
-        self.status = "published"
-
-
-class DeleteFile(ManifestFile):
-    #: Status of the file in the OPDV system
-    #: todo: The file has not been picked up yet by the OPDV system.
-    #: validated: The file has been validated by the OPDV system. Will be processed.
-    #: deleted: The file has been deleted from the MDS service.
-    #: error: The file failed to be deleted.
-    status: Literal["todo", "validated", "deleted", "error"] = "todo"
-
-    def set_success_status(self) -> None:
-        self.status = "deleted"
+    #: Upload start time from the users machine to the OPDV system in seconds.
+    upload_start_time: str | None
+    #: Upload end time from the users machine to the OPDV system in seconds.
+    upload_end_time: str | None
 
 
-class OperationChangelogEntry(BaseModel):
-    #: Different steps for an operation.
-    #: creation: The operation is being created by the user.
-    #: push: The operation is being push from a user to the OPDV system.
-    #: validate: The operation is being validated by the OPDV system.
-    #: publish and delete: The operation is being processed by the OPDV system.
-    #: backup: The operation is being backed up by the OPDV system.
-    step: Literal["creation", "push", "validate", "publish", "delete", "backup"]
-    #: ISO 8601 formatted
-    timestamp: str = Field(default_factory=now_in_utc_isoformat)
-    #: status of the operation in the OPDV system
-    step_status: Literal["success", "partial_error", "error"]
-    #: Optional error message if the operation failed to be processed by the OPDV system.
-    error: str | None = None
-    #: Optional comment for the operation step.
-    #: Can be especially useful for the backup step, there might be different backup strategies
-    #: and we might want to keep track of which one was used.
-    comment: str | None = None
+class DeleteFile(DeliveryFile):
+    pass
 
 
-class Operation(BaseModel, Generic[F]):
-    #: Operation type
-    #: upload: The operation is to upload new files to MDS storage.
-    #: delete: The operation is to delete files from MDS storage.
-    operation: OperationNames
-    #: status of the operation in the OPDV system
-    #: todo: The operation has not been picked up yet by the OPDV system.
-    #: in_progress: The operation is being processed by the OPDV system.
-    #: done: The operation has been processed successfully by the OPDV system.
-    #: partial_error: The operation has been partially processed by the OPDV system. Some files may have failed.
-    #: error: The operation failed to be processed by the OPDV system.
-    status: Literal["todo", "in_progress", "done", "partial_error", "error"] = "todo"
-    #: last updated status timestamp in ISO 8601 format (UTC)
-    status_timestamp: str | None = None
-    #: Optional error message if the operation failed to be processed by the OPDV system.
-    error: str | None = None
-    #: Changelog of the operation. Allows to keep track of the status changes and error messages.
-    #: intended for debugging and auditing purposes. Not intended for the user.
-    changelog: list[OperationChangelogEntry] = []
-    #: List of files associated with the operation.
-    files: list[F]
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.changelog:
-            self.add_changelog_entry(step="creation", step_status="success")
-
-    def add_changelog_entry(
-        self,
-        step: Literal["creation", "push", "validate", "publish", "delete", "backup"],
-        step_status: Literal["success", "partial_error", "error"],
-        error: str | None = None,
-        comment: str | None = None,
-    ) -> None:
-
-        self.changelog.append(
-            OperationChangelogEntry(
-                step=step,
-                step_status=step_status,
-                error=error,
-                comment=comment,
-            )
-        )
-
-
-class UploadOperation(Operation[UploadFile]):
-    operation: OperationNames = "upload"
-    #: Upload time from the users machine to the OPDV system in seconds for the whole operation.
-    upload_duration_seconds: float | None
+class UploadOperation(BaseModel):
+    operation: Literal["upload"] = "upload"
+    files: list[UploadFile] = Field(default_factory=list)
 
     def total_size(self) -> int:
-        """Returns the total size of the files in the operation in MB."""
-        return sum(f.file_size_mb or 0 for f in self.files)
+        """Returns the total size of all files in MB."""
+        return sum(file.file_size_mb or 0 for file in self.files)
 
 
-class DeleteOperation(Operation[DeleteFile]):
-    operation: OperationNames = "delete"
+class DeleteOperation(BaseModel):
+    operation: Literal["delete"] = "delete"
+    files: list[DeleteFile] = Field(default_factory=list)
 
 
-class Manifest(BaseModel):
-    #: Unique identifier for the manifest. Contains a date that is not in UTC.
-    manifest_id: str
+Operation = Annotated[
+    Union[UploadOperation, DeleteOperation], Field(discriminator="operation")
+]
+
+
+class Delivery(BaseModel):
+    #: Unique identifier for the delivery. Contains a date that is not in UTC.
+    delivery_id: str
     #: Unique identifier for the pushing entity.
     pushing_entity_id: str
     #: Unique identifier for the product.
     product_id: str
     #: Unique identifier for the dataset.
     dataset_id: str
-    #: List of operations associated with the manifest.
+    #: List of operations associated with the delivery.
     #: These operations will be done sequentially in the order they are listed.
-    operations: list[SerializeAsAny[Operation]]
+    operations: list[Operation] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def _parse_operations(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "operations" in data:
-            parsed = []
-            for op in data["operations"]:
-                if isinstance(op, dict):
-                    op_type = op.get("operation")
-                    if op_type == "upload":
-                        model_cls = UploadOperation
-                    elif op_type == "delete":
-                        model_cls = DeleteOperation
-                    else:
-                        model_cls = Operation
-                    parsed.append(model_cls(**op))
-                else:
-                    parsed.append(op)
-            data["operations"] = parsed
-        return data
-
-    #: ISO 8601 formatted timestamp in UTC for the creation of the delivery.
-    #: It corresponds to the moment the manifest is sent to the OPDV system.
-    creation_time: str
-    #: status of the manifest in the OPDV system.
-    #: todo: The manifest has not been picked up yet by the OPDV system.
-    #: in_progress: The manifest is being processed by the OPDV system.
-    #: done: The manifest has been processed successfully by the OPDV system.
-    #: partial_error: The manifest has been partially processed by the OPDV system. Some files or operations may have failed.
-    #: error: The manifest failed to be processed by the OPDV system.
-    status: Literal["todo", "in_progress", "done", "partial_error", "error"] = "todo"
+    #: status of the delivery in the OPDV system.
+    #: todo: The delivery has not been picked up yet by the OPDV system.
+    #: in_progress: The delivery is being processed by the OPDV system.
+    #: done: The delivery has been processed successfully by the OPDV system.
+    #: partial_error: The delivery has been partially processed by the OPDV system. Some files or operations may have failed.
+    #: error: The delivery failed to be processed by the OPDV system.
+    status: DeliveryStatus = "pending"
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None
-    #: Optional error message if the manifest failed to be processed by the OPDV system.
-    error: str | None = None
+    #: Optional error message if something failed or partially failed.
+    #: Please check the individual files for more details.
+    #: For further help, please contact the User Support team.
+    error_message: str | None = None
 
 
 class ErrorResponseFile(BaseModel):
@@ -288,17 +178,3 @@ class ErrorResponseFile(BaseModel):
 
 
 class InvalidFile(ErrorResponseFile): ...
-
-
-class ValidationResult(BaseModel, Generic[T]):
-    duplicate_files: list[T]
-
-
-class ValidationError(BaseModel, Generic[T]):
-    reason: str  # invalid, duplicates, etc
-    files: list[T]
-
-    def __str__(self) -> str:
-        return f"{self.reason} - {', '.join(str(f) for f in self.files)}"
-
-    __repr__ = __str__

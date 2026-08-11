@@ -8,12 +8,13 @@ from delivery_common.domain import (
     ErrorResponseFile,
     InvalidFile,
     OperationNames,
-    S3Path,
 )
 from pusher.logger import logger
 
-# Represents an S3 Path stripped of `data/manifest_id`
+# Represents an S3 Path stripped of `data/delivery_id`
 S3KeySuffix = NewType("S3KeySuffix", str)
+
+S3Path = NewType("S3Path", str)
 
 
 def get_s3_key_suffix(s3_path: S3Path) -> S3KeySuffix:
@@ -24,7 +25,8 @@ class S3File(BaseModel):
     local_path: Path
     s3_path: S3Path
     e_tag: str
-    upload_time: float
+    upload_start_time: str
+    upload_end_time: str
 
 
 class ErrorFile(ErrorResponseFile): ...

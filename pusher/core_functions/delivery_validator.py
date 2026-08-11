@@ -10,6 +10,9 @@ from pusher.s3_client import get_s3_metadata_client
 SUPPORTED_FILE_EXTENTIONS = {".txt", ".shp", ".zip", ".nc"}
 
 
+# TODO: move these to the common validation
+
+
 def file_exists(file_path: Path) -> bool:
     return file_path.exists()
 

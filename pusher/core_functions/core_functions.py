@@ -1,27 +1,22 @@
 import os
-import time
 from pathlib import Path
-
-import yaml
 
 from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
-    Manifest,
+    Delivery,
     Operation,
     OperationNames,
     UploadFile,
     UploadOperation,
 )
-from delivery_common.manifest import create_manifest, create_manifest_id
 from delivery_common.validation import validate_delivery_ids
 from pusher.core_functions.constants import (
-    DEFAULT_CHUNK_SIZE_MB,
-    DONE_MANIFESTS_PATH,
-    FAILED_MANIFESTS_PATH,
-    IN_PROGRESS_MANIFESTS_PATH,
     NEW_DATA_BUCKET_PATH,
-    NEW_MANIFESTS_PATH,
+)
+from pusher.core_functions.delivery import (
+    create_and_upload_delivery,
+    create_delivery_id,
 )
 from pusher.core_functions.delivery_validator import (
     fetch_pushing_entities,
@@ -38,7 +33,6 @@ from pusher.core_functions.domain import (
 from pusher.core_functions.utils import (
     get_ingestion_bucket_name,
     human_readable_size,
-    megabytes_to_bytes,
 )
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
@@ -46,23 +40,19 @@ from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 def get_local_path_s3_keys_mapping(
     list_of_files: list[str],
-    manifest_id: str,
+    delivery_id: str,
     product_id: str,
     dataset_id: str,
 ) -> dict[Path, str]:
     return {
         Path(file_path): NEW_DATA_BUCKET_PATH.format(
-            manifest_id=manifest_id,
+            delivery_id=delivery_id,
             product_id=product_id,
             dataset_id=dataset_id,
             file_name=file_path,
         )
         for file_path in list_of_files
     }
-
-
-def get_manifest_destination_key(manifest_id: str) -> str:
-    return NEW_MANIFESTS_PATH.format(manifest_id=manifest_id)
 
 
 def upload(
@@ -75,11 +65,11 @@ def upload(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-) -> tuple[ResponseUpload, Manifest]:
+) -> tuple[ResponseUpload, Delivery]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
-    3. Create Manifest with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
+    3. Create Delivery with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
     """
 
     logger.debug(
@@ -100,10 +90,10 @@ def upload(
     s3_client = get_s3_ingestion_client(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
-    manifest_id = create_manifest_id(product_id)
+    delivery_id = create_delivery_id(product_id)
     put_files_result = _put_files_to_ingestion_system(
         s3_client,
-        manifest_id=manifest_id,
+        delivery_id=delivery_id,
         product_id=product_id,
         dataset_id=dataset_id,
         operation=upload_operation,
@@ -113,22 +103,21 @@ def upload(
         dry_run=dry_run,
     )
 
-    manifest = _create_and_upload_manifest(
-        s3_client,
+    delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[upload_operation],
-        manifest_id=manifest_id,
+        delivery_id=delivery_id,
         dry_run=dry_run,
     )
 
     return (
         ResponseUpload.create(
-            delivery_id=manifest.manifest_id,
+            delivery_id=delivery.delivery_id,
             result_upload=put_files_result,
         ),
-        manifest,
+        delivery,
     )
 
 
@@ -138,9 +127,9 @@ def delete(
     dataset_id: str,
     files: list[str],
     dry_run: bool,
-) -> tuple[ResponseDelete, Manifest]:
+) -> tuple[ResponseDelete, Delivery]:
     """
-    Create manifest with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
+    Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
     logger.debug(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
@@ -156,8 +145,7 @@ def delete(
     )
     s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
 
-    manifest = _create_and_upload_manifest(
-        s3_client,
+    delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -166,9 +154,9 @@ def delete(
     )
     return (
         ResponseDelete.create(
-            delivery_id=manifest.manifest_id, files_to_delete=delete_operation.files
+            delivery_id=delivery.delivery_id, files_to_delete=delete_operation.files
         ),
-        manifest,
+        delivery,
     )
 
 
@@ -191,12 +179,12 @@ def delivery(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-) -> tuple[ResponseDelivery, Manifest]:
+) -> tuple[ResponseDelivery, Delivery]:
 
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
-    manifest_id = create_manifest_id(product_id)
+    delivery_id = create_delivery_id(product_id)
     all_operations: list[Operation] = []
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
@@ -216,7 +204,7 @@ def delivery(
         if isinstance(operation, UploadOperation):
             put_files_result = _put_files_to_ingestion_system(
                 s3_client,
-                manifest_id=manifest_id,
+                delivery_id=delivery_id,
                 product_id=product_id,
                 dataset_id=dataset_id,
                 operation=operation,
@@ -227,35 +215,30 @@ def delivery(
             )
             all_responses.append(
                 ResponseUpload.create(
-                    delivery_id=manifest_id,
+                    delivery_id=delivery_id,
                     result_upload=put_files_result,
                 )
             )
         elif isinstance(operation, DeleteOperation):
-            operation.add_changelog_entry(
-                step="push",
-                step_status="success",
-            )
             all_responses.append(
                 ResponseDelete.create(
-                    delivery_id=manifest_id, files_to_delete=operation.files
+                    delivery_id=delivery_id, files_to_delete=operation.files
                 )
             )
 
-    manifest = _create_and_upload_manifest(
-        s3_client,
+    delivery = create_and_upload_delivery(
         pushing_entity_id,
         product_id,
         dataset_id,
         all_operations,
         dry_run,
-        manifest_id=manifest_id,
+        delivery_id=delivery_id,
     )
     return (
         ResponseDelivery.create(
-            delivery_id=manifest_id, operations_responses=all_responses
+            delivery_id=delivery_id, operations_responses=all_responses
         ),
-        manifest,
+        delivery,
     )
 
 
@@ -269,46 +252,18 @@ def create_and_validate_upload_operation(
                 key_suffix=file,
                 file_size_mb=os.path.getsize(file) // (1024 * 1024),
                 checksum=None,  # ETag will be filled in after upload
-                upload_duration_seconds=None,  # will be filled in after upload
+                upload_start_time=None,  # will be filled in after upload
+                upload_end_time=None,  # will be filled in after upload
             )
             for file in files
         ],
-        upload_duration_seconds=None,  # will be filled in after upload in OPDV
+        operation="upload",
     )
-
-
-def _create_and_upload_manifest(
-    s3_client: S3Client,
-    pushing_entity_id: str,
-    product_id: str,
-    dataset_id: str,
-    operations: list[Operation],
-    dry_run: bool,
-    manifest_id: str | None = None,
-) -> Manifest:
-    if not manifest_id:
-        manifest_id = create_manifest_id(product_id)
-    manifest = create_manifest(
-        pushing_entity_id=pushing_entity_id,
-        product_id=product_id,
-        dataset_id=dataset_id,
-        operations=operations,
-        manifest_id=manifest_id,
-    )
-    if not dry_run:
-        manifest_bucket_path = get_manifest_destination_key(manifest.manifest_id)
-        logger.debug(f"Uploading delivery document to {manifest_bucket_path}")
-        s3_client.upload_fileobj(
-            key=manifest_bucket_path,
-            file=manifest.model_dump_json().encode(),
-            chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
-        )
-    return manifest
 
 
 def _put_files_to_ingestion_system(
     s3_client: S3Client,
-    manifest_id: str,
+    delivery_id: str,
     product_id: str,
     dataset_id: str,
     operation: UploadOperation,
@@ -317,10 +272,9 @@ def _put_files_to_ingestion_system(
     max_concurrent_uploads: int,
     dry_run: bool,
 ) -> PutFilesResult:
-    top = time.time()
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
         [file.key_suffix for file in operation.files],
-        manifest_id,
+        delivery_id,
         product_id,
         dataset_id,
     )
@@ -331,7 +285,6 @@ def _put_files_to_ingestion_system(
         max_concurrent_uploads=max_concurrent_uploads,
         dry_run=dry_run,
     )
-    elapsed = time.time() - top
     if not put_files_result.successful_files:
         raise NoSuccessfulUploadsError(put_files_result.errored_files)
 
@@ -339,23 +292,10 @@ def _put_files_to_ingestion_system(
 
     total_size = operation.total_size()
     logger.info(
-        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files in {elapsed:.2f} seconds "
+        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files"
         f"for a total size of {human_readable_size(total_size)}."
     )
-    operation.upload_duration_seconds = elapsed
-    step_status = "success"
-    if not put_files_result.successful_files:
-        step_status = "error"
-    elif put_files_result.errored_files and put_files_result.successful_files:
-        step_status = "partial_error"
 
-    operation.add_changelog_entry(
-        step="push",
-        step_status=step_status,
-        comment=f"Upload operation pushed files in {elapsed:.2f} seconds "
-        f"with {len(put_files_result.successful_files)} successful files"
-        f" and {len(put_files_result.errored_files)} errored files.",
-    )
     return put_files_result
 
 
@@ -374,70 +314,16 @@ def _update_operation_with_put_results(
         str(file.local_path): file for file in put_files_result.errored_files
     }
     index_files_to_remove = []
-    for i, manifest_file in enumerate(operation.files):
-        if manifest_file.key_suffix in successful_files_dict:
-            successful_s3_file = successful_files_dict[manifest_file.key_suffix]
-            manifest_file.checksum = successful_s3_file.e_tag
-            manifest_file.upload_duration_seconds = successful_s3_file.upload_time
-        elif manifest_file.key_suffix in errored_files_dict:
+    for i, delivery_file in enumerate(operation.files):
+        if delivery_file.key_suffix in successful_files_dict:
+            successful_s3_file = successful_files_dict[delivery_file.key_suffix]
+            delivery_file.checksum = successful_s3_file.e_tag
+            delivery_file.upload_start_time = successful_s3_file.upload_start_time
+            delivery_file.upload_end_time = successful_s3_file.upload_end_time
+        elif delivery_file.key_suffix in errored_files_dict:
             logger.debug(
-                f"Removing file {manifest_file.key_suffix} from upload operation."
+                f"Removing file {delivery_file.key_suffix} from upload operation."
             )
             index_files_to_remove.append(i)
     for index in reversed(index_files_to_remove):
         del operation.files[index]
-
-
-def get_manifest(
-    delivery_id: str,
-    pushing_entity_id: str,
-    product_id: str,
-    dataset_id: str,
-) -> Manifest:
-    pushing_entities = fetch_pushing_entities()
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
-    manifest_new = _get_manifest(
-        s3_client, NEW_MANIFESTS_PATH.format(manifest_id=delivery_id)
-    )
-    if manifest_new:
-        return manifest_new
-    manifest_in_progress = _get_manifest(
-        s3_client,
-        IN_PROGRESS_MANIFESTS_PATH.format(manifest_id=delivery_id),
-    )
-    if manifest_in_progress:
-        return manifest_in_progress
-    manifest_failed = _get_manifest(
-        s3_client,
-        FAILED_MANIFESTS_PATH.format(
-            product_id=product_id, dataset_id=dataset_id, manifest_id=delivery_id
-        ),
-    )
-    if manifest_failed:
-        return manifest_failed
-    manifest_done = _get_manifest(
-        s3_client,
-        DONE_MANIFESTS_PATH.format(
-            product_id=product_id, dataset_id=dataset_id, manifest_id=delivery_id
-        ),
-    )
-    if manifest_done:
-        return manifest_done
-    raise ValueError(
-        f"Manifest with id {delivery_id} not found for pushing entity {pushing_entity_id}."
-    )
-
-
-def _get_manifest(
-    s3_client: S3Client,
-    key: str,
-) -> Manifest | None:
-    try:
-        manifest_stream = s3_client.get_file_stream(key)
-        return Manifest.model_validate(yaml.safe_load(manifest_stream))
-    except Exception:
-        logger.debug(f"Manifest not found at {key}")
-        return None

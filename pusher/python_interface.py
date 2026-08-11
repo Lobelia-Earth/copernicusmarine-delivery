@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from delivery_common.domain import Manifest
+from delivery_common.domain import Delivery as DeliveryModel
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -8,8 +8,8 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
-from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
+from pusher.core_functions.delivery import get_delivery
 from pusher.core_functions.domain import (
     BaseOperation,
     ResponseDelete,
@@ -170,18 +170,14 @@ class Delivery(BaseModel):
         return response
 
 
-def delivery_status(
-    delivery_id: str, pushing_entity_id: str, product_id: str, dataset_id: str
-) -> Manifest:
+def delivery_status(delivery_id: str, pushing_entity_id: str) -> DeliveryModel:
     """
     Get the status of a delivery.
 
-    Right now, returns the manifest.
+    Right now, returns the delivery.
     """
-    manifest = get_manifest(
+    delivery = get_delivery(
         delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,
-        product_id=product_id,
-        dataset_id=dataset_id,
     )
-    return manifest
+    return delivery

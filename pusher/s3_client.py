@@ -9,6 +9,7 @@ from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
+from delivery_common.domain import now_in_utc_isoformat
 from pusher.core_functions.domain import (
     ErrorFile,
     PutFilesResult,
@@ -208,23 +209,25 @@ class S3Client:
         try:
             if dry_run:
                 e_tag = "dry-run"
-                upload_time = 0.0
+                upload_start_time = now_in_utc_isoformat()
+                upload_end_time = now_in_utc_isoformat()
             else:
                 logger.debug(f"Starting upload for {file.name}")
-                top = time.time()
+                upload_start_time = now_in_utc_isoformat()
                 put_result = self._put_with_os_error_retry(
                     key, file, use_multipart, chunk_size
                 )
-                upload_time = time.time() - top
+                upload_end_time = now_in_utc_isoformat()
                 logger.debug(
-                    f"Successfully uploaded file {file.name} in {upload_time:.2f} seconds"
+                    f"Successfully uploaded file {file.name} from {upload_start_time} to {upload_end_time}"
                 )
                 e_tag = put_result["e_tag"].strip('"')
             return S3File(
                 local_path=file,
                 s3_path=S3Path(key),
                 e_tag=e_tag,
-                upload_time=upload_time,
+                upload_start_time=upload_start_time,
+                upload_end_time=upload_end_time,
             )
 
         except Exception as e:

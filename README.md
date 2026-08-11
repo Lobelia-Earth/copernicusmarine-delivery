@@ -9,6 +9,7 @@ You need to set the following environment variables:
 - `OPDV_S3_ENDPOINT`: the URL of the OPDV S3 service.
 - `OPDV_ACCESS_KEY_ID`: the access key ID to access the OPDV S3 service.
 - `OPDV_SECRET_ACCESS_KEY`: the secret access key to access the OPDV S3 service.
+- `INGESTION_SERVICE_URL`: the URL of the ingestion service API. Defaults to `https://opdv-api-dta.lobelia.earth`.
 - `MDL_METADATA_ENDPOINT="https://s3.waw3-1.cloudferro.com"`.
 - `MDL_METADATA_BUCKET="mdl-metadata-dta"`: Set this as the dta bucket name, otherwise points to production.
 
@@ -169,7 +170,7 @@ You can then check the status of your delivery with the delivery ID:
 ```python
 from pusher import delivery_status
 
-manifest = delivery_status(delivery_id, pushing_entity_id, product_id, dataset_id)
+delivery = delivery_status(delivery_id, pushing_entity_id)
 ```
 
 ## CLI
@@ -188,6 +189,18 @@ You can pass multiple sources:
 
 ``` bash
 pusher upload --source some/file.nc --source some/other/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo
+```
+
+You can validate without performing any actual operation with `--dry-run`:
+
+``` bash
+pusher upload --source some/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo --dry-run
+```
+
+To save the delivery document to a JSON file (for later use with `pusher status`), use `--save-delivery-json`:
+
+``` bash
+pusher upload --source some/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo --save-delivery-json
 ```
 
 > WARNING: the path for the files should be relative. It should point to a local file.
@@ -209,6 +222,8 @@ You can pass multiple sources:
 pusher delete --source some/file.nc --source some/other/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo
 ```
 
+You can also use `--dry-run` and `--save-delivery-json` as with the upload command.
+
 > WARNING: the path for the files should be the path without productID and datasetID. See the concept of folder structure and path.
 
 ### Delivery command
@@ -226,6 +241,8 @@ Example:
 ``` bash
 pusher delivery --file delivery_file.yaml --dataset-id hello --product-id world --pushing-entity-id lololo
 ```
+
+You can also use `--dry-run` and `--save-delivery-json` as with the upload command.
 
 The delivery file should be a YAML file with the following structure:
 
@@ -245,16 +262,22 @@ delivery:
 
 > WIP: for internal testing for the moment. Don't hesitate to suggest what this command should do.
 
-Given the delivery ID, prints the manifest fetched from OPDV.
+Given the delivery ID, prints the delivery summary fetched from OPDV.
 
 ``` bash
-pusher delivery-status --help
+pusher status --help
 ```
 
-Example:
+You can provide the IDs directly:
 
 ``` bash
-pusher delivery-status --delivery-id some-delivery-id --dataset-id hello --product-id world --pushing-entity-id lololo
+pusher status --delivery-id some-delivery-id --pushing-entity-id lololo
+```
+
+Or provide a delivery JSON file (saved with `--save-delivery-json`):
+
+``` bash
+pusher status --delivery-json some-delivery-id.json
 ```
 
 ## Error handling
@@ -267,7 +290,7 @@ This package will raise in the following cases:
 - All the uploads for an operation fail: if all the uploads for an operation fail, the package will raise an error.
 
 Optionally, you can set the `raise_on_upload_error` flag to `True` when submitting a delivery. In that case, if any of the uploads fail, the package will raise an error. No delivery will be submitted in that case.
-By default, the package will not raise an error if an upload fails. Instead, it will return a manifest without the failed uploads. The failed uploads will be logged and in the response.
+By default, the package will not raise an error if an upload fails. Instead, it will remove the failed uploads from the delivery. The failed uploads will be logged and can be found in the response.
 
 > The error handling right now might be inconsistent across the package. Please report any inconsistency.
 

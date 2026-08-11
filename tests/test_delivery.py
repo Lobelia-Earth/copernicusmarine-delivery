@@ -12,7 +12,7 @@ from pusher.core_functions.constants import (
     DEFAULT_CHUNK_SIZE_MB,
     MAX_CONCURRENT_UPLOADS,
 )
-from pusher.core_functions.core_functions import delivery
+from pusher.core_functions.core_functions import delivery as delivery_function
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.python_interface import Delivery, Upload
 from pusher.s3_client import S3Client
@@ -23,7 +23,11 @@ PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_python_interface(
-    snapshot, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    snapshot,
+    glo_mercator_bucket,
+    set_env,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
     random.seed(42)
     operations = [
@@ -31,7 +35,7 @@ def test_delivery_python_interface(
         ("upload", MOCK_FILES),
     ]
 
-    response, manifest = delivery(
+    response, delivery = delivery_function(
         operations=operations,  # type: ignore
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
@@ -43,18 +47,18 @@ def test_delivery_python_interface(
         dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
-    assert manifest is not None
-    assert manifest.model_dump_json(indent=2) == snapshot
+    assert delivery is not None
+    assert delivery.model_dump_json(indent=2) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_early_exit_with_validation_error(
-    glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    glo_mercator_bucket, set_env, skip_delivery_ids_validation, ingestion_service
 ):
     random.seed(42)
     operations = [("delete", MOCK_FILES), ("upload", MOCK_FILES + ["extra_file.txt"])]
     with pytest.raises(InvalidFilesError) as exc_info:
-        delivery(
+        delivery_function(
             operations=operations,  # type: ignore
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
@@ -70,7 +74,11 @@ def test_delivery_early_exit_with_validation_error(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_cli_with_delivery_file(
-    snapshot, glo_mercator_bucket, cli_env, skip_delivery_ids_validation
+    snapshot,
+    glo_mercator_bucket,
+    cli_env,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
     delivery_file_example = "tests/resources/delivery_file.yaml"
 
@@ -97,7 +105,11 @@ def test_delivery_cli_with_delivery_file(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_dry_run_does_not_call_s3(
-    monkeypatch, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    monkeypatch,
+    glo_mercator_bucket,
+    set_env,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
     random.seed(42)
     mock_put = Mock()
@@ -110,7 +122,7 @@ def test_delivery_dry_run_does_not_call_s3(
         ("upload", MOCK_FILES),
     ]
 
-    response, manifest = delivery(
+    response, delivery = delivery_function(
         operations=operations,  # type: ignore
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
@@ -124,7 +136,7 @@ def test_delivery_dry_run_does_not_call_s3(
 
     mock_put.assert_not_called()
     mock_upload_fileobj.assert_not_called()
-    assert manifest is not None
+    assert delivery is not None
     assert len(response.operations_responses) == 2
 
 

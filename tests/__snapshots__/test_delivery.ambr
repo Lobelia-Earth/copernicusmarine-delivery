@@ -30,15 +30,11 @@
         "files_to_delete": [
           {
             "key_suffix": "tests/resources/file1.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo"
+            "error_message": null
           },
           {
             "key_suffix": "tests/resources/file2.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo"
+            "error_message": null
           }
         ]
       },
@@ -64,95 +60,49 @@
 # name: test_delivery_python_interface.1
   '''
   {
-    "manifest_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-product1-2824",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
     "operations": [
       {
         "operation": "delete",
-        "status": "todo",
-        "status_timestamp": null,
-        "error": null,
-        "changelog": [
-          {
-            "step": "creation",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": null
-          },
-          {
-            "step": "push",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": null
-          }
-        ],
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo"
+            "error_message": null
           },
           {
             "key_suffix": "tests/resources/file2.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo"
+            "error_message": null
           }
         ]
       },
       {
         "operation": "upload",
-        "status": "todo",
-        "status_timestamp": null,
-        "error": null,
-        "changelog": [
-          {
-            "step": "creation",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": null
-          },
-          {
-            "step": "push",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": "Upload operation pushed files in 0.00 seconds with 2 successful files and 0 errored files."
-          }
-        ],
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo",
+            "error_message": null,
             "file_size_mb": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
-            "upload_duration_seconds": 0.0
+            "upload_start_time": "2012-01-14T12:00:01Z",
+            "upload_end_time": "2012-01-14T12:00:01Z"
           },
           {
             "key_suffix": "tests/resources/file2.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo",
+            "error_message": null,
             "file_size_mb": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
-            "upload_duration_seconds": 0.0
+            "upload_start_time": "2012-01-14T12:00:01Z",
+            "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ],
-        "upload_duration_seconds": 0.0
+        ]
       }
     ],
-    "creation_time": "2012-01-14T12:00:01Z",
-    "status": "todo",
+    "status": "pending",
     "status_timestamp": null,
-    "error": null
+    "error_message": null
   }
   '''
 # ---
