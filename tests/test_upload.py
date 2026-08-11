@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-import random
 
 import pytest
 import yaml
@@ -37,11 +36,13 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_python_interface(
-    snapshot, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    snapshot,
+    glo_mercator_bucket,
+    set_env,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
-
-    response, manifest = upload(
+    response, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -56,18 +57,19 @@ def test_upload_python_interface(
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
     result["files_failed"] = sorted(result.get("files_failed", []))
     result["files_invalid"] = sorted(result.get("files_invalid", []))
-    assert manifest is not None
-    for op in manifest.operations:
-        op.files = sorted(op.files, key=lambda f: f.key_suffix)
+    assert delivery is not None
     assert result == snapshot
-    assert manifest.model_dump_json(indent=2) == snapshot
+    assert delivery.model_dump_json(indent=2) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_cli(
-    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+    glo_mercator_bucket,
+    cli_env,
+    snapshot,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -92,9 +94,12 @@ def test_upload_cli(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_cli_save_delivery_json(
-    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+    glo_mercator_bucket,
+    cli_env,
+    snapshot,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -170,9 +175,9 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
 
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_bucket):
-    random.seed(42)
-
+def test_upload_one_file_cannot_be_uploaded(
+    monkeypatch, snapshot, glo_mercator_bucket, ingestion_service
+):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")
@@ -182,7 +187,7 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry
     )
 
-    response, manifest = upload(
+    response, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -195,12 +200,12 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
     )
 
     assert response.fatal_error is None
-    assert manifest is not None
+    assert delivery is not None
     assert len(response.files_uploaded) == 1
     assert str(response.files_uploaded[0][0]).endswith("file2.txt")
     assert len(response.files_failed) == 1
     assert str(response.files_failed[0].local_path).endswith("file1.txt")
-    assert manifest.model_dump_json(indent=2) == snapshot
+    assert delivery.model_dump_json(indent=2) == snapshot
 
 
 def test_upload_one_file_cannot_be_uploaded_with_raise(

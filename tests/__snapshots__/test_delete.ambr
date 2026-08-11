@@ -3,7 +3,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-1409
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -20,7 +20,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-5506
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -35,44 +35,27 @@
 # ---
 # name: test_delete_cli_save_delivery_json.1
   dict({
-    'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',
-    'error': None,
-    'manifest_id': '20120114T120001-product1-2824',
+    'delivery_id': '20120114T120001-product1-5506',
+    'error_message': None,
     'operations': list([
       dict({
-        'changelog': list([
-          dict({
-            'comment': None,
-            'error': None,
-            'step': 'creation',
-            'step_status': 'success',
-            'timestamp': '2012-01-14T12:00:01Z',
-          }),
-        ]),
-        'error': None,
         'files': list([
           dict({
-            'error': None,
+            'error_message': None,
             'key_suffix': 'tests/resources/file1.txt',
-            'status': 'todo',
-            'status_timestamp': None,
           }),
           dict({
-            'error': None,
+            'error_message': None,
             'key_suffix': 'tests/resources/file2.txt',
-            'status': 'todo',
-            'status_timestamp': None,
           }),
         ]),
         'operation': 'delete',
-        'status': 'todo',
-        'status_timestamp': None,
       }),
     ]),
     'product_id': 'product1',
     'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
-    'status': 'todo',
+    'status': 'pending',
     'status_timestamp': None,
   })
 # ---
@@ -84,15 +67,11 @@
     "files_to_delete": [
       {
         "key_suffix": "tests/resources/file1.txt",
-        "status_timestamp": null,
-        "error": null,
-        "status": "todo"
+        "error_message": null
       },
       {
         "key_suffix": "tests/resources/file2.txt",
-        "status_timestamp": null,
-        "error": null,
-        "status": "todo"
+        "error_message": null
       }
     ]
   }
@@ -101,45 +80,28 @@
 # name: test_delete_python_interface.1
   '''
   {
-    "manifest_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-product1-2824",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
     "operations": [
       {
         "operation": "delete",
-        "status": "todo",
-        "status_timestamp": null,
-        "error": null,
-        "changelog": [
-          {
-            "step": "creation",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": null
-          }
-        ],
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo"
+            "error_message": null
           },
           {
             "key_suffix": "tests/resources/file2.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo"
+            "error_message": null
           }
         ]
       }
     ],
-    "creation_time": "2012-01-14T12:00:01Z",
-    "status": "todo",
+    "status": "pending",
     "status_timestamp": null,
-    "error": null
+    "error_message": null
   }
   '''
 # ---

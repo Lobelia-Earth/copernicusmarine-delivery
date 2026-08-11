@@ -10,7 +10,7 @@ import click
 import yaml
 from pydantic import ValidationError
 
-from delivery_common.domain import Manifest
+from delivery_common.domain import Delivery
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -18,8 +18,8 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
-from pusher.core_functions.core_functions import get_manifest
 from pusher.core_functions.core_functions import upload as _upload
+from pusher.core_functions.delivery import get_delivery
 from pusher.core_functions.domain import (
     DeliveryFile,
     ResponseDelete,
@@ -174,7 +174,7 @@ def delivery(
     with open(file) as f:
         delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
-    response_delivery, manifest = _delivery(
+    response_delivery, delivery = _delivery(
         [
             (operation.operation, operation.files)
             for operation in delivery_file.delivery
@@ -188,10 +188,10 @@ def delivery(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    print_id_header(manifest, dry_run)
+    print_id_header(delivery, dry_run)
     print_delivery_summary(response_delivery, dry_run)
-    if save_delivery_json and manifest:
-        saving_delivery_file(manifest)
+    if save_delivery_json and delivery:
+        saving_delivery_file(delivery)
 
 
 @cli.command()
@@ -229,7 +229,7 @@ def upload(
         )
         sys.exit(1)
 
-    response, manifest = _upload(
+    response, delivery = _upload(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -240,10 +240,10 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    print_id_header(manifest, dry_run)
+    print_id_header(delivery, dry_run)
     print_operation_summary(response, dry_run)
-    if save_delivery_json and manifest:
-        saving_delivery_file(manifest)
+    if save_delivery_json and delivery:
+        saving_delivery_file(delivery)
 
 
 @cli.command()
@@ -281,7 +281,7 @@ def delete(
         )
         sys.exit(1)
 
-    response, manifest = _delete(
+    response, delivery = _delete(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
@@ -289,30 +289,30 @@ def delete(
         dry_run=dry_run,
     )
 
-    print_id_header(manifest, dry_run)
+    print_id_header(delivery, dry_run)
     print_operation_summary(response, dry_run)
 
     if save_delivery_json:
-        saving_delivery_file(manifest)
+        saving_delivery_file(delivery)
 
 
-def saving_delivery_file(manifest: Manifest) -> None:
-    manifest_output_file_name = f"{manifest.manifest_id}.json"
-    logger.info(f"Writing delivery file to {manifest_output_file_name}")
-    with open(manifest_output_file_name, "w") as output_file:
+def saving_delivery_file(delivery: Delivery) -> None:
+    delivery_output_file_name = f"{delivery.delivery_id}.json"
+    logger.info(f"Writing delivery file to {delivery_output_file_name}")
+    with open(delivery_output_file_name, "w") as output_file:
         output_file.write(
-            manifest.model_dump_json(
+            delivery.model_dump_json(
                 indent=2,
             )
         )
 
 
-def print_id_header(manifest: Manifest, dry_run: bool) -> None:
+def print_id_header(delivery: Delivery, dry_run: bool) -> None:
     click.echo(f"\n{'[DRY RUN]: ' if dry_run else ''}Delivery summary:\n")
-    click.echo(f"\tdelivery_id: {manifest.manifest_id}")
-    click.echo(f"\tpushing_entity_id: {manifest.pushing_entity_id}")
-    click.echo(f"\tproduct_id: {manifest.product_id}")
-    click.echo(f"\tdataset_id: {manifest.dataset_id}")
+    click.echo(f"\tdelivery_id: {delivery.delivery_id}")
+    click.echo(f"\tpushing_entity_id: {delivery.pushing_entity_id}")
+    click.echo(f"\tproduct_id: {delivery.product_id}")
+    click.echo(f"\tdataset_id: {delivery.dataset_id}")
 
 
 def print_delivery_summary(response: ResponseDelivery, dry_run: bool) -> None:
@@ -367,8 +367,6 @@ def print_operation_summary(
 @cli.command()
 @click.option("--delivery-id", help="ID of the delivery to check status for.")
 @click.option("--pushing-entity-id", help="ID of the pushing entity.")
-@click.option("--product-id", help="ID of the product.")
-@click.option("--dataset-id", help="ID of the dataset.")
 @click.option(
     "--delivery-json",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
@@ -378,48 +376,38 @@ def print_operation_summary(
 def status(
     delivery_id: str | None = None,
     pushing_entity_id: str | None = None,
-    product_id: str | None = None,
-    dataset_id: str | None = None,
     delivery_json: Path | None = None,
 ) -> None:
     """Get the status of a delivery (upload and/or delete). Specify either ids
-    [delivery_id, pushing_entity_id, product_id, dataset_id] or a path to a delivery json file.
+    [delivery_id, pushing_entity_id] or a path to a delivery json file.
     """
-    if (
-        not all([delivery_id, pushing_entity_id, product_id, dataset_id])
-        and not delivery_json
-    ):
+    if not all([delivery_id, pushing_entity_id]) and not delivery_json:
         raise click.UsageError(
             message=(
-                "Specify either the set of ids delivery_id, pushing_entity_id, "
-                "product_id, dataset_id] or a path to a delivery json file."
+                "Specify either the set of ids delivery_id, pushing_entity_id "
+                "or a path to a delivery json file."
             )
         )
 
     if delivery_json:
         try:
             with open(delivery_json) as delivery_file:
-                manifest = Manifest.model_validate(json.load(delivery_file))
+                delivery = Delivery.model_validate(json.load(delivery_file))
         except (json.JSONDecodeError, ValidationError) as e:
             raise click.UsageError(f"Invalid delivery json: {e}")
-        delivery_id = manifest.manifest_id
-        pushing_entity_id = manifest.pushing_entity_id
-        product_id = manifest.product_id
-        dataset_id = manifest.dataset_id
+        delivery_id = delivery.delivery_id
+        pushing_entity_id = delivery.pushing_entity_id
+
     else:
         delivery_id = delivery_id
         pushing_entity_id = pushing_entity_id
-        product_id = product_id
-        dataset_id = dataset_id
 
-    manifest = get_manifest(
+    delivery = get_delivery(
         delivery_id=delivery_id,  # type: ignore
         pushing_entity_id=pushing_entity_id,  # type: ignore
-        product_id=product_id,  # type: ignore
-        dataset_id=dataset_id,  # type: ignore
     )
     click.echo(
-        manifest.model_dump_json(
+        delivery.model_dump_json(
             indent=2,
             exclude_none=True,
         )

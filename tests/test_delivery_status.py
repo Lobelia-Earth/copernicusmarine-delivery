@@ -1,4 +1,3 @@
-import random
 import re
 
 from click.testing import CliRunner
@@ -20,11 +19,13 @@ PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_status_python_interface(
-    snapshot, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    snapshot,
+    glo_mercator_bucket,
+    set_env,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
-
-    _, manifest = upload(
+    _, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -35,22 +36,23 @@ def test_delivery_status_python_interface(
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
     )
-    assert manifest is not None
+    assert delivery is not None
 
     result = delivery_status(
-        delivery_id=manifest.manifest_id,
+        delivery_id=delivery.delivery_id,
         pushing_entity_id=PUSHING_ENTITY_ID,
-        product_id="product1",
-        dataset_id="dataset1",
     )
     assert result.model_dump_json(indent=2) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_status_cli(
-    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+    glo_mercator_bucket,
+    cli_env,
+    snapshot,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
 
     # First, upload files to create a delivery
@@ -83,10 +85,6 @@ def test_delivery_status_cli(
             delivery_id,
             "--pushing-entity-id",
             PUSHING_ENTITY_ID,
-            "--product-id",
-            "product1",
-            "--dataset-id",
-            "dataset1",
         ],
         env=cli_env,
     )

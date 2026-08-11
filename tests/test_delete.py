@@ -1,6 +1,5 @@
 import glob
 import json
-import random
 
 import pytest
 import yaml
@@ -30,11 +29,14 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delete_python_interface(
-    snapshot, glo_mercator_bucket, set_env, skip_delivery_ids_validation
+    snapshot,
+    glo_mercator_bucket,
+    set_env,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
 
-    response, manifest = delete(
+    response, delivery = delete(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
@@ -42,15 +44,18 @@ def test_delete_python_interface(
         dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
-    assert manifest is not None
-    assert manifest.model_dump_json(indent=2) == snapshot
+    assert delivery is not None
+    assert delivery.model_dump_json(indent=2) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delete_cli(
-    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+    glo_mercator_bucket,
+    cli_env,
+    snapshot,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -75,9 +80,12 @@ def test_delete_cli(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delete_cli_save_delivery_json(
-    glo_mercator_bucket, cli_env, snapshot, skip_delivery_ids_validation
+    glo_mercator_bucket,
+    cli_env,
+    snapshot,
+    skip_delivery_ids_validation,
+    ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(

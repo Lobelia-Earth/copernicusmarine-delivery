@@ -1,0 +1,38 @@
+# serializer version: 1
+# name: test_save_delivery_and_load
+  '''
+  {
+    "delivery_id": "20240315T120001-product1-1520",
+    "pushing_entity_id": "TEST-FR",
+    "product_id": "product1",
+    "dataset_id": "dataset1",
+    "operations": [
+      {
+        "operation": "upload",
+        "files": [
+          {
+            "key_suffix": "file.nc",
+            "error_message": null,
+            "file_size_mb": 43,
+            "checksum": "abc-1",
+            "upload_start_time": "2024-03-15T12:00:01Z",
+            "upload_end_time": "2024-03-15T12:00:02Z"
+          }
+        ]
+      },
+      {
+        "operation": "delete",
+        "files": [
+          {
+            "key_suffix": "file2.nc",
+            "error_message": null
+          }
+        ]
+      }
+    ],
+    "status": "pending",
+    "status_timestamp": null,
+    "error_message": null
+  }
+  '''
+# ---

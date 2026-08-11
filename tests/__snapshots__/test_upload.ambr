@@ -3,7 +3,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-4811
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -20,7 +20,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-9279
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -35,114 +35,69 @@
 # ---
 # name: test_upload_cli_save_delivery_json.1
   dict({
-    'creation_time': '2012-01-14T12:00:01Z',
     'dataset_id': 'dataset1',
-    'error': None,
-    'manifest_id': '20120114T120001-product1-2824',
+    'delivery_id': '20120114T120001-product1-9279',
+    'error_message': None,
     'operations': list([
       dict({
-        'changelog': list([
-          dict({
-            'comment': None,
-            'error': None,
-            'step': 'creation',
-            'step_status': 'success',
-            'timestamp': '2012-01-14T12:00:01Z',
-          }),
-          dict({
-            'comment': 'Upload operation pushed files in 0.00 seconds with 2 successful files and 0 errored files.',
-            'error': None,
-            'step': 'push',
-            'step_status': 'success',
-            'timestamp': '2012-01-14T12:00:01Z',
-          }),
-        ]),
-        'error': None,
         'files': list([
           dict({
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
-            'error': None,
+            'error_message': None,
             'file_size_mb': 0,
             'key_suffix': 'tests/resources/file1.txt',
-            'status': 'todo',
-            'status_timestamp': None,
-            'upload_duration_seconds': 0.0,
+            'upload_end_time': '2012-01-14T12:00:01Z',
+            'upload_start_time': '2012-01-14T12:00:01Z',
           }),
           dict({
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
-            'error': None,
+            'error_message': None,
             'file_size_mb': 0,
             'key_suffix': 'tests/resources/file2.txt',
-            'status': 'todo',
-            'status_timestamp': None,
-            'upload_duration_seconds': 0.0,
+            'upload_end_time': '2012-01-14T12:00:01Z',
+            'upload_start_time': '2012-01-14T12:00:01Z',
           }),
         ]),
         'operation': 'upload',
-        'status': 'todo',
-        'status_timestamp': None,
-        'upload_duration_seconds': 0.0,
       }),
     ]),
     'product_id': 'product1',
     'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
-    'status': 'todo',
+    'status': 'pending',
     'status_timestamp': None,
   })
 # ---
 # name: test_upload_one_file_cannot_be_uploaded
   '''
   {
-    "manifest_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-product1-1434",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
     "operations": [
       {
         "operation": "upload",
-        "status": "todo",
-        "status_timestamp": null,
-        "error": null,
-        "changelog": [
-          {
-            "step": "creation",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": null
-          },
-          {
-            "step": "push",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "partial_error",
-            "error": null,
-            "comment": "Upload operation pushed files in 0.00 seconds with 1 successful files and 1 errored files."
-          }
-        ],
         "files": [
           {
             "key_suffix": "tests/resources/file2.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo",
+            "error_message": null,
             "file_size_mb": 0,
             "checksum": "mock-etag",
-            "upload_duration_seconds": 0.0
+            "upload_start_time": "2012-01-14T12:00:01Z",
+            "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ],
-        "upload_duration_seconds": 0.0
+        ]
       }
     ],
-    "creation_time": "2012-01-14T12:00:01Z",
-    "status": "todo",
+    "status": "pending",
     "status_timestamp": null,
-    "error": null
+    "error_message": null
   }
   '''
 # ---
 # name: test_upload_python_interface
   dict({
-    'delivery_id': '20120114T120001-product1-2824',
+    'delivery_id': '20120114T120001-product1-4582',
     'files_failed': list([
     ]),
     'files_invalid': list([
@@ -162,59 +117,36 @@
 # name: test_upload_python_interface.1
   '''
   {
-    "manifest_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-product1-4582",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
     "operations": [
       {
         "operation": "upload",
-        "status": "todo",
-        "status_timestamp": null,
-        "error": null,
-        "changelog": [
-          {
-            "step": "creation",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": null
-          },
-          {
-            "step": "push",
-            "timestamp": "2012-01-14T12:00:01Z",
-            "step_status": "success",
-            "error": null,
-            "comment": "Upload operation pushed files in 0.00 seconds with 2 successful files and 0 errored files."
-          }
-        ],
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo",
+            "error_message": null,
             "file_size_mb": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
-            "upload_duration_seconds": 0.0
+            "upload_start_time": "2012-01-14T12:00:01Z",
+            "upload_end_time": "2012-01-14T12:00:01Z"
           },
           {
             "key_suffix": "tests/resources/file2.txt",
-            "status_timestamp": null,
-            "error": null,
-            "status": "todo",
+            "error_message": null,
             "file_size_mb": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
-            "upload_duration_seconds": 0.0
+            "upload_start_time": "2012-01-14T12:00:01Z",
+            "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ],
-        "upload_duration_seconds": 0.0
+        ]
       }
     ],
-    "creation_time": "2012-01-14T12:00:01Z",
-    "status": "todo",
+    "status": "pending",
     "status_timestamp": null,
-    "error": null
+    "error_message": null
   }
   '''
 # ---
