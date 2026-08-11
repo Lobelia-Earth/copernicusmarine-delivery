@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-import random
 
 import pytest
 import yaml
@@ -43,8 +42,6 @@ def test_upload_python_interface(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
-
     response, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
@@ -73,7 +70,6 @@ def test_upload_cli(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -104,7 +100,6 @@ def test_upload_cli_save_delivery_json(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -183,8 +178,6 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
 def test_upload_one_file_cannot_be_uploaded(
     monkeypatch, snapshot, glo_mercator_bucket, ingestion_service
 ):
-    random.seed(42)
-
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")

@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from typing import Generator
 from urllib.parse import parse_qs
 
@@ -13,6 +14,8 @@ from pusher.core_functions.constants import (
     PUSHING_ENTITIES_PATH,
 )
 from pusher.s3_client import S3Client, get_s3_ingestion_client
+
+random.seed(42)
 
 _MANIFESTS_PATH_PREFIX = "deliveries/{pushing_entity_id}/"
 _MANIFESTS_PATH = "deliveries/{pushing_entity_id}/{delivery_id}.json"

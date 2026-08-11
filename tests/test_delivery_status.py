@@ -1,4 +1,3 @@
-import random
 import re
 
 from click.testing import CliRunner
@@ -26,8 +25,6 @@ def test_delivery_status_python_interface(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
-
     _, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
@@ -56,7 +53,6 @@ def test_delivery_status_cli(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
 
     # First, upload files to create a delivery

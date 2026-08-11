@@ -1,6 +1,5 @@
 import glob
 import json
-import random
 
 import pytest
 import yaml
@@ -36,7 +35,6 @@ def test_delete_python_interface(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
 
     response, delivery = delete(
         pushing_entity_id=PUSHING_ENTITY_ID,
@@ -58,7 +56,6 @@ def test_delete_cli(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -89,7 +86,6 @@ def test_delete_cli_save_delivery_json(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(

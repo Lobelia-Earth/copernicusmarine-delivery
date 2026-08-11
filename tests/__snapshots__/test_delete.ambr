@@ -3,7 +3,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-1409
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -20,7 +20,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-5506
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -36,7 +36,7 @@
 # name: test_delete_cli_save_delivery_json.1
   dict({
     'dataset_id': 'dataset1',
-    'delivery_id': '20120114T120001-product1-2824',
+    'delivery_id': '20120114T120001-product1-5506',
     'error_message': None,
     'operations': list([
       dict({

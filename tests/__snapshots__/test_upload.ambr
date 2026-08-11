@@ -3,7 +3,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-4811
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -20,7 +20,7 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-2824
+  	delivery_id: 20120114T120001-product1-9279
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
@@ -36,7 +36,7 @@
 # name: test_upload_cli_save_delivery_json.1
   dict({
     'dataset_id': 'dataset1',
-    'delivery_id': '20120114T120001-product1-2824',
+    'delivery_id': '20120114T120001-product1-9279',
     'error_message': None,
     'operations': list([
       dict({
@@ -70,7 +70,7 @@
 # name: test_upload_one_file_cannot_be_uploaded
   '''
   {
-    "delivery_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-product1-1434",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
@@ -97,7 +97,7 @@
 # ---
 # name: test_upload_python_interface
   dict({
-    'delivery_id': '20120114T120001-product1-2824',
+    'delivery_id': '20120114T120001-product1-4582',
     'files_failed': list([
     ]),
     'files_invalid': list([
@@ -117,7 +117,7 @@
 # name: test_upload_python_interface.1
   '''
   {
-    "delivery_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-product1-4582",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",

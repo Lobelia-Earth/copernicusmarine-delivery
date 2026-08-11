@@ -1,4 +1,3 @@
-import random
 from unittest.mock import Mock
 
 import pytest
@@ -29,7 +28,6 @@ def test_delivery_python_interface(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     operations = [
         ("delete", MOCK_FILES),
         ("upload", MOCK_FILES),
@@ -55,7 +53,6 @@ def test_delivery_python_interface(
 def test_delivery_early_exit_with_validation_error(
     glo_mercator_bucket, set_env, skip_delivery_ids_validation, ingestion_service
 ):
-    random.seed(42)
     operations = [("delete", MOCK_FILES), ("upload", MOCK_FILES + ["extra_file.txt"])]
     with pytest.raises(InvalidFilesError) as exc_info:
         delivery_function(
@@ -82,7 +79,6 @@ def test_delivery_cli_with_delivery_file(
 ):
     delivery_file_example = "tests/resources/delivery_file.yaml"
 
-    random.seed(42)
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -111,7 +107,6 @@ def test_delivery_dry_run_does_not_call_s3(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    random.seed(42)
     mock_put = Mock()
     mock_upload_fileobj = Mock()
     monkeypatch.setattr(S3Client, "_put_with_os_error_retry", mock_put)
