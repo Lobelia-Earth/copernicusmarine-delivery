@@ -330,4 +330,4 @@ def build_upload_operation_from_put_results(
                 upload_end_time=successful_s3_file.upload_end_time,
             )
         )
-    return UploadOperation(files=upload_files, operation="upload")
+    return UploadOperation(files=upload_files, operation=OperationNames.upload)

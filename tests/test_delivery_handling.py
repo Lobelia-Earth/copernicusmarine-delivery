@@ -7,6 +7,7 @@ from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
     Delivery,
+    OperationNames,
     UploadFile,
     UploadOperation,
 )
@@ -60,7 +61,7 @@ def test_create_delivery(tmp_path):
         dataset_id="dataset1",
         operations=[
             UploadOperation(
-                operation="upload",
+                operation=OperationNames.upload,
                 files=[
                     UploadFile(
                         key_suffix=str(f),
@@ -89,7 +90,7 @@ def test_save_delivery_and_load(tmp_path, snapshot):
         dataset_id="dataset1",
         operations=[
             UploadOperation(
-                operation="upload",
+                operation=OperationNames.upload,
                 files=[
                     UploadFile(
                         key_suffix="file.nc",
@@ -101,7 +102,7 @@ def test_save_delivery_and_load(tmp_path, snapshot):
                 ],
             ),
             DeleteOperation(
-                operation="delete",
+                operation=OperationNames.delete,
                 files=[
                     DeleteFile(
                         key_suffix="file2.nc",
