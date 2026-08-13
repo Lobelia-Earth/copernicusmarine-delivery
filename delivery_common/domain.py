@@ -2,10 +2,10 @@ import os
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, TypeVar, Union
+from typing import Annotated, Any, TypeVar, Union
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Discriminator, Field, Tag, field_validator
 
 ##############
 # Utils
@@ -138,7 +138,7 @@ class DeleteFile(DeliveryFile):
 
 
 class UploadOperation(BaseModel):
-    operation: Literal["upload"] = "upload"
+    operation: OperationNames = Field(default=OperationNames.upload)
     files: list[UploadFile] = Field(default_factory=list)
 
     def total_size(self) -> int:
@@ -149,17 +149,33 @@ class UploadOperation(BaseModel):
 class ToUploadOperation(BaseModel):
     """Pre-upload counterpart to UploadOperation: files not uploaded yet, so no checksum."""
 
-    operation: Literal["upload"] = "upload"
+    operation: OperationNames = Field(default=OperationNames.upload)
     files: list[FileToUpload] = Field(default_factory=list)
 
 
 class DeleteOperation(BaseModel):
-    operation: Literal["delete"] = "delete"
+    operation: OperationNames = Field(default=OperationNames.delete)
     files: list[DeleteFile] = Field(default_factory=list)
 
 
+def operation_discriminator(value: Any) -> str:
+    """
+    Discriminator function for the Operation union type.
+    Determines the operation type based on the "operation" field in the input dictionary.
+    """
+    if isinstance(value, dict):
+        if "operation" not in value:
+            raise ValueError("Missing 'operation' field in operation data.")
+        return value["operation"]
+    return getattr(value, "operation")
+
+
 Operation = Annotated[
-    Union[UploadOperation, DeleteOperation], Field(discriminator="operation")
+    Union[
+        Annotated[UploadOperation, Tag(OperationNames.upload)],
+        Annotated[DeleteOperation, Tag(OperationNames.delete)],
+    ],
+    Field(discriminator=Discriminator(operation_discriminator)),
 ]
 
 
