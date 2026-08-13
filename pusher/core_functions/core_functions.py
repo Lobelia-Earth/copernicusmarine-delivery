@@ -5,8 +5,10 @@ from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
     Delivery,
+    FileToUpload,
     Operation,
     OperationNames,
+    ToUploadOperation,
     UploadFile,
     UploadOperation,
 )
@@ -80,7 +82,7 @@ def upload(
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
-    upload_operation = create_and_validate_upload_operation(
+    to_upload_operation = create_and_validate_to_upload_operation(
         files,
     )
 
@@ -91,12 +93,12 @@ def upload(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
     delivery_id = create_delivery_id(product_id)
-    put_files_result = _put_files_to_ingestion_system(
+    put_files_result, upload_operation = _put_files_to_ingestion_system(
         s3_client,
         delivery_id=delivery_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        operation=upload_operation,
+        to_upload_operation=to_upload_operation,
         raise_on_error=raise_on_upload_error,
         chunk_size=chunk_size_bytes,
         max_concurrent_uploads=max_concurrent_uploads,
@@ -185,7 +187,7 @@ def delivery(
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
     delivery_id = create_delivery_id(product_id)
-    all_operations: list[Operation] = []
+    pending_operations: list[DeleteOperation | ToUploadOperation] = []
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
@@ -195,34 +197,37 @@ def delivery(
     for operation_name, sources in operations:
         if operation_name == "delete":
             operation = create_and_validate_delete_operation(sources)
-            all_operations.append(operation)
+            pending_operations.append(operation)
         elif operation_name == "upload":
-            operation = create_and_validate_upload_operation(sources)
-            all_operations.append(operation)
+            to_upload_operation = create_and_validate_to_upload_operation(sources)
+            pending_operations.append(to_upload_operation)
+    all_operations: list[Operation] = []
     all_responses: list[ResponseUpload | ResponseDelete] = []
-    for operation in all_operations:
-        if isinstance(operation, UploadOperation):
-            put_files_result = _put_files_to_ingestion_system(
+    for operation in pending_operations:
+        if isinstance(operation, DeleteOperation):
+            all_operations.append(operation)
+            all_responses.append(
+                ResponseDelete.create(
+                    delivery_id=delivery_id, files_to_delete=operation.files
+                )
+            )
+        else:
+            put_files_result, upload_operation = _put_files_to_ingestion_system(
                 s3_client,
                 delivery_id=delivery_id,
                 product_id=product_id,
                 dataset_id=dataset_id,
-                operation=operation,
+                to_upload_operation=operation,
                 raise_on_error=raise_on_upload_error,
                 chunk_size=chunk_size_bytes,
                 max_concurrent_uploads=max_concurrent_uploads,
                 dry_run=dry_run,
             )
+            all_operations.append(upload_operation)
             all_responses.append(
                 ResponseUpload.create(
                     delivery_id=delivery_id,
                     result_upload=put_files_result,
-                )
-            )
-        elif isinstance(operation, DeleteOperation):
-            all_responses.append(
-                ResponseDelete.create(
-                    delivery_id=delivery_id, files_to_delete=operation.files
                 )
             )
 
@@ -242,22 +247,18 @@ def delivery(
     )
 
 
-def create_and_validate_upload_operation(
+def create_and_validate_to_upload_operation(
     files: list[str],
-) -> UploadOperation:
+) -> ToUploadOperation:
     validate_upload_files(files)
-    return UploadOperation(
+    return ToUploadOperation(
         files=[
-            UploadFile(
+            FileToUpload(
                 key_suffix=file,
                 file_size_mb=os.path.getsize(file) // (1024 * 1024),
-                checksum=None,  # ETag will be filled in after upload
-                upload_start_time=None,  # will be filled in after upload
-                upload_end_time=None,  # will be filled in after upload
             )
             for file in files
-        ],
-        operation="upload",
+        ]
     )
 
 
@@ -266,14 +267,14 @@ def _put_files_to_ingestion_system(
     delivery_id: str,
     product_id: str,
     dataset_id: str,
-    operation: UploadOperation,
+    to_upload_operation: ToUploadOperation,
     raise_on_error: bool,
     chunk_size: int,
     max_concurrent_uploads: int,
     dry_run: bool,
-) -> PutFilesResult:
+) -> tuple[PutFilesResult, UploadOperation]:
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
-        [file.key_suffix for file in operation.files],
+        [file.key_suffix for file in to_upload_operation.files],
         delivery_id,
         product_id,
         dataset_id,
@@ -288,7 +289,9 @@ def _put_files_to_ingestion_system(
     if not put_files_result.successful_files:
         raise NoSuccessfulUploadsError(put_files_result.errored_files)
 
-    _update_operation_with_put_results(operation, put_files_result)
+    operation = build_upload_operation_from_put_results(
+        to_upload_operation, put_files_result
+    )
 
     total_size = operation.total_size()
     logger.info(
@@ -296,12 +299,12 @@ def _put_files_to_ingestion_system(
         f"for a total size of {human_readable_size(total_size)}."
     )
 
-    return put_files_result
+    return put_files_result, operation
 
 
-def _update_operation_with_put_results(
-    operation: UploadOperation, put_files_result: PutFilesResult
-) -> None:
+def build_upload_operation_from_put_results(
+    to_upload_operation: ToUploadOperation, put_files_result: PutFilesResult
+) -> UploadOperation:
     """
     TODO: add the possibility for users to abort the delivery if there are any errors. For now, we just log them and continue.
 
@@ -310,20 +313,21 @@ def _update_operation_with_put_results(
     successful_files_dict = {
         str(file.local_path): file for file in put_files_result.successful_files
     }
-    errored_files_dict = {
-        str(file.local_path): file for file in put_files_result.errored_files
-    }
-    index_files_to_remove = []
-    for i, delivery_file in enumerate(operation.files):
-        if delivery_file.key_suffix in successful_files_dict:
-            successful_s3_file = successful_files_dict[delivery_file.key_suffix]
-            delivery_file.checksum = successful_s3_file.e_tag
-            delivery_file.upload_start_time = successful_s3_file.upload_start_time
-            delivery_file.upload_end_time = successful_s3_file.upload_end_time
-        elif delivery_file.key_suffix in errored_files_dict:
+    upload_files = []
+    for file_to_upload in to_upload_operation.files:
+        successful_s3_file = successful_files_dict.get(file_to_upload.key_suffix)
+        if successful_s3_file is None:
             logger.debug(
-                f"Removing file {delivery_file.key_suffix} from upload operation."
+                f"Removing file {file_to_upload.key_suffix} from upload operation."
             )
-            index_files_to_remove.append(i)
-    for index in reversed(index_files_to_remove):
-        del operation.files[index]
+            continue
+        upload_files.append(
+            UploadFile(
+                key_suffix=file_to_upload.key_suffix,
+                file_size_mb=file_to_upload.file_size_mb,
+                checksum=successful_s3_file.e_tag,
+                upload_start_time=successful_s3_file.upload_start_time,
+                upload_end_time=successful_s3_file.upload_end_time,
+            )
+        )
+    return UploadOperation(files=upload_files, operation="upload")
