@@ -118,13 +118,19 @@ class DeliveryFile(BaseModel):
 
 
 class UploadFile(DeliveryFile):
-    file_size_mb: int | None
-    #: checksum of the file to be uploaded.
-    checksum: str | None
+    file_size_mb: int
+    #: checksum of uploaded file.
+    checksum: str
     #: Upload start time from the users machine to the OPDV system in seconds.
     upload_start_time: str | None
     #: Upload end time from the users machine to the OPDV system in seconds.
     upload_end_time: str | None
+
+
+class FileToUpload(DeliveryFile):
+    """Pre-upload file: checksum not known yet, only available once the upload completes."""
+
+    file_size_mb: int
 
 
 class DeleteFile(DeliveryFile):
@@ -138,6 +144,13 @@ class UploadOperation(BaseModel):
     def total_size(self) -> int:
         """Returns the total size of all files in MB."""
         return sum(file.file_size_mb or 0 for file in self.files)
+
+
+class ToUploadOperation(BaseModel):
+    """Pre-upload counterpart to UploadOperation: files not uploaded yet, so no checksum."""
+
+    operation: Literal["upload"] = "upload"
+    files: list[FileToUpload] = Field(default_factory=list)
 
 
 class DeleteOperation(BaseModel):

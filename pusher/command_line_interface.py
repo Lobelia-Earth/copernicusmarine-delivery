@@ -254,11 +254,6 @@ def upload(
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
 @shared_options
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Validate the delete without performing any actual operation in S3.",
-)
 @log_exception_and_exit
 def delete(
     source: list[str],
