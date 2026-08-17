@@ -1,9 +1,9 @@
 delivery:
   - operation: delete
     files:
-      - tests/resources/file1.txt
-      - tests/resources/file2.txt
+      - tests/resources/dataset1/file1.txt
+      - tests/resources/dataset1/file2.txt
   - operation: upload
     files:
-      - tests/resources/file1.txt
-      - tests/resources/file2.txt
+      - tests/resources/dataset1/file1.txt
+      - tests/resources/dataset1/file2.txt

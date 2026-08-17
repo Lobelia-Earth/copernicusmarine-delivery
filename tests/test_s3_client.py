@@ -8,7 +8,7 @@ from pusher.core_functions.exceptions import NoSuchBucketException
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
-RESOURCES = Path("tests/resources")
+RESOURCES = Path("tests/resources/dataset1")
 
 
 def test_no_such_bucket_raises(ministack_endpoint: str, set_env):
@@ -35,6 +35,7 @@ def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str
     s3_client.head_object(Bucket=ingestion_bucket, Key=key)
 
 
+@pytest.mark.slow
 def test_upload_file_nonexistent_returns_error(
     service: S3Client, ingestion_bucket: str
 ):
@@ -71,6 +72,7 @@ def test_upload_multiple_files(
         s3_client.head_object(Bucket=ingestion_bucket, Key=f.s3_path)
 
 
+@pytest.mark.slow
 def test_upload_multiple_files_partial_failure(
     service: S3Client, ingestion_bucket: str
 ):

@@ -120,6 +120,13 @@ _upload_shared_options = [
         show_default=True,
         help="Number of parts uploaded in parallel per file (multipart upload).",
     ),
+    click.option(
+        "--anchor",
+        type=str,
+        required=False,
+        default=None,
+        help="Specify a different anchor from the default 'dataset_id'",
+    ),
 ]
 
 
@@ -163,6 +170,7 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
+    anchor: str | None = None,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -182,6 +190,7 @@ def delivery(
         pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
+        anchor=anchor or dataset_id,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
@@ -199,7 +208,11 @@ def delivery(
     "--source",
     type=str,
     multiple=True,
-    help="Relative path to the file. `product_id/dataset_id` are prepended to the file.",
+    help=(
+        """Relative or absolute path to the file.
+        `dataset_id` will be used as an anchor (anything before it removed) and 
+        `product_id/` prepended before upload."""
+    ),
 )
 @shared_options
 @upload_shared_options
@@ -209,6 +222,7 @@ def upload(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
+    anchor: str | None,
     save_delivery_json: bool = False,
     raise_on_upload_error: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -234,6 +248,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
+        anchor=anchor or dataset_id,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),

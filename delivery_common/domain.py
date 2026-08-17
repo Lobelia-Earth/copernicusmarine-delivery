@@ -62,10 +62,6 @@ class PushingEntities(BaseModel):
         return cls(**data)
 
 
-# DeliveryStatus = Literal["pending", "validated", "completed", "failed"]
-# OperationNames = Literal["upload", "delete"]
-
-
 class DeliveryStatus(str, Enum):
     pending = "pending"
     validated = "validated"
@@ -85,6 +81,7 @@ class DeliveryFile(BaseModel):
     #: Similarly for a delete, the file will be deleted from the Marine datastore at "/{product_id}/{dataset_id}/{key_suffix}".
     key_suffix: str
 
+    # Could leave this here for those creating a delivery without the toolbox, but it should be irrelevant now from the Toolbox.
     @field_validator("key_suffix")
     @classmethod
     def ensure_relative_path(cls, v: str) -> str:

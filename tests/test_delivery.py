@@ -16,7 +16,10 @@ from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.python_interface import Delivery, Upload
 from pusher.s3_client import S3Client
 
-MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
+MOCK_FILES = [
+    "tests/resources/dataset1/file1.txt",
+    "tests/resources/dataset1/file2.txt",
+]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 
@@ -38,6 +41,7 @@ def test_delivery_python_interface(
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
+        anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -60,6 +64,7 @@ def test_delivery_early_exit_with_validation_error(
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
             product_id="product1",
+            anchor="dataset1",
             raise_on_upload_error=False,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -122,6 +127,7 @@ def test_delivery_dry_run_does_not_call_s3(
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
+        anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),

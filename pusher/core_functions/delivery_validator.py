@@ -40,7 +40,7 @@ def validate_delete_files(files: list[str]) -> None:
         )
 
 
-def validate_upload_files(files: list[str]) -> None:
+def validate_upload_files(files: list[str], anchor: str) -> None:
     invalid_files = []
     for file_str in files:
         file = Path(file_str)
@@ -51,6 +51,14 @@ def validate_upload_files(files: list[str]) -> None:
             continue
         if not file_not_empty(file):
             invalid_files.append(InvalidFile(local_path=file, reason="File is empty."))
+            continue
+        if anchor not in file.parts:
+            invalid_files.append(
+                InvalidFile(
+                    local_path=file,
+                    reason=f"Expected anchor ({anchor}) was not found in local path: {file.as_posix()}",
+                )
+            )
             continue
         if not file_type_supported(file):
             # Just a warning for now
@@ -66,8 +74,8 @@ def validate_upload_files(files: list[str]) -> None:
             # )
             # continue
     invalid_files += [
-        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
-        for file_ in duplicate_files(files)
+        InvalidFile(local_path=Path(file), reason="Duplicate file path.")
+        for file in duplicate_files(files)
     ]
     if invalid_files:
         raise InvalidFilesError(

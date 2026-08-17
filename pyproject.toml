@@ -45,6 +45,7 @@ format-check = "ruff format --check .; ruff check ."
 type-check = "ty check ."
 test-local = "pytest --snapshot-update"
 test = "pytest"
+test-fast = "pytest -m \"not slow\""
 setup-local = "python tests/resources/setup.py"
 list-local = "python tests/resources/setup.py --list"
 clean-local = "python tests/resources/setup.py --clean"
@@ -68,3 +69,8 @@ dev = ["httpx>=0.28.1,<0.29"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
+
+[tool.pytest]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

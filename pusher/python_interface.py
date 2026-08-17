@@ -23,6 +23,7 @@ from pusher.core_functions.utils import megabytes_to_bytes
 class Upload(BaseOperation):
     """
     Upload ``files`` to the given dataset and product.
+    :param files: Relative or absolute path to the file. `dataset_id` will be used as an anchor (anything before it removed) and `product_id/` prepended before upload.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `files` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
@@ -37,6 +38,7 @@ class Upload(BaseOperation):
         pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
+        anchor: str | None = None,
         raise_on_upload_error: bool = False,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
@@ -49,6 +51,7 @@ class Upload(BaseOperation):
         :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
+        :param anchor: Specify a different anchor from the default 'dataset_id'.
         :param raise_on_upload_error: If True, raise an exception and stop the upload if any file fails to upload. By default, the upload will continue and skip any files that fail to upload.
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
@@ -64,6 +67,7 @@ class Upload(BaseOperation):
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
+            anchor=anchor or dataset_id,
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
@@ -76,6 +80,7 @@ class Upload(BaseOperation):
 class Delete(BaseOperation):
     """
     Delete ``files`` from the given dataset and product.
+    :param files: S3 Path to the file. `product_id/dataset_id` are prepended by default.
     :param dry_run: Validate the delete without performing any actual operation in S3.
     """
 
@@ -135,6 +140,7 @@ class Delivery(BaseModel):
         pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
+        anchor: str | None = None,
         raise_on_upload_error: bool = False,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
@@ -147,6 +153,7 @@ class Delivery(BaseModel):
         :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
+        :param anchor: Specify a different anchor from the default 'dataset_id'.
         :param raise_on_upload_error: If True, raise an exception and stop the delivery if any file fails to upload. By default, the delivery will continue and skip any files that fail to upload.
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
@@ -161,6 +168,7 @@ class Delivery(BaseModel):
             pushing_entity_id=pushing_entity_id,
             product_id=product_id,
             dataset_id=dataset_id,
+            anchor=anchor or dataset_id,
             operations=[(op.operation, op.files) for op in self.operations],
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,

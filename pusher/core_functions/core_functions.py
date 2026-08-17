@@ -40,18 +40,25 @@ from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
+def strip_to_anchor(local_path: str, anchor: str) -> str:
+    parts = Path(local_path).parts
+    idx = parts.index(anchor)
+    return str(Path(*parts[idx + 1 :]))
+
+
 def get_local_path_s3_keys_mapping(
     list_of_files: list[str],
     delivery_id: str,
     product_id: str,
     dataset_id: str,
+    anchor: str,
 ) -> dict[Path, str]:
     return {
         Path(file_path): NEW_DATA_BUCKET_PATH.format(
             delivery_id=delivery_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            file_name=file_path,
+            file_name=strip_to_anchor(file_path, anchor),
         )
         for file_path in list_of_files
     }
@@ -62,6 +69,7 @@ def upload(
     product_id: str,
     dataset_id: str,
     files: list[str],
+    anchor: str,
     raise_on_upload_error: bool,
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
@@ -84,6 +92,7 @@ def upload(
 
     to_upload_operation = create_and_validate_to_upload_operation(
         files,
+        anchor,
     )
 
     ingestion_bucket_name = get_ingestion_bucket_name(
@@ -98,6 +107,7 @@ def upload(
         delivery_id=delivery_id,
         product_id=product_id,
         dataset_id=dataset_id,
+        anchor=anchor,
         to_upload_operation=to_upload_operation,
         raise_on_error=raise_on_upload_error,
         chunk_size=chunk_size_bytes,
@@ -173,6 +183,7 @@ def create_and_validate_delete_operation(
 
 def delivery(
     operations: list[tuple[OperationNames, list[str]]],
+    anchor: str,
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
@@ -199,7 +210,9 @@ def delivery(
             operation = create_and_validate_delete_operation(sources)
             pending_operations.append(operation)
         elif operation_name == "upload":
-            to_upload_operation = create_and_validate_to_upload_operation(sources)
+            to_upload_operation = create_and_validate_to_upload_operation(
+                sources, anchor
+            )
             pending_operations.append(to_upload_operation)
     all_operations: list[Operation] = []
     all_responses: list[ResponseUpload | ResponseDelete] = []
@@ -217,6 +230,7 @@ def delivery(
                 delivery_id=delivery_id,
                 product_id=product_id,
                 dataset_id=dataset_id,
+                anchor=anchor,
                 to_upload_operation=operation,
                 raise_on_error=raise_on_upload_error,
                 chunk_size=chunk_size_bytes,
@@ -249,8 +263,9 @@ def delivery(
 
 def create_and_validate_to_upload_operation(
     files: list[str],
+    anchor: str,
 ) -> ToUploadOperation:
-    validate_upload_files(files)
+    validate_upload_files(files, anchor)
     return ToUploadOperation(
         files=[
             FileToUpload(
@@ -267,6 +282,7 @@ def _put_files_to_ingestion_system(
     delivery_id: str,
     product_id: str,
     dataset_id: str,
+    anchor: str,
     to_upload_operation: ToUploadOperation,
     raise_on_error: bool,
     chunk_size: int,
@@ -278,6 +294,7 @@ def _put_files_to_ingestion_system(
         delivery_id,
         product_id,
         dataset_id,
+        anchor,
     )
     put_files_result = s3_client.upload_multiple_files(
         local_path_s3_keys_mapping,

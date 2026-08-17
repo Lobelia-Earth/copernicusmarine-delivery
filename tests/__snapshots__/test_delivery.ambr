@@ -10,10 +10,10 @@
   
   The following operations have been submitted:
   
-  	[DELETE] tests/resources/file1.txt
-  	[DELETE] tests/resources/file2.txt
-  	[UPLOAD] tests/resources/file1.txt -> product1/dataset1/tests/resources/file1.txt
-  	[UPLOAD] tests/resources/file2.txt -> product1/dataset1/tests/resources/file2.txt
+  	[DELETE] tests/resources/dataset1/file1.txt
+  	[DELETE] tests/resources/dataset1/file2.txt
+  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/file1.txt
+  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/file2.txt
   
   Total: 2 file uploaded, 2 file to delete.
   '''
@@ -29,11 +29,11 @@
         "fatal_error": null,
         "files_to_delete": [
           {
-            "key_suffix": "tests/resources/file1.txt",
+            "key_suffix": "tests/resources/dataset1/file1.txt",
             "error_message": null
           },
           {
-            "key_suffix": "tests/resources/file2.txt",
+            "key_suffix": "tests/resources/dataset1/file2.txt",
             "error_message": null
           }
         ]
@@ -43,12 +43,12 @@
         "fatal_error": null,
         "files_uploaded": [
           [
-            "tests/resources/file1.txt",
-            "product1/dataset1/tests/resources/file1.txt"
+            "tests/resources/dataset1/file1.txt",
+            "product1/dataset1/file1.txt"
           ],
           [
-            "tests/resources/file2.txt",
-            "product1/dataset1/tests/resources/file2.txt"
+            "tests/resources/dataset1/file2.txt",
+            "product1/dataset1/file2.txt"
           ]
         ],
         "files_failed": []
@@ -69,11 +69,11 @@
         "operation": "delete",
         "files": [
           {
-            "key_suffix": "tests/resources/file1.txt",
+            "key_suffix": "tests/resources/dataset1/file1.txt",
             "error_message": null
           },
           {
-            "key_suffix": "tests/resources/file2.txt",
+            "key_suffix": "tests/resources/dataset1/file2.txt",
             "error_message": null
           }
         ]
@@ -82,7 +82,7 @@
         "operation": "upload",
         "files": [
           {
-            "key_suffix": "tests/resources/file1.txt",
+            "key_suffix": "tests/resources/dataset1/file1.txt",
             "error_message": null,
             "file_size_mb": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
@@ -90,7 +90,7 @@
             "upload_end_time": "2012-01-14T12:00:01Z"
           },
           {
-            "key_suffix": "tests/resources/file2.txt",
+            "key_suffix": "tests/resources/dataset1/file2.txt",
             "error_message": null,
             "file_size_mb": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",
