@@ -2,7 +2,6 @@ import json
 import os
 import random
 from typing import Generator
-from urllib.parse import parse_qs
 
 import boto3
 import freezegun
@@ -148,7 +147,7 @@ def ingestion_service(s3_client, monkeypatch):
     """Patches http_client with an httpx-backed mock transport that mimics the ingestion service.
 
     - POST /delivery: accepts a delivery JSON, saves it to S3, returns 201.
-    - GET /delivery?pushing_entity_id=...: returns all stored delivery for the entity.
+    - GET /delivery/{pushing_entity_id}: returns all stored delivery for the entity.
     """
 
     def _handler(request: httpx.Request) -> httpx.Response:
@@ -178,9 +177,8 @@ def ingestion_service(s3_client, monkeypatch):
             )
             return httpx.Response(201, json=body)
 
-        if path == "/delivery" and request.method == "GET":
-            params = parse_qs(request.url.query.decode())
-            pushing_entity_id = params.get("pushing_entity_id", [None])[0]
+        if path.startswith("/delivery/") and request.method == "GET":
+            pushing_entity_id = path.split("/")[2]
             if not pushing_entity_id:
                 return httpx.Response(400, json={"error": "Missing pushing_entity_id"})
             bucket = next(
