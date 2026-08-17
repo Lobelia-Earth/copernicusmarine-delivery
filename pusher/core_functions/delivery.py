@@ -65,10 +65,7 @@ def get_delivery(
     pushing_entity_id: str,
 ) -> Delivery:
     response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/delivery",
-        params={
-            "pushing_entity_id": pushing_entity_id,
-        },
+        f"{INGESTION_SERVICE_URL}/delivery/{pushing_entity_id}",
     )
     response.raise_for_status()
     for delivery_data in response.json()["deliveries"]:
