@@ -85,25 +85,6 @@ class DeliveryFile(BaseModel):
     @field_validator("key_suffix")
     @classmethod
     def ensure_relative_path(cls, v: str) -> str:
-        """
-        From Claude. Not sure it is a good idea but I will leave it there as a TODO.
-
-        We need to make sure we retrieve and save the right path in the delivery.
-        The right path is the relative path that we will apply in S3. Without product/dataset prefix.
-        Examples:
-        - datasetID/filename.txt => wrong s3 path
-        - subfolder/filename.txt => good path
-        - /absolute/path/to/filename.txt => wrong path, should be relative to the current working directory
-        - onlylocalfolder/filename.txt => wrong because we don't want it in s3
-
-        UX wise: All the above is our problem and our convention ie we need to send this to the OPDV.
-        But we can imagine various interfaces that helps the user understand this.
-        Examples:
-        - we ask for s3 folder structure
-        - we force the user to have locally the same structure as s3 and we just take the relative path to the current working directory (as done now)
-        - we ask for the full path and we strip the product/dataset prefix if it exists so we use the datasetID as anchor.
-        - etc
-        """
         if os.path.isabs(v):
             return os.path.relpath(v).replace(
                 "../", ""
