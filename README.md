@@ -173,6 +173,27 @@ from pusher import delivery_status
 delivery = delivery_status(delivery_id, pushing_entity_id)
 ```
 
+You can also list all the deliveries of a pushing entity:
+
+```python
+from pusher import list_deliveries
+
+deliveries = list_deliveries(pushing_entity_id)
+```
+
+It lists all the deliveries for a given pushing entity, sorted by delivery ID in descending order (most recent first). For example, if you want to have all the deliveries IDs for a given dataset, simply do:
+
+```python
+from pusher import list_deliveries
+
+deliveries = list_deliveries(pushing_entity_id)
+dataset_deliveries = [
+  d.delivery_id 
+  for d in deliveries 
+  if d.dataset_id == dataset_id
+  ]
+```
+
 ## CLI
 
 ### Upload command
@@ -278,6 +299,18 @@ Or provide a delivery JSON file (saved with `--save-delivery-json`):
 
 ``` bash
 pusher status --delivery-json some-delivery-id.json
+```
+
+### List deliveries command
+
+List all the deliveries fetched from OPDV for a given pushing entity, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the python interface.
+
+``` bash
+pusher list-deliveries --help
+```
+
+``` bash
+pusher list-deliveries --pushing-entity-id lololo
 ```
 
 ## Error handling

@@ -60,18 +60,21 @@ def create_and_upload_delivery(
     return delivery
 
 
-def get_delivery(
-    delivery_id: str,
+def get_deliveries(
     pushing_entity_id: str,
-) -> Delivery:
+    delivery_id: str | None = None,
+) -> list[Delivery]:
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery/{pushing_entity_id}",
     )
     response.raise_for_status()
-    for delivery_data in response.json()["deliveries"]:
-        if delivery_data["delivery_id"] == delivery_id:
-            return Delivery(**delivery_data)
 
-    raise ValueError(
-        f"Delivery with id {delivery_id} not found for pushing entity {pushing_entity_id}."
+    return sorted(
+        [
+            Delivery(**delivery_data)
+            for delivery_data in response.json()["deliveries"]
+            if delivery_id is None or delivery_data["delivery_id"] == delivery_id
+        ],
+        key=lambda d: d.delivery_id,
+        reverse=True,
     )
