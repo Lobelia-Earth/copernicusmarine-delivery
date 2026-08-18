@@ -19,7 +19,7 @@ from pusher.core_functions.constants import (
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.delivery import get_delivery
+from pusher.core_functions.delivery import get_deliveries
 from pusher.core_functions.domain import (
     DeliveryFile,
     ResponseDelete,
@@ -412,16 +412,42 @@ def status(
         delivery_id = delivery_id
         pushing_entity_id = pushing_entity_id
 
-    delivery = get_delivery(
-        delivery_id=delivery_id,  # type: ignore
+    deliveries = get_deliveries(
+        delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,  # type: ignore
     )
+    delivery = deliveries[0] if deliveries else None
+    if not delivery:
+        raise ValueError(
+            f"Delivery with id {delivery_id} not found for pushing entity {pushing_entity_id}."
+        )
     click.echo(
         delivery.model_dump_json(
             indent=2,
             exclude_none=True,
         )
     )
+
+
+@cli.command()
+@click.option("--pushing-entity-id", help="ID of the pushing entity.")
+@log_exception_and_exit
+def list_deliveries(pushing_entity_id: str) -> None:
+    """
+    List all deliveries for a given pushing entity.
+    The result is sorted by delivery_id in descending order (most recent first).
+    """
+    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id)
+    print_list_deliveries(deliveries)
+
+
+def print_list_deliveries(deliveries: list[Delivery]) -> None:
+    click.echo(f"\nDeliveries for pushing entity {deliveries[0].pushing_entity_id}:\n")
+    for delivery in deliveries:
+        click.echo(f"\t[DELIVERY] {delivery.delivery_id}")
+        click.echo(f"\tproduct_id: {delivery.product_id}")
+        click.echo(f"\tdataset_id: {delivery.dataset_id}")
+        click.echo(f"\tstatus: {delivery.status.value}")
 
 
 if __name__ == "__main__":
