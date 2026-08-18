@@ -13,7 +13,7 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delivery as delivery_function
 from pusher.core_functions.utils import megabytes_to_bytes
-from pusher.python_interface import Delivery, Upload
+from pusher.python_interface import Delete, Delivery, Upload
 from pusher.s3_client import S3Client
 
 MOCK_FILES = [
@@ -31,17 +31,15 @@ def test_delivery_python_interface(
     skip_delivery_ids_validation,
     ingestion_service,
 ):
-    operations = [
-        ("delete", MOCK_FILES),
-        ("upload", MOCK_FILES),
-    ]
 
     response, delivery = delivery_function(
-        operations=operations,  # type: ignore
+        operations=[
+            Delete(files=MOCK_FILES),
+            Upload(files=MOCK_FILES, anchor="dataset1"),
+        ],
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
-        anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -57,14 +55,15 @@ def test_delivery_python_interface(
 def test_delivery_early_exit_with_validation_error(
     glo_mercator_bucket, set_env, skip_delivery_ids_validation, ingestion_service
 ):
-    operations = [("delete", MOCK_FILES), ("upload", MOCK_FILES + ["extra_file.txt"])]
     with pytest.raises(InvalidFilesError) as exc_info:
         delivery_function(
-            operations=operations,  # type: ignore
+            operations=[
+                Delete(files=MOCK_FILES),
+                Upload(files=MOCK_FILES + ["extra_file.txt"]),
+            ],
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
             product_id="product1",
-            anchor="dataset1",
             raise_on_upload_error=False,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -117,17 +116,11 @@ def test_delivery_dry_run_does_not_call_s3(
     monkeypatch.setattr(S3Client, "_put_with_os_error_retry", mock_put)
     monkeypatch.setattr(S3Client, "upload_fileobj", mock_upload_fileobj)
 
-    operations = [
-        ("delete", MOCK_FILES),
-        ("upload", MOCK_FILES),
-    ]
-
     response, delivery = delivery_function(
-        operations=operations,  # type: ignore
+        operations=[Delete(files=MOCK_FILES), Upload(files=MOCK_FILES)],
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
-        anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),

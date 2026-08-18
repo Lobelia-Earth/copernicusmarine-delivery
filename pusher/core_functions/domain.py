@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import NewType
+from typing import Literal, NewType
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -121,8 +121,17 @@ class BaseOperation(BaseModel):
         self.files.append(file)
 
 
+class Upload(BaseOperation):
+    operation: Literal[OperationNames.upload] = OperationNames.upload
+    anchor: str | None = None
+
+
+class Delete(BaseOperation):
+    operation: Literal[OperationNames.delete] = OperationNames.delete
+
+
 class DeliveryFile(BaseModel):
-    delivery: list[BaseOperation]
+    delivery: list[Upload | Delete]
 
 
 ######

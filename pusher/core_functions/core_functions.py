@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Sequence
 
 from delivery_common.domain import (
     DeleteFile,
@@ -26,11 +27,13 @@ from pusher.core_functions.delivery_validator import (
     validate_upload_files,
 )
 from pusher.core_functions.domain import (
+    Delete,
     NoSuccessfulUploadsError,
     PutFilesResult,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
+    Upload,
 )
 from pusher.core_functions.utils import (
     get_ingestion_bucket_name,
@@ -40,8 +43,16 @@ from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
-def strip_to_anchor(local_path: str, anchor: str) -> str:
+def strip_to_anchor(local_path: str, dataset_id: str, anchor: str | None = None) -> str:
+    """Anchor is not enforced. If it is None,
+    the logic checks whether local path contains `dataset_id`.
+    If so, `dataset_id` becomes the anchor, otherwise return `local_path` untouched.
+    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe."""
     parts = Path(local_path).parts
+    if anchor is None:
+        if dataset_id not in parts:
+            return local_path
+        anchor = dataset_id
     idx = parts.index(anchor)
     return str(Path(*parts[idx + 1 :]))
 
@@ -51,14 +62,14 @@ def get_local_path_s3_keys_mapping(
     delivery_id: str,
     product_id: str,
     dataset_id: str,
-    anchor: str,
+    anchor: str | None,
 ) -> dict[Path, str]:
     return {
         Path(file_path): NEW_DATA_BUCKET_PATH.format(
             delivery_id=delivery_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            file_name=strip_to_anchor(file_path, anchor),
+            file_name=strip_to_anchor(file_path, dataset_id, anchor),
         )
         for file_path in list_of_files
     }
@@ -69,7 +80,7 @@ def upload(
     product_id: str,
     dataset_id: str,
     files: list[str],
-    anchor: str,
+    anchor: str | None,
     raise_on_upload_error: bool,
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
@@ -182,8 +193,7 @@ def create_and_validate_delete_operation(
 
 
 def delivery(
-    operations: list[tuple[OperationNames, list[str]]],
-    anchor: str,
+    operations: Sequence[Upload | Delete],
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
@@ -205,45 +215,47 @@ def delivery(
     s3_client = get_s3_ingestion_client(
         pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
     )
-    for operation_name, sources in operations:
-        if operation_name == "delete":
-            operation = create_and_validate_delete_operation(sources)
-            pending_operations.append(operation)
-        elif operation_name == "upload":
-            to_upload_operation = create_and_validate_to_upload_operation(
-                sources, anchor
-            )
-            pending_operations.append(to_upload_operation)
+    for operation in operations:
+        match operation:
+            case Delete():
+                operation = create_and_validate_delete_operation(operation.files)
+                pending_operations.append(operation)
+            case Upload():
+                to_upload_operation = create_and_validate_to_upload_operation(
+                    operation.files, operation.anchor
+                )
+                pending_operations.append(to_upload_operation)
     all_operations: list[Operation] = []
     all_responses: list[ResponseUpload | ResponseDelete] = []
     for operation in pending_operations:
-        if isinstance(operation, DeleteOperation):
-            all_operations.append(operation)
-            all_responses.append(
-                ResponseDelete.create(
-                    delivery_id=delivery_id, files_to_delete=operation.files
+        match operation:
+            case DeleteOperation():
+                all_operations.append(operation)
+                all_responses.append(
+                    ResponseDelete.create(
+                        delivery_id=delivery_id, files_to_delete=operation.files
+                    )
                 )
-            )
-        else:
-            put_files_result, upload_operation = _put_files_to_ingestion_system(
-                s3_client,
-                delivery_id=delivery_id,
-                product_id=product_id,
-                dataset_id=dataset_id,
-                anchor=anchor,
-                to_upload_operation=operation,
-                raise_on_error=raise_on_upload_error,
-                chunk_size=chunk_size_bytes,
-                max_concurrent_uploads=max_concurrent_uploads,
-                dry_run=dry_run,
-            )
-            all_operations.append(upload_operation)
-            all_responses.append(
-                ResponseUpload.create(
+            case ToUploadOperation():
+                put_files_result, upload_operation = _put_files_to_ingestion_system(
+                    s3_client,
                     delivery_id=delivery_id,
-                    result_upload=put_files_result,
+                    product_id=product_id,
+                    dataset_id=dataset_id,
+                    anchor=operation.anchor,
+                    to_upload_operation=operation,
+                    raise_on_error=raise_on_upload_error,
+                    chunk_size=chunk_size_bytes,
+                    max_concurrent_uploads=max_concurrent_uploads,
+                    dry_run=dry_run,
                 )
-            )
+                all_operations.append(upload_operation)
+                all_responses.append(
+                    ResponseUpload.create(
+                        delivery_id=delivery_id,
+                        result_upload=put_files_result,
+                    )
+                )
 
     delivery = create_and_upload_delivery(
         pushing_entity_id,
@@ -263,7 +275,7 @@ def delivery(
 
 def create_and_validate_to_upload_operation(
     files: list[str],
-    anchor: str,
+    anchor: str | None,
 ) -> ToUploadOperation:
     validate_upload_files(files, anchor)
     return ToUploadOperation(
@@ -273,7 +285,8 @@ def create_and_validate_to_upload_operation(
                 file_size_mb=os.path.getsize(file) // (1024 * 1024),
             )
             for file in files
-        ]
+        ],
+        anchor=anchor,
     )
 
 
@@ -282,7 +295,7 @@ def _put_files_to_ingestion_system(
     delivery_id: str,
     product_id: str,
     dataset_id: str,
-    anchor: str,
+    anchor: str | None,
     to_upload_operation: ToUploadOperation,
     raise_on_error: bool,
     chunk_size: int,
@@ -307,7 +320,7 @@ def _put_files_to_ingestion_system(
         raise NoSuccessfulUploadsError(put_files_result.errored_files)
 
     operation = build_upload_operation_from_put_results(
-        to_upload_operation, put_files_result
+        to_upload_operation, put_files_result, dataset_id
     )
 
     total_size = operation.total_size()
@@ -320,12 +333,18 @@ def _put_files_to_ingestion_system(
 
 
 def build_upload_operation_from_put_results(
-    to_upload_operation: ToUploadOperation, put_files_result: PutFilesResult
+    to_upload_operation: ToUploadOperation,
+    put_files_result: PutFilesResult,
+    dataset_id: str,
 ) -> UploadOperation:
     """
     TODO: add the possibility for users to abort the delivery if there are any errors. For now, we just log them and continue.
 
     Might be the default one.
+
+    `dataset_id` is used as an anchor on the S3 Path returned by `put_files_result` to trim up to the file name.
+    The S3 Path in the ingestion bucket is a temporary one (files will be removed from there once uploaded to MDS).
+    Such S3 Path then would not add much relevant information to the user.
     """
     successful_files_dict = {
         str(file.local_path): file for file in put_files_result.successful_files
@@ -340,7 +359,9 @@ def build_upload_operation_from_put_results(
             continue
         upload_files.append(
             UploadFile(
-                key_suffix=file_to_upload.key_suffix,
+                key_suffix=strip_to_anchor(
+                    successful_s3_file.s3_path, dataset_id=dataset_id
+                ),
                 file_size_mb=file_to_upload.file_size_mb,
                 checksum=successful_s3_file.e_tag,
                 upload_start_time=successful_s3_file.upload_start_time,

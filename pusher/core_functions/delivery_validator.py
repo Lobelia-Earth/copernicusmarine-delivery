@@ -40,7 +40,7 @@ def validate_delete_files(files: list[str]) -> None:
         )
 
 
-def validate_upload_files(files: list[str], anchor: str) -> None:
+def validate_upload_files(files: list[str], anchor: str | None) -> None:
     invalid_files = []
     for file_str in files:
         file = Path(file_str)
@@ -52,7 +52,7 @@ def validate_upload_files(files: list[str], anchor: str) -> None:
         if not file_not_empty(file):
             invalid_files.append(InvalidFile(local_path=file, reason="File is empty."))
             continue
-        if anchor not in file.parts:
+        if anchor and anchor not in file.parts:
             invalid_files.append(
                 InvalidFile(
                     local_path=file,

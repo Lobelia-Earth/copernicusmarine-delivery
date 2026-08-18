@@ -82,7 +82,7 @@
         "operation": "upload",
         "files": [
           {
-            "key_suffix": "tests/resources/dataset1/file1.txt",
+            "key_suffix": "file1.txt",
             "error_message": null,
             "file_size_mb": 0,
             "checksum": "c08af741236b563ed7ac6e240623a6f5-1",
@@ -90,7 +90,7 @@
             "upload_end_time": "2012-01-14T12:00:01Z"
           },
           {
-            "key_suffix": "tests/resources/dataset1/file2.txt",
+            "key_suffix": "file2.txt",
             "error_message": null,
             "file_size_mb": 0,
             "checksum": "727a3ead5c2a5492759091a67cb31068-1",

@@ -81,7 +81,7 @@ class DeliveryFile(BaseModel):
     #: Similarly for a delete, the file will be deleted from the Marine datastore at "/{product_id}/{dataset_id}/{key_suffix}".
     key_suffix: str
 
-    # Could leave this here for those creating a delivery without the toolbox, but it should be irrelevant now from the Toolbox.
+    # Relevant when Delivery created without the toolbox.
     @field_validator("key_suffix")
     @classmethod
     def ensure_relative_path(cls, v: str) -> str:
@@ -148,6 +148,7 @@ class ToUploadOperation(BaseModel):
 
     operation: OperationNames = Field(default=OperationNames.upload)
     files: list[FileToUpload] = Field(default_factory=list)
+    anchor: str | None
 
 
 class DeleteOperation(BaseModel):

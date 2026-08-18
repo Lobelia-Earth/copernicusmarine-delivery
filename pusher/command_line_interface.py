@@ -120,13 +120,6 @@ _upload_shared_options = [
         show_default=True,
         help="Number of parts uploaded in parallel per file (multipart upload).",
     ),
-    click.option(
-        "--anchor",
-        type=str,
-        required=False,
-        default=None,
-        help="Specify a different anchor from the default 'dataset_id'",
-    ),
 ]
 
 
@@ -170,7 +163,6 @@ def delivery(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
-    anchor: str | None = None,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -183,14 +175,10 @@ def delivery(
         delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
     response_delivery, delivery = _delivery(
-        [
-            (operation.operation, operation.files)
-            for operation in delivery_file.delivery
-        ],
+        [operation for operation in delivery_file.delivery],
         pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
-        anchor=anchor or dataset_id,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
@@ -210,8 +198,22 @@ def delivery(
     multiple=True,
     help=(
         """Relative or absolute path to the file.
-        `dataset_id` will be used as an anchor (anything before it removed) and 
-        `product_id/` prepended before upload."""
+        If `anchor` is set, anything before it will be removed.
+        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
+    ),
+)
+@click.option(
+    "--anchor",
+    type=str,
+    required=False,
+    default=None,
+    help=(
+        """
+        If set, anything before and up to such anchor will be removed
+        from the given path upon uploading to the ingestion bucket.
+        If unset and the path contains `dataset_id`, that will be used as an anchor.
+        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path.
+        """
     ),
 )
 @shared_options
@@ -248,7 +250,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
-        anchor=anchor or dataset_id,
+        anchor=anchor,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),

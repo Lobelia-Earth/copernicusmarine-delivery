@@ -13,7 +13,10 @@ from pusher.core_functions.core_functions import upload
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.python_interface import list_deliveries
 
-MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
+MOCK_FILES = [
+    "tests/resources/dataset1/file1.txt",
+    "tests/resources/dataset1/file2.txt",
+]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 
@@ -28,6 +31,7 @@ def _upload(files: list[str], dataset_id: str, product_id: str):
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
+        anchor=None,
     )
 
 

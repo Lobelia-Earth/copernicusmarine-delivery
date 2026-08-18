@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 
 from delivery_common.domain import Delivery as DeliveryModel
-from delivery_common.domain import OperationNames
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -11,16 +10,17 @@ from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.delivery import get_deliveries
+from pusher.core_functions.domain import Delete as _Delete
 from pusher.core_functions.domain import (
-    BaseOperation,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
 )
+from pusher.core_functions.domain import Upload as _Upload
 from pusher.core_functions.utils import megabytes_to_bytes
 
 
-class Upload(BaseOperation):
+class Upload(_Upload):
     """
     Upload ``files`` to the given dataset and product.
     :param files: Relative or absolute path to the file. `dataset_id` will be used as an anchor (anything before it removed) and `product_id/` prepended before upload.
@@ -29,9 +29,6 @@ class Upload(BaseOperation):
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     :param dry_run: Validate the upload without performing any actual operation in S3.
     """
-
-    def __init__(self, files: list[str]):
-        super().__init__(operation=OperationNames.upload, files=files)
 
     def submit(
         self,
@@ -67,7 +64,7 @@ class Upload(BaseOperation):
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
-            anchor=anchor or dataset_id,
+            anchor=self.anchor,
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
@@ -77,15 +74,12 @@ class Upload(BaseOperation):
         return response
 
 
-class Delete(BaseOperation):
+class Delete(_Delete):
     """
     Delete ``files`` from the given dataset and product.
     :param files: S3 Path to the file. `product_id/dataset_id` are prepended by default.
     :param dry_run: Validate the delete without performing any actual operation in S3.
     """
-
-    def __init__(self, files: list[str]):
-        super().__init__(operation=OperationNames.delete, files=files)
 
     def submit(
         self,
@@ -168,8 +162,7 @@ class Delivery(BaseModel):
             pushing_entity_id=pushing_entity_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            anchor=anchor or dataset_id,
-            operations=[(op.operation, op.files) for op in self.operations],
+            operations=self.operations,
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
