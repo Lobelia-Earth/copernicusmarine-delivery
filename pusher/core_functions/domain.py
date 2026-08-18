@@ -21,6 +21,22 @@ def get_s3_key_suffix(s3_path: S3Path) -> S3KeySuffix:
     return S3KeySuffix("/".join(s3_path.split("/")[2:]))
 
 
+class FileToUpload(BaseModel):
+    """Pre-upload file: checksum not known yet, only available once the upload completes.
+    file_path is a local path, not S3 related yet."""
+
+    file_size_mb: int
+    file_path: str
+
+
+class ToUploadOperation(BaseModel):
+    """Pre-upload counterpart to UploadOperation: files not uploaded yet, so no checksum."""
+
+    operation: OperationNames = Field(default=OperationNames.upload)
+    files: list[FileToUpload] = Field(default_factory=list)
+    anchor: str | None
+
+
 class S3File(BaseModel):
     local_path: Path
     s3_path: S3Path

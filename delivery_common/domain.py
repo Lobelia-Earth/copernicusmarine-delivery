@@ -105,12 +105,6 @@ class UploadFile(DeliveryFile):
     upload_end_time: str | None
 
 
-class FileToUpload(DeliveryFile):
-    """Pre-upload file: checksum not known yet, only available once the upload completes."""
-
-    file_size_mb: int
-
-
 class DeleteFile(DeliveryFile):
     pass
 
@@ -122,14 +116,6 @@ class UploadOperation(BaseModel):
     def total_size(self) -> int:
         """Returns the total size of all files in MB."""
         return sum(file.file_size_mb or 0 for file in self.files)
-
-
-class ToUploadOperation(BaseModel):
-    """Pre-upload counterpart to UploadOperation: files not uploaded yet, so no checksum."""
-
-    operation: OperationNames = Field(default=OperationNames.upload)
-    files: list[FileToUpload] = Field(default_factory=list)
-    anchor: str | None
 
 
 class DeleteOperation(BaseModel):

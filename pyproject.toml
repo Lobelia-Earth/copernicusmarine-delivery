@@ -58,6 +58,7 @@ OPDV_S3_ENDPOINT = "http://localhost:4566"
 OPDV_ACCESS_KEY_ID = "test"
 OPDV_SECRET_ACCESS_KEY = "test"
 INGESTION_SERVICE_URL = "http://localhost:8005"
+PYTHON_LOG_DEBUG = "true"
 
 [tool.ruff.lint]
 select = ["F401", "I"]

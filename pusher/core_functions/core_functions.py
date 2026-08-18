@@ -6,10 +6,8 @@ from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
     Delivery,
-    FileToUpload,
     Operation,
     OperationNames,
-    ToUploadOperation,
     UploadFile,
     UploadOperation,
 )
@@ -28,11 +26,13 @@ from pusher.core_functions.delivery_validator import (
 )
 from pusher.core_functions.domain import (
     Delete,
+    FileToUpload,
     NoSuccessfulUploadsError,
     PutFilesResult,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
+    ToUploadOperation,
     Upload,
 )
 from pusher.core_functions.utils import (
@@ -54,7 +54,13 @@ def strip_to_anchor(local_path: str, dataset_id: str, anchor: str | None = None)
             return local_path
         anchor = dataset_id
     idx = parts.index(anchor)
-    return str(Path(*parts[idx + 1 :]))
+    stripped_path = str(Path(*parts[idx + 1 :]))
+    if not anchor and stripped_path != local_path:
+        # Let user know that default `dataset_id` used as anchor.
+        logger.info(
+            f"Dataset ID used as anchor. Stripped '{local_path}' to '{stripped_path}'."
+        )
+    return stripped_path
 
 
 def get_local_path_s3_keys_mapping(
@@ -281,7 +287,7 @@ def create_and_validate_to_upload_operation(
     return ToUploadOperation(
         files=[
             FileToUpload(
-                key_suffix=file,
+                file_path=file,
                 file_size_mb=os.path.getsize(file) // (1024 * 1024),
             )
             for file in files
@@ -303,7 +309,7 @@ def _put_files_to_ingestion_system(
     dry_run: bool,
 ) -> tuple[PutFilesResult, UploadOperation]:
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
-        [file.key_suffix for file in to_upload_operation.files],
+        [file.file_path for file in to_upload_operation.files],
         delivery_id,
         product_id,
         dataset_id,
@@ -351,10 +357,10 @@ def build_upload_operation_from_put_results(
     }
     upload_files = []
     for file_to_upload in to_upload_operation.files:
-        successful_s3_file = successful_files_dict.get(file_to_upload.key_suffix)
+        successful_s3_file = successful_files_dict.get(file_to_upload.file_path)
         if successful_s3_file is None:
             logger.debug(
-                f"Removing file {file_to_upload.key_suffix} from upload operation."
+                f"Removing file {file_to_upload.file_path} from upload operation."
             )
             continue
         upload_files.append(
