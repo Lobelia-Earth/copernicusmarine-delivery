@@ -285,6 +285,7 @@ delivery:
     files:
       - tests/resources/file1.txt
       - tests/resources/file2.txt
+    anchor: resources
 ```
 
 ### Delivery status command (WIP)
