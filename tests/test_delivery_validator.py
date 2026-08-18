@@ -115,7 +115,7 @@ def test_duplicate_files_delete(file_list, caplog):
     ],
 )
 def test_strip_to_anchor(local_path, anchor, expected):
-    assert strip_to_anchor(local_path, anchor, anchor) == expected
+    assert strip_to_anchor(local_path, anchor) == expected
 
 
 def test_missing_anchor_raises(caplog):

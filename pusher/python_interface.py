@@ -23,7 +23,7 @@ from pusher.core_functions.utils import megabytes_to_bytes
 class Upload(_Upload):
     """
     Upload ``files`` to the given dataset and product.
-    :param files: Relative or absolute path to local files. If anchor is not set and `dataset_id` found in the path, it will be used as an anchor (anything before it removed). See `Files paths and anchors` in the documentation.
+    :param files: Relative or absolute path to local files. See `Files paths and anchors` in the documentation.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `files` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
@@ -48,7 +48,7 @@ class Upload(_Upload):
         :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
-        :param anchor: Specify a different anchor from the default 'dataset_id'.
+        :param anchor: Optional anchor to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation.
         :param raise_on_upload_error: If True, raise an exception and stop the upload if any file fails to upload. By default, the upload will continue and skip any files that fail to upload.
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
@@ -147,7 +147,7 @@ class Delivery(BaseModel):
         :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
-        :param anchor: Specify a different anchor from the default 'dataset_id' to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation for more details.
+        :param anchor: Optional anchor to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation for more details.
         :param raise_on_upload_error: If True, raise an exception and stop the delivery if any file fails to upload. By default, the delivery will continue and skip any files that fail to upload.
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.

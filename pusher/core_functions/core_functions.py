@@ -43,23 +43,17 @@ from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
-def strip_to_anchor(local_path: str, dataset_id: str, anchor: str | None = None) -> str:
+def strip_to_anchor(local_path: str, anchor: str | None = None) -> str:
     """Anchor is not enforced. If it is None,
-    the logic checks whether local path contains `dataset_id`.
-    If so, `dataset_id` becomes the anchor, otherwise return `local_path` untouched.
+    the logic checks whether local path is absolute. If it is it 'relativizes' it before returning.
     If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe."""
-    parts = Path(local_path).parts
     if anchor is None:
-        if dataset_id not in parts:
-            return local_path
-        anchor = dataset_id
+        if os.path.isabs(local_path):
+            return os.path.relpath(local_path).replace("../", "")
+        return local_path
+    parts = Path(local_path).parts
     idx = parts.index(anchor)
     stripped_path = str(Path(*parts[idx + 1 :]))
-    if not anchor and stripped_path != local_path:
-        # Let user know that default `dataset_id` used as anchor.
-        logger.info(
-            f"Dataset ID used as anchor. Stripped '{local_path}' to '{stripped_path}'."
-        )
     return stripped_path
 
 
@@ -75,7 +69,7 @@ def get_local_path_s3_keys_mapping(
             delivery_id=delivery_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            file_name=strip_to_anchor(file_path, dataset_id, anchor),
+            file_name=strip_to_anchor(file_path, anchor),
         )
         for file_path in list_of_files
     }
@@ -366,7 +360,7 @@ def build_upload_operation_from_put_results(
         upload_files.append(
             UploadFile(
                 key_suffix=strip_to_anchor(
-                    successful_s3_file.s3_path, dataset_id=dataset_id
+                    successful_s3_file.s3_path, anchor=dataset_id
                 ),
                 file_size_mb=file_to_upload.file_size_mb,
                 checksum=successful_s3_file.e_tag,

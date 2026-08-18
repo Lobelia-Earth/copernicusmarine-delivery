@@ -110,7 +110,7 @@ Right now, the ingestion system (OPDV) only accepts **S3 MDS suffixes**.
 
 Right now, the toolbox accepts the following:
 
-- For the "upload", you can specify an `anchor` (which can be different per operation) together with the list of file paths. The `anchor` is optional, but the toolbox will default to `dataset_id` (if present). Then the file path can be:
+- For the "upload", you can specify an `anchor` (which can be different per operation) together with the list of file paths. The `anchor` is optional. Then the file path can be:
   - a **relative local path** without `anchor` and **the file will be published with the same folder structure.** For example, if the source is `my/local/folder/filename.nc`, then in MDS the file will be published with the key: `productID/datasetID/my/local/folder/filename.nc`.
   - a **relative local path** with `anchor`, **the file will be published with the same folder structure AFTER the anchor**. For example, if the source is `my/local/folder/filename.nc` and the anchor is `local`, then in MDS the file will be published with the key: `productID/datasetID/folder/filename.nc`.
   - an **absolute path** without `anchor`. The system will make the absolute path a relative one, local to where it's being executed and remove any `../`. This is not recommended.

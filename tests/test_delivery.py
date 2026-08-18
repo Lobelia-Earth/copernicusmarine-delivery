@@ -144,8 +144,11 @@ def test_delivery_dry_run_does_not_call_s3(
         pytest.param(
             MOCK_FILES,
             None,
-            {"file1.txt", "file2.txt"},
-            id="relative-no-anchor-falls-back-to-dataset-id",
+            {
+                "tests/resources/dataset1/file1.txt",
+                "tests/resources/dataset1/file2.txt",
+            },
+            id="relative-no-anchor-keeps-path",
         ),
         pytest.param(
             MOCK_FILES,
@@ -156,8 +159,11 @@ def test_delivery_dry_run_does_not_call_s3(
         pytest.param(
             MOCK_FILES_ABS,
             None,
-            {"file1.txt", "file2.txt"},
-            id="absolute-no-anchor-falls-back-to-dataset-id",
+            {
+                "tests/resources/dataset1/file1.txt",
+                "tests/resources/dataset1/file2.txt",
+            },
+            id="absolute-no-anchor-keeps-path",
         ),
         pytest.param(
             MOCK_FILES_ABS,

@@ -10,8 +10,8 @@
   
   The following upload operation have been submitted:
   
-  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/file1.txt
-  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/file2.txt
+  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/tests/resources/dataset1/file1.txt
+  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/tests/resources/dataset1/file2.txt
   
   Total: 2 file uploaded, 0 file to delete.
   '''
@@ -27,8 +27,8 @@
   
   The following upload operation have been submitted:
   
-  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/file1.txt
-  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/file2.txt
+  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/tests/resources/dataset1/file1.txt
+  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/tests/resources/dataset1/file2.txt
   
   Total: 2 file uploaded, 0 file to delete.
   '''
@@ -45,7 +45,7 @@
             'checksum': 'c08af741236b563ed7ac6e240623a6f5-1',
             'error_message': None,
             'file_size_mb': 0,
-            'key_suffix': 'file1.txt',
+            'key_suffix': 'tests/resources/dataset1/file1.txt',
             'upload_end_time': '2012-01-14T12:00:01Z',
             'upload_start_time': '2012-01-14T12:00:01Z',
           }),
@@ -53,7 +53,7 @@
             'checksum': '727a3ead5c2a5492759091a67cb31068-1',
             'error_message': None,
             'file_size_mb': 0,
-            'key_suffix': 'file2.txt',
+            'key_suffix': 'tests/resources/dataset1/file2.txt',
             'upload_end_time': '2012-01-14T12:00:01Z',
             'upload_start_time': '2012-01-14T12:00:01Z',
           }),
