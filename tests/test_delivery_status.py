@@ -74,6 +74,8 @@ def test_delivery_status_cli(
             "dataset1",
             "--product-id",
             "product1",
+            "--anchor",
+            "dataset1",
         ],
         env=cli_env,
     )
