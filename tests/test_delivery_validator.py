@@ -1,9 +1,12 @@
+from pathlib import Path
+
 import pytest
 import yaml
 
 from delivery_common.domain import PushingEntities
 from delivery_common.validation import validate_delivery_ids
 from pusher import InvalidDeliveryIdsError, InvalidFilesError
+from pusher.core_functions.core_functions import strip_to_anchor
 from pusher.core_functions.delivery_validator import (
     validate_delete_files,
     validate_upload_files,
@@ -88,7 +91,9 @@ MORE_DUPLICATED_FILES = ["file2.txt"] + [f"file1.txt" for i in range(10)]
 def test_duplicate_files_upload(file_list, caplog):
     with caplog.at_level("ERROR"):
         with pytest.raises(InvalidFilesError):
-            validate_upload_files(file_list)
+            validate_upload_files(
+                file_list, "dataset1", "product1", anchor="does not matter here"
+            )
         assert caplog.text.count("Duplicate file path") == 1
 
 
@@ -98,3 +103,60 @@ def test_duplicate_files_delete(file_list, caplog):
         with pytest.raises(InvalidFilesError):
             validate_delete_files(file_list)
         assert caplog.text.count("Duplicate file path") == 1
+
+
+@pytest.mark.parametrize(
+    ("local_path", "anchor", "expected"),
+    [
+        (
+            "/home/user/projects/my_dataset/region/africa/file.nc",
+            "my_dataset",
+            "region/africa/file.nc",
+        ),
+        ("my_dataset/file.nc", "my_dataset", "file.nc"),
+        ("a/b/my_dataset", "my_dataset", "."),
+        ("a/my_dataset/b/my_dataset/c.nc", "my_dataset", "b/my_dataset/c.nc"),
+    ],
+)
+def test_strip_to_anchor(local_path, anchor, expected):
+    assert strip_to_anchor(local_path, anchor) == expected
+
+
+def test_missing_anchor_raises(caplog):
+    with caplog.at_level("ERROR"):
+        with pytest.raises(InvalidFilesError):
+            validate_upload_files(
+                ["tests/resources/dataset1/file1.txt"],
+                "dataset1",
+                "product1",
+                anchor="does-not-exist",
+            )
+        assert "does-not-exist" in caplog.text
+
+
+def test_no_anchor_and_dataset_id_in_path_is_rejected(caplog):
+    with caplog.at_level("ERROR"):
+        with pytest.raises(InvalidFilesError):
+            validate_upload_files(
+                ["tests/resources/dataset1/file1.txt"],
+                "dataset1",
+                "product1",
+                anchor=None,
+            )
+        assert (
+            "No anchor specified and product_id (product1) or dataset_id (dataset1) found in local path"
+            in caplog.text
+        )
+
+
+def test_no_anchor_and_absolute_path_is_rejected(caplog):
+    path = Path("tests/resources/file1.txt").absolute()
+    with caplog.at_level("ERROR"):
+        with pytest.raises(InvalidFilesError):
+            validate_upload_files(
+                [str(path)],
+                "dataset1",
+                "product1",
+                anchor=None,
+            )
+        assert "Absolute paths are only allowed if an anchor is given" in caplog.text

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import NewType
+from typing import Literal, NewType
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -21,9 +21,25 @@ def get_s3_key_suffix(s3_path: S3Path) -> S3KeySuffix:
     return S3KeySuffix("/".join(s3_path.split("/")[2:]))
 
 
+class FileToUpload(BaseModel):
+    """Pre-upload file: checksum not known yet, only available once the upload completes.
+    file_path is a local path, not S3 related yet."""
+
+    file_size_mb: int
+    local_path: str
+
+
+class ToUploadOperation(BaseModel):
+    """Pre-upload counterpart to UploadOperation: files not uploaded yet, so no checksum."""
+
+    operation: OperationNames = Field(default=OperationNames.upload)
+    files: list[FileToUpload] = Field(default_factory=list)
+    anchor: str | None
+
+
 class S3File(BaseModel):
     local_path: Path
-    s3_path: S3Path
+    ingestion_system_s3_path: S3Path
     e_tag: str
     upload_start_time: str
     upload_end_time: str
@@ -67,7 +83,7 @@ class ResponseUpload(BaseResponse):
         return cls(
             delivery_id=delivery_id,
             files_uploaded=[
-                (file.local_path, get_s3_key_suffix(file.s3_path))
+                (file.local_path, get_s3_key_suffix(file.ingestion_system_s3_path))
                 for file in result_upload.successful_files
             ],
             files_failed=result_upload.errored_files,
@@ -121,8 +137,17 @@ class BaseOperation(BaseModel):
         self.files.append(file)
 
 
+class Upload(BaseOperation):
+    operation: Literal[OperationNames.upload] = OperationNames.upload
+    anchor: str | None = None
+
+
+class Delete(BaseOperation):
+    operation: Literal[OperationNames.delete] = OperationNames.delete
+
+
 class DeliveryFile(BaseModel):
-    delivery: list[BaseOperation]
+    delivery: list[Upload | Delete]
 
 
 ######

@@ -40,7 +40,9 @@ def validate_delete_files(files: list[str]) -> None:
         )
 
 
-def validate_upload_files(files: list[str]) -> None:
+def validate_upload_files(
+    files: list[str], dataset_id: str, product_id: str, anchor: str | None
+) -> None:
     invalid_files = []
     for file_str in files:
         file = Path(file_str)
@@ -52,22 +54,47 @@ def validate_upload_files(files: list[str]) -> None:
         if not file_not_empty(file):
             invalid_files.append(InvalidFile(local_path=file, reason="File is empty."))
             continue
+        if anchor and anchor not in file.parts:
+            invalid_files.append(
+                InvalidFile(
+                    local_path=file,
+                    reason=f"Expected anchor ({anchor}) was not found in local path: {file}",
+                )
+            )
+            continue
+        if not anchor:
+            if dataset_id in file.parts or product_id in file.parts:
+                invalid_files.append(
+                    InvalidFile(
+                        local_path=file,
+                        reason=(
+                            f"No anchor specified and product_id ({product_id}) or dataset_id ({dataset_id}) found in local path: {file}. "
+                            "This will most probably produce an invalid S3 MDS suffix. For specific cases, please contact User Support."
+                        ),
+                    )
+                )
+                continue
+            if file.is_absolute():
+                invalid_files.append(
+                    InvalidFile(
+                        local_path=file,
+                        reason=(
+                            f"Absolute paths are only allowed if an anchor is given: {file}"
+                            "This will most probably produce an invalid S3 MDS suffix. For specific cases, please contact User Support."
+                        ),
+                    )
+                )
+                continue
         if not file_type_supported(file):
             # Just a warning for now
             logger.warning(
                 "File extension is not supported. There might be some issues downstream. "
                 f"Supported file extensions are: {SUPPORTED_FILE_EXTENTIONS}"
             )
-            # invalid_files.append(
-            #     InvalidFile(
-            #         path=file_,
-            #         reason=f"File extension not supported. Supported extensions are: {SUPPORTED_FILE_EXTENTIONS}",
-            #     )
-            # )
-            # continue
+            continue
     invalid_files += [
-        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
-        for file_ in duplicate_files(files)
+        InvalidFile(local_path=Path(file), reason="Duplicate file path.")
+        for file in duplicate_files(files)
     ]
     if invalid_files:
         raise InvalidFilesError(

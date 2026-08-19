@@ -18,7 +18,10 @@ from pusher.core_functions.core_functions import upload
 from pusher.core_functions.utils import megabytes_to_bytes
 from pusher.s3_client import S3Client
 
-MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
+MOCK_FILES = [
+    "tests/resources/dataset1/file1.txt",
+    "tests/resources/dataset1/file2.txt",
+]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 _UNKNOWN_ENTITY_YAML = yaml.dump(
@@ -47,6 +50,7 @@ def test_upload_python_interface(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_concurrency=CHUNK_CONCURRENCY,
@@ -85,6 +89,8 @@ def test_upload_cli(
             "dataset1",
             "--product-id",
             "product1",
+            "--anchor",
+            "dataset1",
         ],
         env=cli_env,
     )
@@ -115,6 +121,8 @@ def test_upload_cli_save_delivery_json(
             "dataset1",
             "--product-id",
             "product1",
+            "--anchor",
+            "dataset1",
             "--save-delivery-json",
         ],
         env=cli_env,
@@ -163,6 +171,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
             files=MOCK_FILES,
             dataset_id="dataset1",
             product_id="product1",
+            anchor="dataset1",
             raise_on_upload_error=False,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -192,6 +201,7 @@ def test_upload_one_file_cannot_be_uploaded(
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
+        anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
@@ -225,6 +235,7 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
             product_id="product1",
+            anchor="dataset1",
             raise_on_upload_error=True,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_mb=DEFAULT_CHUNK_SIZE_MB,

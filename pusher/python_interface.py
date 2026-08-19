@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 
 from delivery_common.domain import Delivery as DeliveryModel
-from delivery_common.domain import OperationNames
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -11,32 +10,32 @@ from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.delivery import get_deliveries
+from pusher.core_functions.domain import Delete as _Delete
 from pusher.core_functions.domain import (
-    BaseOperation,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
 )
+from pusher.core_functions.domain import Upload as _Upload
 from pusher.core_functions.utils import megabytes_to_bytes
 
 
-class Upload(BaseOperation):
+class Upload(_Upload):
     """
     Upload ``files`` to the given dataset and product.
+    :param files: Relative or absolute path to local files. See `Files paths and anchors` in the documentation.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `files` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
     :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
     :param dry_run: Validate the upload without performing any actual operation in S3.
     """
 
-    def __init__(self, files: list[str]):
-        super().__init__(operation=OperationNames.upload, files=files)
-
     def submit(
         self,
         pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
+        anchor: str | None = None,
         raise_on_upload_error: bool = False,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
@@ -49,6 +48,7 @@ class Upload(BaseOperation):
         :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
+        :param anchor: Optional anchor to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation.
         :param raise_on_upload_error: If True, raise an exception and stop the upload if any file fails to upload. By default, the upload will continue and skip any files that fail to upload.
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
@@ -64,6 +64,7 @@ class Upload(BaseOperation):
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
+            anchor=anchor,
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
@@ -73,14 +74,12 @@ class Upload(BaseOperation):
         return response
 
 
-class Delete(BaseOperation):
+class Delete(_Delete):
     """
     Delete ``files`` from the given dataset and product.
+    :param files: Files' Key suffix in S3 without `product_id/dataset_id` in the folder structure. See `File paths and anchors` in the documentation for more details.
     :param dry_run: Validate the delete without performing any actual operation in S3.
     """
-
-    def __init__(self, files: list[str]):
-        super().__init__(operation=OperationNames.delete, files=files)
 
     def submit(
         self,
@@ -135,6 +134,7 @@ class Delivery(BaseModel):
         pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
+        anchor: str | None = None,
         raise_on_upload_error: bool = False,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
@@ -147,6 +147,7 @@ class Delivery(BaseModel):
         :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
+        :param anchor: Optional anchor to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation for more details.
         :param raise_on_upload_error: If True, raise an exception and stop the delivery if any file fails to upload. By default, the delivery will continue and skip any files that fail to upload.
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
@@ -161,7 +162,7 @@ class Delivery(BaseModel):
             pushing_entity_id=pushing_entity_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            operations=[(op.operation, op.files) for op in self.operations],
+            operations=self.operations,
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),

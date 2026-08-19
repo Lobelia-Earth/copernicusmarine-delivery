@@ -54,16 +54,10 @@ class PushingEntities(BaseModel):
     @classmethod
     def from_file(cls, path: Path) -> "PushingEntities":
         if not path.is_file():
-            raise FileNotFoundError(
-                f"Could not open file in given path: {path.as_posix()}"
-            )
+            raise FileNotFoundError(f"Could not open file in given path: {path}")
         with open(path) as input_config_file:
             data = yaml.safe_load(input_config_file)
         return cls(**data)
-
-
-# DeliveryStatus = Literal["pending", "validated", "completed", "failed"]
-# OperationNames = Literal["upload", "delete"]
 
 
 class DeliveryStatus(str, Enum):
@@ -85,28 +79,10 @@ class DeliveryFile(BaseModel):
     #: Similarly for a delete, the file will be deleted from the Marine datastore at "/{product_id}/{dataset_id}/{key_suffix}".
     key_suffix: str
 
+    # Relevant when Delivery created without the toolbox.
     @field_validator("key_suffix")
     @classmethod
     def ensure_relative_path(cls, v: str) -> str:
-        """
-        From Claude. Not sure it is a good idea but I will leave it there as a TODO.
-
-        We need to make sure we retrieve and save the right path in the delivery.
-        The right path is the relative path that we will apply in S3. Without product/dataset prefix.
-        Examples:
-        - datasetID/filename.txt => wrong s3 path
-        - subfolder/filename.txt => good path
-        - /absolute/path/to/filename.txt => wrong path, should be relative to the current working directory
-        - onlylocalfolder/filename.txt => wrong because we don't want it in s3
-
-        UX wise: All the above is our problem and our convention ie we need to send this to the OPDV.
-        But we can imagine various interfaces that helps the user understand this.
-        Examples:
-        - we ask for s3 folder structure
-        - we force the user to have locally the same structure as s3 and we just take the relative path to the current working directory (as done now)
-        - we ask for the full path and we strip the product/dataset prefix if it exists so we use the datasetID as anchor.
-        - etc
-        """
         if os.path.isabs(v):
             return os.path.relpath(v).replace(
                 "../", ""
@@ -127,12 +103,6 @@ class UploadFile(DeliveryFile):
     upload_end_time: str | None
 
 
-class FileToUpload(DeliveryFile):
-    """Pre-upload file: checksum not known yet, only available once the upload completes."""
-
-    file_size_mb: int
-
-
 class DeleteFile(DeliveryFile):
     pass
 
@@ -144,13 +114,6 @@ class UploadOperation(BaseModel):
     def total_size(self) -> int:
         """Returns the total size of all files in MB."""
         return sum(file.file_size_mb or 0 for file in self.files)
-
-
-class ToUploadOperation(BaseModel):
-    """Pre-upload counterpart to UploadOperation: files not uploaded yet, so no checksum."""
-
-    operation: OperationNames = Field(default=OperationNames.upload)
-    files: list[FileToUpload] = Field(default_factory=list)
 
 
 class DeleteOperation(BaseModel):

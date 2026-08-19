@@ -175,10 +175,7 @@ def delivery(
         delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
     response_delivery, delivery = _delivery(
-        [
-            (operation.operation, operation.files)
-            for operation in delivery_file.delivery
-        ],
+        [operation for operation in delivery_file.delivery],
         pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
@@ -199,7 +196,24 @@ def delivery(
     "--source",
     type=str,
     multiple=True,
-    help="Relative path to the file. `product_id/dataset_id` are prepended to the file.",
+    help=(
+        """Relative or absolute path to the file.
+        If `anchor` is set, anything before it will be removed.
+        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
+    ),
+)
+@click.option(
+    "--anchor",
+    type=str,
+    required=False,
+    default=None,
+    help=(
+        """
+        If set, anything before and up to such anchor will be removed
+        from the given path upon uploading to the ingestion bucket.
+        For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
+        """
+    ),
 )
 @shared_options
 @upload_shared_options
@@ -209,6 +223,7 @@ def upload(
     pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
+    anchor: str | None,
     save_delivery_json: bool = False,
     raise_on_upload_error: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -234,6 +249,7 @@ def upload(
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
+        anchor=anchor,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
