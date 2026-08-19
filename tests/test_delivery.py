@@ -62,7 +62,7 @@ def test_delivery_early_exit_with_validation_error(
         delivery_function(
             operations=[
                 Delete(files=MOCK_FILES),
-                Upload(files=MOCK_FILES + ["extra_file.txt"]),
+                Upload(files=MOCK_FILES + ["extra_file.txt"], anchor="dataset1"),
             ],
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
@@ -120,7 +120,7 @@ def test_delivery_dry_run_does_not_call_s3(
     monkeypatch.setattr(S3Client, "upload_fileobj", mock_upload_fileobj)
 
     response, delivery = delivery_function(
-        operations=[Delete(files=MOCK_FILES), Upload(files=MOCK_FILES)],
+        operations=[Delete(files=MOCK_FILES), Upload(files=MOCK_FILES, anchor="dataset1")],
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
@@ -143,27 +143,9 @@ def test_delivery_dry_run_does_not_call_s3(
     [
         pytest.param(
             MOCK_FILES,
-            None,
-            {
-                "tests/resources/dataset1/file1.txt",
-                "tests/resources/dataset1/file2.txt",
-            },
-            id="relative-no-anchor-keeps-path",
-        ),
-        pytest.param(
-            MOCK_FILES,
             "tests",
             {"resources/dataset1/file1.txt", "resources/dataset1/file2.txt"},
             id="relative-explicit-anchor-overrides-dataset-id",
-        ),
-        pytest.param(
-            MOCK_FILES_ABS,
-            None,
-            {
-                "tests/resources/dataset1/file1.txt",
-                "tests/resources/dataset1/file2.txt",
-            },
-            id="absolute-no-anchor-keeps-path",
         ),
         pytest.param(
             MOCK_FILES_ABS,
@@ -219,7 +201,7 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
             raise Exception("Simulated upload failure for file1.txt")
         return {"e_tag": "mock-etag", "VersionId": "mock-version-id"}
 
-    upload = Upload(files=MOCK_FILES)
+    upload = Upload(files=MOCK_FILES, anchor="dataset1")
     delivery = Delivery(operations=[upload])
     monkeypatch.setattr(
         S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry

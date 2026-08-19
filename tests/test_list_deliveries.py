@@ -20,18 +20,18 @@ MOCK_FILES = [
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 
-def _upload(files: list[str], dataset_id: str, product_id: str):
+def _upload(files: list[str], dataset_id: str, product_id: str, anchor: str | None):
     return upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=files,
         dataset_id=dataset_id,
         product_id=product_id,
+        anchor=anchor,
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        anchor=None,
     )
 
 
@@ -44,9 +44,9 @@ def test_list_deliveries_python_interface(
     ingestion_service,
 ):
     # Create several deliveries for the same pushing entity.
-    _upload([MOCK_FILES[0]], dataset_id="dataset1", product_id="product1")
-    _upload([MOCK_FILES[1]], dataset_id="dataset2", product_id="product1")
-    _upload(MOCK_FILES, dataset_id="dataset1", product_id="product1")
+    _upload([MOCK_FILES[0]], dataset_id="dataset1", product_id="product1", anchor="dataset1")
+    _upload([MOCK_FILES[1]], dataset_id="dataset2", product_id="product1", anchor="dataset1")
+    _upload(MOCK_FILES, dataset_id="dataset1", product_id="product1", anchor="dataset1")
 
     deliveries = list_deliveries(pushing_entity_id=PUSHING_ENTITY_ID)
 
@@ -78,7 +78,7 @@ def test_list_deliveries_cli(
         args = ["upload", "--pushing-entity-id", PUSHING_ENTITY_ID]
         for source in sources:
             args += ["--source", source]
-        args += ["--dataset-id", dataset_id, "--product-id", "product1"]
+        args += ["--dataset-id", dataset_id, "--product-id", "product1", "--anchor", "dataset1"]
         upload_result = runner.invoke(cli, args, env=cli_env)
         assert upload_result.exit_code == 0, upload_result.output
 

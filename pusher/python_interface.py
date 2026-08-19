@@ -64,7 +64,7 @@ class Upload(_Upload):
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
-            anchor=self.anchor,
+            anchor=anchor,
             raise_on_upload_error=raise_on_upload_error,
             max_concurrent_uploads=max_concurrent_uploads,
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),

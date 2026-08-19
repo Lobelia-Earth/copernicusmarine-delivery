@@ -103,6 +103,8 @@ def upload(
 
     to_upload_operation = create_and_validate_to_upload_operation(
         files,
+        dataset_id,
+        product_id,
         anchor,
     )
 
@@ -222,7 +224,7 @@ def delivery(
                 pending_operations.append(operation)
             case Upload():
                 to_upload_operation = create_and_validate_to_upload_operation(
-                    operation.files, operation.anchor
+                    operation.files, dataset_id, product_id, operation.anchor
                 )
                 pending_operations.append(to_upload_operation)
     all_operations: list[Operation] = []
@@ -275,9 +277,11 @@ def delivery(
 
 def create_and_validate_to_upload_operation(
     files: list[str],
+    dataset_id: str,
+    product_id: str,
     anchor: str | None,
 ) -> ToUploadOperation:
-    validate_upload_files(files, anchor)
+    validate_upload_files(files, dataset_id, product_id, anchor)
     return ToUploadOperation(
         files=[
             FileToUpload(

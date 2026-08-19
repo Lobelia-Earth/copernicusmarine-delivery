@@ -2,7 +2,7 @@
 # name: test_delivery_status_cli
   '''
   {
-    "delivery_id": "20120114T120001-product1-1434",
+    "delivery_id": "20120114T120001-product1-4811",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
@@ -34,7 +34,7 @@
 # name: test_delivery_status_python_interface
   '''
   {
-    "delivery_id": "20120114T120001-product1-9279",
+    "delivery_id": "20120114T120001-product1-4582",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",

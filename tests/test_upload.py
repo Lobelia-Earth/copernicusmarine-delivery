@@ -89,6 +89,8 @@ def test_upload_cli(
             "dataset1",
             "--product-id",
             "product1",
+            "--anchor",
+            "dataset1"
         ],
         env=cli_env,
     )
@@ -119,6 +121,8 @@ def test_upload_cli_save_delivery_json(
             "dataset1",
             "--product-id",
             "product1",
+            "--anchor",
+            "dataset1",
             "--save-delivery-json",
         ],
         env=cli_env,
@@ -231,6 +235,7 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
             pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
             product_id="product1",
+            anchor="dataset1",
             raise_on_upload_error=True,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_mb=DEFAULT_CHUNK_SIZE_MB,
