@@ -69,7 +69,7 @@ def validate_upload_files(
                         local_path=file,
                         reason=(
                             f"No anchor specified and product_id ({product_id}) or dataset_id ({dataset_id}) found in local path: {file}. "
-                            "This will produce unexpected results in S3 MDS Suffixes."
+                            "This will most probably produce an invalid S3 MDS suffix. For specific cases, please contact User Support."
                         ),
                     )
                 )
@@ -80,7 +80,7 @@ def validate_upload_files(
                         local_path=file,
                         reason=(
                             f"Absolute paths are only allowed if an anchor is given: {file}"
-                            "This will produce unexpected results in S3 MDS Suffixes."
+                            "This will most probably produce an invalid S3 MDS suffix. For specific cases, please contact User Support."
                         ),
                     )
                 )
