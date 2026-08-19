@@ -120,7 +120,10 @@ def test_delivery_dry_run_does_not_call_s3(
     monkeypatch.setattr(S3Client, "upload_fileobj", mock_upload_fileobj)
 
     response, delivery = delivery_function(
-        operations=[Delete(files=MOCK_FILES), Upload(files=MOCK_FILES, anchor="dataset1")],
+        operations=[
+            Delete(files=MOCK_FILES),
+            Upload(files=MOCK_FILES, anchor="dataset1"),
+        ],
         pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",

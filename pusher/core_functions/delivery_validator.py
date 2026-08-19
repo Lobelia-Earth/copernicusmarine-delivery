@@ -40,7 +40,9 @@ def validate_delete_files(files: list[str]) -> None:
         )
 
 
-def validate_upload_files(files: list[str], dataset_id: str, product_id: str, anchor: str | None) -> None:
+def validate_upload_files(
+    files: list[str], dataset_id: str, product_id: str, anchor: str | None
+) -> None:
     invalid_files = []
     for file_str in files:
         file = Path(file_str)
@@ -56,21 +58,33 @@ def validate_upload_files(files: list[str], dataset_id: str, product_id: str, an
             invalid_files.append(
                 InvalidFile(
                     local_path=file,
-                    reason=f"Expected anchor ({anchor}) was not found in local path: {file.as_posix()}",
+                    reason=f"Expected anchor ({anchor}) was not found in local path: {file}",
                 )
             )
             continue
-        if not anchor and (dataset_id in file.parts or product_id in file.parts):
-            invalid_files.append(
-                InvalidFile(
-                    local_path=file,
-                    reason=(
-                        f"No anchor specified and product_id ({product_id}) or dataset_id ({dataset_id}) found in local path: {file.as_posix()}. "
-                        "This will produce unexpected results in S3 MDS Suffixes."
+        if not anchor:
+            if dataset_id in file.parts or product_id in file.parts:
+                invalid_files.append(
+                    InvalidFile(
+                        local_path=file,
+                        reason=(
+                            f"No anchor specified and product_id ({product_id}) or dataset_id ({dataset_id}) found in local path: {file}. "
+                            "This will produce unexpected results in S3 MDS Suffixes."
+                        ),
                     )
                 )
-            )
-            continue
+                continue
+            if file.is_absolute():
+                invalid_files.append(
+                    InvalidFile(
+                        local_path=file,
+                        reason=(
+                            f"Absolute paths are only allowed if an anchor is given: {file}"
+                            "This will produce unexpected results in S3 MDS Suffixes."
+                        ),
+                    )
+                )
+                continue
         if not file_type_supported(file):
             # Just a warning for now
             logger.warning(

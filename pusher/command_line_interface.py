@@ -211,7 +211,7 @@ def delivery(
         """
         If set, anything before and up to such anchor will be removed
         from the given path upon uploading to the ingestion bucket.
-        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path.
+        For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
         """
     ),
 )

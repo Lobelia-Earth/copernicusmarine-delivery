@@ -90,7 +90,7 @@ def test_upload_cli(
             "--product-id",
             "product1",
             "--anchor",
-            "dataset1"
+            "dataset1",
         ],
         env=cli_env,
     )

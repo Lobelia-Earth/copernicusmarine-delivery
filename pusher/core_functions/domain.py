@@ -26,7 +26,7 @@ class FileToUpload(BaseModel):
     file_path is a local path, not S3 related yet."""
 
     file_size_mb: int
-    file_path: str
+    local_path: str
 
 
 class ToUploadOperation(BaseModel):
@@ -39,7 +39,7 @@ class ToUploadOperation(BaseModel):
 
 class S3File(BaseModel):
     local_path: Path
-    s3_path: S3Path
+    ingestion_system_s3_path: S3Path
     e_tag: str
     upload_start_time: str
     upload_end_time: str
@@ -83,7 +83,7 @@ class ResponseUpload(BaseResponse):
         return cls(
             delivery_id=delivery_id,
             files_uploaded=[
-                (file.local_path, get_s3_key_suffix(file.s3_path))
+                (file.local_path, get_s3_key_suffix(file.ingestion_system_s3_path))
                 for file in result_upload.successful_files
             ],
             files_failed=result_upload.errored_files,

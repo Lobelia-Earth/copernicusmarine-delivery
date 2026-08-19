@@ -44,12 +44,10 @@ from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 
 def strip_to_anchor(local_path: str, anchor: str | None = None) -> str:
-    """Anchor is not enforced. If it is None,
-    the logic checks whether local path is absolute. If it is it 'relativizes' it before returning.
+    """Anchor is not enforced. If it is None, the logic does not check whether local path is absolute
+    because these are rejected if no anchor is given in the validation.
     If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe."""
     if anchor is None:
-        if os.path.isabs(local_path):
-            return os.path.relpath(local_path).replace("../", "")
         return local_path
     parts = Path(local_path).parts
     idx = parts.index(anchor)
@@ -285,7 +283,7 @@ def create_and_validate_to_upload_operation(
     return ToUploadOperation(
         files=[
             FileToUpload(
-                file_path=file,
+                local_path=file,
                 file_size_mb=os.path.getsize(file) // (1024 * 1024),
             )
             for file in files
@@ -307,7 +305,7 @@ def _put_files_to_ingestion_system(
     dry_run: bool,
 ) -> tuple[PutFilesResult, UploadOperation]:
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
-        [file.file_path for file in to_upload_operation.files],
+        [file.local_path for file in to_upload_operation.files],
         delivery_id,
         product_id,
         dataset_id,
@@ -355,16 +353,16 @@ def build_upload_operation_from_put_results(
     }
     upload_files = []
     for file_to_upload in to_upload_operation.files:
-        successful_s3_file = successful_files_dict.get(file_to_upload.file_path)
+        successful_s3_file = successful_files_dict.get(file_to_upload.local_path)
         if successful_s3_file is None:
             logger.debug(
-                f"Removing file {file_to_upload.file_path} from upload operation."
+                f"Removing file {file_to_upload.local_path} from upload operation."
             )
             continue
         upload_files.append(
             UploadFile(
                 key_suffix=strip_to_anchor(
-                    successful_s3_file.s3_path, anchor=dataset_id
+                    successful_s3_file.ingestion_system_s3_path, anchor=dataset_id
                 ),
                 file_size_mb=file_to_upload.file_size_mb,
                 checksum=successful_s3_file.e_tag,

@@ -224,7 +224,7 @@ class S3Client:
                 e_tag = put_result["e_tag"].strip('"')
             return S3File(
                 local_path=file,
-                s3_path=S3Path(key),
+                ingestion_system_s3_path=S3Path(key),
                 e_tag=e_tag,
                 upload_start_time=upload_start_time,
                 upload_end_time=upload_end_time,

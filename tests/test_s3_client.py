@@ -30,7 +30,7 @@ def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str
         use_multipart=True,
     )
     assert isinstance(result, S3File)
-    assert result.s3_path == key
+    assert result.ingestion_system_s3_path == key
     assert result.e_tag
     s3_client.head_object(Bucket=ingestion_bucket, Key=key)
 
@@ -69,7 +69,7 @@ def test_upload_multiple_files(
     assert len(result.successful_files) == 2
     assert len(result.errored_files) == 0
     for f in result.successful_files:
-        s3_client.head_object(Bucket=ingestion_bucket, Key=f.s3_path)
+        s3_client.head_object(Bucket=ingestion_bucket, Key=f.ingestion_system_s3_path)
 
 
 @pytest.mark.slow
@@ -89,4 +89,4 @@ def test_upload_multiple_files_partial_failure(
     )
     assert len(result.successful_files) == 1
     assert len(result.errored_files) == 1
-    assert result.successful_files[0].s3_path == "data/test/file1.txt"
+    assert result.successful_files[0].ingestion_system_s3_path == "data/test/file1.txt"

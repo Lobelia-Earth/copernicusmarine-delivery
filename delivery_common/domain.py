@@ -54,9 +54,7 @@ class PushingEntities(BaseModel):
     @classmethod
     def from_file(cls, path: Path) -> "PushingEntities":
         if not path.is_file():
-            raise FileNotFoundError(
-                f"Could not open file in given path: {path.as_posix()}"
-            )
+            raise FileNotFoundError(f"Could not open file in given path: {path}")
         with open(path) as input_config_file:
             data = yaml.safe_load(input_config_file)
         return cls(**data)
