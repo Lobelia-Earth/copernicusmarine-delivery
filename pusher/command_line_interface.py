@@ -18,6 +18,7 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
+from pusher.core_functions.core_functions import login
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.delivery import get_deliveries
 from pusher.core_functions.domain import (
@@ -207,13 +208,11 @@ def delivery(
     type=str,
     required=False,
     default=None,
-    help=(
-        """
+    help=("""
         If set, anything before and up to such anchor will be removed
         from the given path upon uploading to the ingestion bucket.
         For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
-        """
-    ),
+        """),
 )
 @shared_options
 @upload_shared_options
@@ -399,7 +398,7 @@ def status(
                 "or a path to a delivery json file."
             )
         )
-
+    token = login()
     if delivery_json:
         try:
             with open(delivery_json) as delivery_file:
@@ -412,10 +411,10 @@ def status(
     else:
         delivery_id = delivery_id
         pushing_entity_id = pushing_entity_id
-
     deliveries = get_deliveries(
         delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,  # type: ignore
+        token=token,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
@@ -438,7 +437,8 @@ def list_deliveries(pushing_entity_id: str) -> None:
     List all deliveries for a given pushing entity.
     The result is sorted by delivery_id in descending order (most recent first).
     """
-    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id)
+    token = login()
+    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, token=token)
     print_list_deliveries(deliveries)
 
 

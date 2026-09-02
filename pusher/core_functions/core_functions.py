@@ -39,6 +39,12 @@ from pusher.core_functions.utils import (
     get_ingestion_bucket_name,
     human_readable_size,
 )
+from pusher.environment_variables import (
+    COPERNICUSMARINE_PASSWORD,
+    COPERNICUSMARINE_USERNAME,
+    INGESTION_SERVICE_URL,
+)
+from pusher.http_client import http_client
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
@@ -46,7 +52,8 @@ from pusher.s3_client import S3Client, get_s3_ingestion_client
 def strip_to_anchor(local_path: str, anchor: str | None = None) -> str:
     """Anchor is not enforced. If it is None, the logic does not check whether local path is absolute
     because these are rejected if no anchor is given in the validation.
-    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe."""
+    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe.
+    """
     if anchor is None:
         return local_path
     parts = Path(local_path).parts
@@ -95,6 +102,7 @@ def upload(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
+    token = login()
 
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
@@ -110,7 +118,10 @@ def upload(
         pushing_entity_id, pushing_entities
     )
     s3_client = get_s3_ingestion_client(
-        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+        pushing_entity_id,
+        ingestion_bucket_name,
+        token=token,
+        chunk_concurrency=chunk_concurrency,
     )
     delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
@@ -132,6 +143,7 @@ def upload(
         dataset_id=dataset_id,
         operations=[upload_operation],
         delivery_id=delivery_id,
+        token=token,
         dry_run=dry_run,
     )
 
@@ -158,6 +170,7 @@ def delete(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
     )
+    token = login()
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
 
@@ -166,13 +179,16 @@ def delete(
     ingestion_bucket_name = get_ingestion_bucket_name(
         pushing_entity_id, pushing_entities
     )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
+    s3_client = get_s3_ingestion_client(
+        pushing_entity_id, ingestion_bucket_name, token=token
+    )
 
     delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[delete_operation],
+        token=token,
         dry_run=dry_run,
     )
     return (
@@ -203,6 +219,7 @@ def delivery(
     chunk_concurrency: int,
     dry_run: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
+    token = login()
 
     pushing_entities = fetch_pushing_entities()
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
@@ -213,7 +230,10 @@ def delivery(
         pushing_entity_id, pushing_entities
     )
     s3_client = get_s3_ingestion_client(
-        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+        pushing_entity_id,
+        ingestion_bucket_name,
+        chunk_concurrency=chunk_concurrency,
+        token=token,
     )
     for operation in operations:
         match operation:
@@ -263,6 +283,7 @@ def delivery(
         dataset_id,
         all_operations,
         dry_run,
+        token=token,
         delivery_id=delivery_id,
     )
     return (
@@ -371,3 +392,15 @@ def build_upload_operation_from_put_results(
             )
         )
     return UploadOperation(files=upload_files, operation=OperationNames.upload)
+
+
+def login() -> str:
+    response = http_client.post(
+        f"{INGESTION_SERVICE_URL}/token",
+        json={
+            "username": COPERNICUSMARINE_USERNAME,
+            "password": COPERNICUSMARINE_PASSWORD,
+        },
+    )
+    response.raise_for_status()
+    return response.json()["access_token"]

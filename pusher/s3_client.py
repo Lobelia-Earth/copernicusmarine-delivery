@@ -22,12 +22,12 @@ from pusher.core_functions.exceptions import (
 )
 from pusher.environment_variables import (
     ALLOW_HTTP,
+    INGESTION_SERVICE_URL,
     MDL_METADATA_BUCKET,
     MDL_METADATA_ENDPOINT,
-    OPDV_ACCESS_KEY_ID,
     OPDV_S3_ENDPOINT,
-    OPDV_SECRET_ACCESS_KEY,
 )
+from pusher.http_client import http_client
 from pusher.logger import logger
 
 _RETRY_CONFIG: Any = {
@@ -59,6 +59,7 @@ def _get_s3_store(
     bucket_name: str,
     access_key_id: str | None,
     secret_access_key: str | None,
+    session_token: str | None = None,
 ) -> S3Store:
     skip_signature = (
         "true" if access_key_id is None and secret_access_key is None else None
@@ -67,6 +68,7 @@ def _get_s3_store(
         "endpoint": endpoint_url,
         "access_key_id": access_key_id,
         "secret_access_key": secret_access_key,
+        "session_token": session_token,
         "skip_signature": skip_signature,
     }
     s3_config: Any = {k: v for k, v in config.items() if v is not None}
@@ -106,14 +108,30 @@ def get_s3_metadata_client() -> "S3Client":
 
 
 def get_s3_ingestion_client(
-    pushing_entity_id: str, bucket_name: str, chunk_concurrency: int = 6
+    pushing_entity_id: str,
+    bucket_name: str,
+    token: str,
+    chunk_concurrency: int = 6,
 ) -> "S3Client":
+    # TODO: add a refresh in the credentials
+    # TODO: The bucket name should be returned by the OPDV
+    # TODO: The endpoint URL should be returned by the OPDV
+    credentials_response = http_client.post(
+        f"{INGESTION_SERVICE_URL}/credentials",
+        params={"pu_name": pushing_entity_id},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=30,
+    )
+    credentials_response.raise_for_status()
+    credentials = credentials_response.json()
+
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(
             bucket_name=bucket_name,
-            access_key_id=OPDV_ACCESS_KEY_ID,
-            secret_access_key=OPDV_SECRET_ACCESS_KEY,
+            access_key_id=credentials["access_key_id"],
+            secret_access_key=credentials["secret_access_key"],
+            session_token=credentials["session_token"],
             endpoint_url=OPDV_S3_ENDPOINT,
         ),
         chunk_concurrency=chunk_concurrency,

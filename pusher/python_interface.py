@@ -8,6 +8,7 @@ from pusher.core_functions.constants import (
 )
 from pusher.core_functions.core_functions import delete as _delete
 from pusher.core_functions.core_functions import delivery as _delivery
+from pusher.core_functions.core_functions import login
 from pusher.core_functions.core_functions import upload as _upload
 from pusher.core_functions.delivery import get_deliveries
 from pusher.core_functions.domain import Delete as _Delete
@@ -178,9 +179,11 @@ def delivery_status(delivery_id: str, pushing_entity_id: str) -> DeliveryModel:
 
     Right now, returns the delivery.
     """
+    token = login()
     delivery = get_deliveries(
         delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,
+        token=token,
     )
     if not delivery:
         raise ValueError(
@@ -197,5 +200,6 @@ def list_deliveries(pushing_entity_id: str) -> list[DeliveryModel]:
     :param pushing_entity_id: The ID of the pushing entity.
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
-    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id)
+    token = login()
+    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, token=token)
     return deliveries

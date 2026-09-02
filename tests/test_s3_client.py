@@ -11,11 +11,12 @@ from pusher.s3_client import S3Client, get_s3_ingestion_client
 RESOURCES = Path("tests/resources/dataset1")
 
 
-def test_no_such_bucket_raises(ministack_endpoint: str, set_env):
+def test_no_such_bucket_raises(ministack_endpoint: str, set_env, ingestion_service):
     with pytest.raises(NoSuchBucketException):
         get_s3_ingestion_client(
             pushing_entity_id="NONEXISTENT-ENTITY-ZZ",
             bucket_name="nonexistent-entity-bucket-name",
+            token="test-token",
         )
 
 

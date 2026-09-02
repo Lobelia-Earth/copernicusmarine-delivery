@@ -12,6 +12,10 @@ import yaml
 from pusher.core_functions.constants import (
     PUSHING_ENTITIES_PATH,
 )
+from pusher.environment_variables import (
+    COPERNICUSMARINE_PASSWORD,
+    COPERNICUSMARINE_USERNAME,
+)
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
 random.seed(42)
@@ -112,10 +116,13 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None]:
 
 
 @pytest.fixture
-def service(ingestion_bucket: str, ministack_endpoint: str, set_env) -> S3Client:
+def service(
+    ingestion_bucket: str, ministack_endpoint: str, set_env, ingestion_service
+) -> S3Client:
     return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
         bucket_name=_BUCKET_NAME,
+        token="test-token",
     )
 
 
@@ -148,6 +155,9 @@ def ingestion_service(s3_client, monkeypatch):
 
     - POST /delivery: accepts a delivery JSON, saves it to S3, returns 201.
     - GET /delivery/{pushing_entity_id}: returns all stored delivery for the entity.
+    - POST /token: returns an authentication token.
+    - POST /credentials: returns temporary S3 credentials for the pushing entity.
+
     """
 
     def _handler(request: httpx.Request) -> httpx.Response:
@@ -155,6 +165,9 @@ def ingestion_service(s3_client, monkeypatch):
 
         if path == "/delivery" and request.method == "POST":
             body = json.loads(request.content)
+            bearer = request.headers.get("Authorization")
+            if bearer != "Bearer test-token":
+                return httpx.Response(401, json={"error": "Invalid bearer token"})
             delivery_id = body["delivery_id"]
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(
@@ -181,6 +194,9 @@ def ingestion_service(s3_client, monkeypatch):
             pushing_entity_id = path.split("/")[2]
             if not pushing_entity_id:
                 return httpx.Response(400, json={"error": "Missing pushing_entity_id"})
+            bearer = request.headers.get("Authorization")
+            if bearer != "Bearer test-token":
+                return httpx.Response(401, json={"error": "Invalid bearer token"})
             bucket = next(
                 pe["bucket"]
                 for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
@@ -194,11 +210,35 @@ def ingestion_service(s3_client, monkeypatch):
                 deliveries.append(json.loads(data["Body"].read()))
             return httpx.Response(200, json={"deliveries": deliveries})
 
+        if path.startswith("/token") and request.method == "POST":
+            body = json.loads(request.content)
+            if (
+                body.get("username") == COPERNICUSMARINE_USERNAME
+                and body.get("password") == COPERNICUSMARINE_PASSWORD
+            ):
+                return httpx.Response(200, json={"access_token": "test-token"})
+            return httpx.Response(401, json={"error": "Invalid credentials"})
+
+        if path.startswith("/credentials") and request.method == "POST":
+            bearer = request.headers.get("Authorization")
+            if bearer != "Bearer test-token":
+                return httpx.Response(401, json={"error": "Invalid bearer token"})
+            return httpx.Response(
+                200,
+                json={
+                    "access_key_id": "test",
+                    "secret_access_key": "test",
+                    "session_token": "test",
+                },
+            )
+
         return httpx.Response(404)
 
     mock_client = httpx.Client(transport=httpx.MockTransport(_handler))
     monkeypatch.setattr("pusher.http_client.http_client", mock_client)
     monkeypatch.setattr("pusher.core_functions.delivery.http_client", mock_client)
+    monkeypatch.setattr("pusher.core_functions.core_functions.http_client", mock_client)
+    monkeypatch.setattr("pusher.s3_client.http_client", mock_client)
 
     yield mock_client
 

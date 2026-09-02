@@ -36,6 +36,7 @@ def create_and_upload_delivery(
     dataset_id: str,
     operations: list[Operation],
     dry_run: bool,
+    token: str,
     delivery_id: str | None = None,
 ) -> Delivery:
     if not delivery_id:
@@ -54,6 +55,7 @@ def create_and_upload_delivery(
         response = http_client.post(
             f"{INGESTION_SERVICE_URL}/delivery",
             json=delivery.model_dump(by_alias=True),
+            headers={"Authorization": f"Bearer {token}"},
         )
         response.raise_for_status()
 
@@ -62,10 +64,12 @@ def create_and_upload_delivery(
 
 def get_deliveries(
     pushing_entity_id: str,
+    token: str,
     delivery_id: str | None = None,
 ) -> list[Delivery]:
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery/{pushing_entity_id}",
+        headers={"Authorization": f"Bearer {token}"},
     )
     response.raise_for_status()
 

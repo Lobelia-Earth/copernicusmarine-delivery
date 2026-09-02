@@ -6,9 +6,8 @@ Python library to help you upload data to the MDS.
 
 You need to set the following environment variables:
 
-- `OPDV_S3_ENDPOINT`: the URL of the OPDV S3 service.
-- `OPDV_ACCESS_KEY_ID`: the access key ID to access the OPDV S3 service.
-- `OPDV_SECRET_ACCESS_KEY`: the secret access key to access the OPDV S3 service.
+- `COPERNICUSMARINE_USERNAME`: your Copernicus Marine username.
+- `COPERNICUSMARINE_PASSWORD`: your Copernicus Marine password.
 - `INGESTION_SERVICE_URL`: the URL of the ingestion service API. Defaults to `https://opdv-api-dta.lobelia.earth`.
 - `MDL_METADATA_ENDPOINT="https://s3.waw3-1.cloudferro.com"`.
 - `MDL_METADATA_BUCKET="mdl-metadata-dta"`: Set this as the dta bucket name, otherwise points to production.

@@ -197,7 +197,7 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
 
 
 def test_upload_one_file_cannot_be_uploaded_with_raise(
-    monkeypatch, glo_mercator_bucket
+    monkeypatch, glo_mercator_bucket, ingestion_service
 ):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:

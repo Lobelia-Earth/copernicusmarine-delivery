@@ -161,7 +161,7 @@ def test_upload_cli_no_source_exits(cli_env):
     assert result.exit_code == 1
 
 
-def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
+def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
     monkeypatch.setattr(
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
@@ -219,7 +219,7 @@ def test_upload_one_file_cannot_be_uploaded(
 
 
 def test_upload_one_file_cannot_be_uploaded_with_raise(
-    monkeypatch, glo_mercator_bucket
+    monkeypatch, glo_mercator_bucket, ingestion_service
 ):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:

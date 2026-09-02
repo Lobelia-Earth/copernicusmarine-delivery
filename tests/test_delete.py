@@ -134,7 +134,7 @@ def test_delete_cli_no_source_exits(cli_env):
     assert result.exit_code == 1
 
 
-def test_delete_raises_on_invalid_delivery_ids(monkeypatch):
+def test_delete_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
     monkeypatch.setattr(
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
