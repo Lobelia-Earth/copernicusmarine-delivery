@@ -208,11 +208,13 @@ def delivery(
     type=str,
     required=False,
     default=None,
-    help=("""
+    help=(
+        """
         If set, anything before and up to such anchor will be removed
         from the given path upon uploading to the ingestion bucket.
         For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
-        """),
+        """
+    ),
 )
 @shared_options
 @upload_shared_options

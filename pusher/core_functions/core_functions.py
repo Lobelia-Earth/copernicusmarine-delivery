@@ -395,12 +395,28 @@ def build_upload_operation_from_put_results(
 
 
 def login() -> str:
-    response = http_client.post(
-        f"{INGESTION_SERVICE_URL}/token",
-        json={
+    config_response = http_client.get(f"{INGESTION_SERVICE_URL}/.well-known/config")
+
+    config_response.raise_for_status()
+
+    config = config_response.json()
+    oidc_provider_url = config["oidc_config"]["oidc_provider_url"]
+
+    discovery_response = http_client.get(
+        f"https://{oidc_provider_url}/.well-known/openid-configuration"
+    )
+    discovery_response.raise_for_status()
+
+    token_endpoint = discovery_response.json()["token_endpoint"]
+    token_response = http_client.post(
+        token_endpoint,
+        data={
+            "grant_type": config["oidc_config"]["grant_type"],
+            "client_id": config["oidc_config"]["oidc_client_id"],
             "username": COPERNICUSMARINE_USERNAME,
             "password": COPERNICUSMARINE_PASSWORD,
+            "scope": config["oidc_config"]["scope"],
         },
     )
-    response.raise_for_status()
-    return response.json()["access_token"]
+    token_response.raise_for_status()
+    return token_response.json()["access_token"]

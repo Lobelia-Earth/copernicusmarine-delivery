@@ -2,6 +2,7 @@ import json
 import os
 import random
 from typing import Generator
+from urllib.parse import parse_qsl
 
 import boto3
 import freezegun
@@ -149,18 +150,50 @@ def skip_delivery_ids_validation(monkeypatch):
     monkeypatch.setattr(core_functions, "validate_delivery_ids", lambda *a, **kw: None)
 
 
+def _mock_keycloak_handler(request: httpx.Request) -> httpx.Response | None:
+    """Mocks the external Keycloak provider (discovery + token endpoint). Not ours to control."""
+    path = request.url.path
+
+    if path == "/.well-known/openid-configuration" and request.method == "GET":
+        return httpx.Response(
+            200,
+            json={"token_endpoint": "https://mock_url/token"},
+        )
+
+    if path == "/token" and request.method == "POST":
+        body = dict(parse_qsl(request.content.decode()))
+        if (
+            body.get("username") == COPERNICUSMARINE_USERNAME
+            and body.get("password") == COPERNICUSMARINE_PASSWORD
+        ):
+            return httpx.Response(200, json={"access_token": "test-token"})
+        return httpx.Response(401, json={"error": "Invalid credentials"})
+
+    return None
+
+
 @pytest.fixture
-def ingestion_service(s3_client, monkeypatch):
+def mock_keycloak():
+    return _mock_keycloak_handler
+
+
+@pytest.fixture
+def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     """Patches http_client with an httpx-backed mock transport that mimics the ingestion service.
 
     - POST /delivery: accepts a delivery JSON, saves it to S3, returns 201.
     - GET /delivery/{pushing_entity_id}: returns all stored delivery for the entity.
-    - POST /token: returns an authentication token.
+    - GET /.well-known/config: returns the oidc config needed to authenticate.
     - POST /credentials: returns temporary S3 credentials for the pushing entity.
 
+    Keycloak calls (discovery + token) are mocked separately by `mock_keycloak`.
     """
 
     def _handler(request: httpx.Request) -> httpx.Response:
+        keycloak_response = mock_keycloak(request)
+        if keycloak_response is not None:
+            return keycloak_response
+
         path = request.url.path
 
         if path == "/delivery" and request.method == "POST":
@@ -210,14 +243,18 @@ def ingestion_service(s3_client, monkeypatch):
                 deliveries.append(json.loads(data["Body"].read()))
             return httpx.Response(200, json={"deliveries": deliveries})
 
-        if path.startswith("/token") and request.method == "POST":
-            body = json.loads(request.content)
-            if (
-                body.get("username") == COPERNICUSMARINE_USERNAME
-                and body.get("password") == COPERNICUSMARINE_PASSWORD
-            ):
-                return httpx.Response(200, json={"access_token": "test-token"})
-            return httpx.Response(401, json={"error": "Invalid credentials"})
+        if path.startswith("/.well-known/config") and request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "oidc_config": {
+                        "oidc_provider_url": "mock_url",
+                        "oidc_client_id": "mock_client",
+                        "grant_type": "all-granted",
+                        "scope": "sky",
+                    }
+                }
+            )
 
         if path.startswith("/credentials") and request.method == "POST":
             bearer = request.headers.get("Authorization")
