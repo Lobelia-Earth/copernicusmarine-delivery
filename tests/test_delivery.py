@@ -24,6 +24,8 @@ MOCK_FILES = [
 ]
 MOCK_FILES_ABS = [str(Path(f).resolve()) for f in MOCK_FILES]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
+PRODUCT_ID = "GLOBAL_ANALYSISFORECAST_BGC_001_028"
+DATASET_ID = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311"
 
 
 @freeze_time("2012-01-14 12:00:01")
@@ -212,8 +214,8 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
     with pytest.raises(Exception) as exc_info:
         delivery.submit(
             pushing_entity_id=PUSHING_ENTITY_ID,
-            dataset_id="dataset1",
-            product_id="product1",
+            dataset_id=DATASET_ID,
+            product_id=PRODUCT_ID,
             raise_on_upload_error=True,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_mb=DEFAULT_CHUNK_SIZE_MB,

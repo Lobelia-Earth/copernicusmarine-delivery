@@ -12,6 +12,7 @@ from delivery_common.domain import (
     UploadOperation,
 )
 from delivery_common.validation import validate_delivery_ids
+from pusher.auth import get_config, get_pushing_entity_config, login
 from pusher.core_functions.constants import (
     NEW_DATA_BUCKET_PATH,
 )
@@ -20,7 +21,6 @@ from pusher.core_functions.delivery import (
     create_delivery_id,
 )
 from pusher.core_functions.delivery_validator import (
-    fetch_pushing_entities,
     validate_delete_files,
     validate_upload_files,
 )
@@ -36,15 +36,8 @@ from pusher.core_functions.domain import (
     Upload,
 )
 from pusher.core_functions.utils import (
-    get_ingestion_bucket_name,
     human_readable_size,
 )
-from pusher.environment_variables import (
-    COPERNICUSMARINE_PASSWORD,
-    COPERNICUSMARINE_USERNAME,
-    INGESTION_SERVICE_URL,
-)
-from pusher.http_client import http_client
 from pusher.logger import logger
 from pusher.s3_client import S3Client, get_s3_ingestion_client
 
@@ -102,10 +95,11 @@ def upload(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
-    token = login()
+    config = get_config()
+    token = login(config)
+    pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
 
-    pushing_entities = fetch_pushing_entities()
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
 
     to_upload_operation = create_and_validate_to_upload_operation(
         files,
@@ -114,14 +108,12 @@ def upload(
         anchor,
     )
 
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
-        ingestion_bucket_name,
-        token=token,
+        pushing_entity.bucket,
+        config=config,
         chunk_concurrency=chunk_concurrency,
+        endpoint_url=config.s3_config.endpoint_url,
     )
     delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
@@ -170,18 +162,13 @@ def delete(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
     )
-    token = login()
-    pushing_entities = fetch_pushing_entities()
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
+    config = get_config()
+    token = login(config)
+    pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
+
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
 
     delete_operation = create_and_validate_delete_operation(files)
-
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
-    s3_client = get_s3_ingestion_client(
-        pushing_entity_id, ingestion_bucket_name, token=token
-    )
 
     delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
@@ -219,21 +206,21 @@ def delivery(
     chunk_concurrency: int,
     dry_run: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
-    token = login()
+    config = get_config()
+    token = login(config)
+    pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
 
-    pushing_entities = fetch_pushing_entities()
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
 
     delivery_id = create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
+
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
-        ingestion_bucket_name,
+        pushing_entity.bucket,
         chunk_concurrency=chunk_concurrency,
-        token=token,
+        config=config,
+        endpoint_url=config.s3_config.endpoint_url,
     )
     for operation in operations:
         match operation:
@@ -392,31 +379,3 @@ def build_upload_operation_from_put_results(
             )
         )
     return UploadOperation(files=upload_files, operation=OperationNames.upload)
-
-
-def login() -> str:
-    config_response = http_client.get(f"{INGESTION_SERVICE_URL}/.well-known/config")
-
-    config_response.raise_for_status()
-
-    config = config_response.json()
-    oidc_provider_url = config["oidc_config"]["oidc_provider_url"]
-
-    discovery_response = http_client.get(
-        f"https://{oidc_provider_url}/.well-known/openid-configuration"
-    )
-    discovery_response.raise_for_status()
-
-    token_endpoint = discovery_response.json()["token_endpoint"]
-    token_response = http_client.post(
-        token_endpoint,
-        data={
-            "grant_type": config["oidc_config"]["grant_type"],
-            "client_id": config["oidc_config"]["oidc_client_id"],
-            "username": COPERNICUSMARINE_USERNAME,
-            "password": COPERNICUSMARINE_PASSWORD,
-            "scope": config["oidc_config"]["scope"],
-        },
-    )
-    token_response.raise_for_status()
-    return token_response.json()["access_token"]

@@ -1,11 +1,9 @@
 from collections import Counter
 from pathlib import Path
 
-from delivery_common.domain import InvalidFile, PushingEntities, T
-from pusher.core_functions.constants import PUSHING_ENTITIES_PATH
+from delivery_common.domain import InvalidFile, T
 from pusher.core_functions.domain import InvalidFilesError
 from pusher.logger import logger
-from pusher.s3_client import get_s3_metadata_client
 
 SUPPORTED_FILE_EXTENTIONS = {".txt", ".shp", ".zip", ".nc"}
 
@@ -100,11 +98,3 @@ def validate_upload_files(
         raise InvalidFilesError(
             invalid_files=invalid_files,
         )
-
-
-def fetch_pushing_entities():
-    metadata_s3_client = get_s3_metadata_client()
-    pushing_entities_raw = metadata_s3_client.get_file_stream(
-        path_to_file=PUSHING_ENTITIES_PATH
-    )
-    return PushingEntities.from_stream(pushing_entities_raw)

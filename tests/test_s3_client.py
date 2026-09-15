@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from pusher.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
+from pusher.core_functions.core_functions import get_config
 from pusher.core_functions.domain import ErrorFile, S3File
 from pusher.core_functions.exceptions import NoSuchBucketException
 from pusher.core_functions.utils import megabytes_to_bytes
@@ -14,9 +15,10 @@ RESOURCES = Path("tests/resources/dataset1")
 def test_no_such_bucket_raises(ministack_endpoint: str, set_env, ingestion_service):
     with pytest.raises(NoSuchBucketException):
         get_s3_ingestion_client(
-            pushing_entity_id="NONEXISTENT-ENTITY-ZZ",
+            pushing_entity_id="TEST-ENTITY-FR",
             bucket_name="nonexistent-entity-bucket-name",
-            token="test-token",
+            config=get_config(),
+            endpoint_url=ministack_endpoint,
         )
 
 

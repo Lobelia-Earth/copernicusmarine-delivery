@@ -30,7 +30,9 @@ _PUSHING_ENTITIES_YAML = yaml.dump(
     }
 ).encode()
 
-_PUSHING_ENTIES = PushingEntities.from_stream(_PUSHING_ENTITIES_YAML)
+_PUSHING_ENTITY = PushingEntities.from_stream(_PUSHING_ENTITIES_YAML).pushing_entities[
+    0
+]
 
 
 @pytest.fixture(autouse=True)
@@ -45,20 +47,9 @@ def test_valid_delivery_ids():
         pushing_entity_id="TEST-ENTITY-FR",
         product_id="product1",
         dataset_id="dataset1",
-        pushing_entities=_PUSHING_ENTIES,
+        pushing_entity=_PUSHING_ENTITY,
     )
     assert result is None
-
-
-def test_invalid_pushing_entity():
-    with pytest.raises(InvalidDeliveryIdsError) as exc_info:
-        validate_delivery_ids(
-            pushing_entity_id="UNKNOWN-ENTITY",
-            product_id="product1",
-            dataset_id="dataset1",
-            pushing_entities=_PUSHING_ENTIES,
-        )
-    assert "UNKNOWN-ENTITY" in str(exc_info.value)
 
 
 def test_invalid_product_id():
@@ -67,7 +58,7 @@ def test_invalid_product_id():
             pushing_entity_id="TEST-ENTITY-FR",
             product_id="nonexistent-product",
             dataset_id="dataset1",
-            pushing_entities=_PUSHING_ENTIES,
+            pushing_entity=_PUSHING_ENTITY,
         )
     assert "nonexistent-product" in str(exc_info.value)
 
@@ -78,7 +69,7 @@ def test_invalid_dataset_id():
             pushing_entity_id="TEST-ENTITY-FR",
             product_id="product1",
             dataset_id="nonexistent-dataset",
-            pushing_entities=_PUSHING_ENTIES,
+            pushing_entity=_PUSHING_ENTITY,
         )
     assert "nonexistent-dataset" in str(exc_info.value)
 

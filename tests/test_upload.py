@@ -23,6 +23,8 @@ MOCK_FILES = [
     "tests/resources/dataset1/file2.txt",
 ]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
+PRODUCT_ID = "GLOBAL_ANALYSISFORECAST_BGC_001_028"
+DATASET_ID = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311"
 
 _UNKNOWN_ENTITY_YAML = yaml.dump(
     {
@@ -169,7 +171,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
         upload(
             pushing_entity_id=PUSHING_ENTITY_ID,
             files=MOCK_FILES,
-            dataset_id="dataset1",
+            dataset_id=DATASET_ID,
             product_id="product1",
             anchor="dataset1",
             raise_on_upload_error=False,
@@ -178,7 +180,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
         )
-    assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
+    assert f"product1 is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(
         exc_info.value
     )
 
@@ -199,8 +201,8 @@ def test_upload_one_file_cannot_be_uploaded(
     response, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
-        dataset_id="dataset1",
-        product_id="product1",
+        dataset_id=DATASET_ID,
+        product_id=PRODUCT_ID,
         anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
@@ -233,8 +235,8 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
     with pytest.raises(Exception) as exc_info:
         upload.submit(
             pushing_entity_id=PUSHING_ENTITY_ID,
-            dataset_id="dataset1",
-            product_id="product1",
+            dataset_id=DATASET_ID,
+            product_id=PRODUCT_ID,
             anchor="dataset1",
             raise_on_upload_error=True,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,

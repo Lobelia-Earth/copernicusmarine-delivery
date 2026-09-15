@@ -193,3 +193,21 @@ class InvalidFilesError(Exception):
         super().__init__(
             f"Found {len(invalid_files)} invalid files. See logs for details."
         )
+
+
+# This is a copy from what comes from the API. We do not need it, but it helps to type things.
+# We are bound to whatever the API Returns anyway, there is a mutual contract just by using the API.
+class OIDCConfig(BaseModel):
+    oidc_provider_url: str
+    oidc_client_id: str
+    scope: str = "openid"
+    grant_type: str = "password"
+
+
+class S3Config(BaseModel):
+    endpoint_url: str
+
+
+class GetConfigResponse(BaseModel):
+    oidc_config: OIDCConfig
+    s3_config: S3Config

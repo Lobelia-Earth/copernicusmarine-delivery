@@ -1,6 +1,8 @@
 import json
 import os
 import random
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Generator
 from urllib.parse import parse_qsl
 
@@ -10,9 +12,7 @@ import httpx
 import pytest
 import yaml
 
-from pusher.core_functions.constants import (
-    PUSHING_ENTITIES_PATH,
-)
+from pusher.core_functions.core_functions import get_config
 from pusher.environment_variables import (
     COPERNICUSMARINE_PASSWORD,
     COPERNICUSMARINE_USERNAME,
@@ -26,24 +26,8 @@ _MANIFESTS_PATH = "deliveries/{pushing_entity_id}/{delivery_id}.json"
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
 _BUCKET_NAME = f"mdl-ing-{_PUSHING_ENTITY_ID.lower()}"
 
-_PUSHING_ENTITIES_DICT = {
-    "pushing-entities": [
-        {
-            "name": "GLO-MERCATOR-TOULOUSE-FR",
-            "bucket": "mdl-ing-glo-mercator-toulouse-fr",
-            "products": [
-                {"name": "product1", "datasets": ["dataset1", "dataset2"]},
-            ],
-        },
-        {
-            "name": _PUSHING_ENTITY_ID,
-            "bucket": _BUCKET_NAME,
-            "products": [
-                {"name": "product1", "datasets": ["dataset1", "dataset2"]},
-            ],
-        },
-    ]
-}
+_PUSHING_ENTITIES_PATH = Path(__file__).parent / "resources" / "pushing_entities.yml"
+_PUSHING_ENTITIES_DICT = yaml.safe_load(_PUSHING_ENTITIES_PATH.read_text())
 
 _DEFAULT_PUSHING_ENTITIES_YAML = yaml.dump(_PUSHING_ENTITIES_DICT).encode()
 _BOTO_KWARGS = {
@@ -69,21 +53,42 @@ freezegun.configure(
 )
 
 
-@pytest.fixture(autouse=True)
-def mock_pushing_entities(monkeypatch):
-    original_get_file_stream = S3Client.get_file_stream
-
-    def _get_file_stream(self, path_to_file: str, **kwargs):
-        if path_to_file == PUSHING_ENTITIES_PATH:
-            return _DEFAULT_PUSHING_ENTITIES_YAML
-        return original_get_file_stream(self, path_to_file, **kwargs)
-
-    monkeypatch.setattr(S3Client, "get_file_stream", _get_file_stream)
-
-
 @pytest.fixture(scope="session")
 def ministack_endpoint() -> str:
     return os.environ.get("S3_ENDPOINT_URL", "http://localhost:4566")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _warm_obstore_datetime_cache(ministack_endpoint: str) -> None:
+    """obstore caches the `datetime.datetime` class (pyo3/jiff) on first use,
+    process-wide. If that first use happens inside a frozen test, the cache
+    gets poisoned with freezegun's FakeDatetime and every later unfrozen
+    obstore call breaks with "'datetime' object is not an instance of
+    'FakeDatetime'". Session-scoped (just run once) + autouse => this runs during fixture
+    setup for whichever test runs first, i.e. always before @freeze_time
+    activates, pinning the cache to the real class.
+    """
+    from obstore import list as list_obstore
+    from obstore.store import S3Store
+
+    def _credential_provider(*_args: object, **_kwargs: object) -> dict:
+        return {
+            "access_key_id": "test",
+            "secret_access_key": "test",
+            "token": "test",
+            "expires_at": datetime.now(tz=timezone.utc) + timedelta(minutes=30),
+        }
+
+    store = S3Store.from_url(
+        url="s3://obstore-datetime-cache-warmup",
+        config={"endpoint": ministack_endpoint},
+        credential_provider=_credential_provider,
+        client_options={"allow_http": True},
+    )
+    try:
+        next(iter(list_obstore(store=store, chunk_size=1)), None)
+    except Exception:
+        pass
 
 
 @pytest.fixture
@@ -123,7 +128,8 @@ def service(
     return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
         bucket_name=_BUCKET_NAME,
-        token="test-token",
+        config=get_config(),
+        endpoint_url=ministack_endpoint,
     )
 
 
@@ -166,7 +172,15 @@ def _mock_keycloak_handler(request: httpx.Request) -> httpx.Response | None:
             body.get("username") == COPERNICUSMARINE_USERNAME
             and body.get("password") == COPERNICUSMARINE_PASSWORD
         ):
-            return httpx.Response(200, json={"access_token": "test-token"})
+            return httpx.Response(
+                200,
+                json={
+                    "access_token": "test-token",
+                    "expires_in": 300,
+                    "refresh_token": "refresh-token",
+                    "refresh_expires_in": 600,
+                },
+            )
         return httpx.Response(401, json={"error": "Invalid credentials"})
 
     return None
@@ -252,20 +266,66 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                         "oidc_client_id": "mock_client",
                         "grant_type": "all-granted",
                         "scope": "sky",
-                    }
-                }
+                    },
+                    "s3_config": {
+                        "endpoint_url": os.environ.get(
+                            "S3_ENDPOINT_URL", "http://localhost:4566"
+                        )
+                    },
+                    "pushing_entities": _PUSHING_ENTITIES_DICT,
+                },
             )
 
-        if path.startswith("/credentials") and request.method == "POST":
+        if (
+            path.startswith("/.well-known/pushing-entity-config/")
+            and request.method == "GET"
+        ):
             bearer = request.headers.get("Authorization")
             if bearer != "Bearer test-token":
                 return httpx.Response(401, json={"error": "Invalid bearer token"})
+            pushing_entity_id = path.split("/")[-1]
+            pushing_entity = next(
+                (
+                    pe
+                    for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
+                    if pe["name"] == pushing_entity_id
+                ),
+                None,
+            )
+            if pushing_entity is None:
+                return httpx.Response(
+                    404,
+                    json={
+                        "error": f"Pushing Entity ID {pushing_entity_id} was not found"
+                    },
+                )
+            return httpx.Response(200, json=pushing_entity)
+
+        if path.startswith("/credentials/") and request.method == "GET":
+            bearer = request.headers.get("Authorization")
+            if bearer != "Bearer test-token":
+                return httpx.Response(401, json={"error": "Invalid bearer token"})
+            pushing_entity_id = path.split("/")[-1]
+            pushing_entity_exists = any(
+                pe["name"] == pushing_entity_id
+                for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
+            )
+            if not pushing_entity_exists:
+                return httpx.Response(
+                    404,
+                    json={
+                        "error": f"Pushing Entity ID {pushing_entity_id} was not found"
+                    },
+                )
             return httpx.Response(
                 200,
                 json={
                     "access_key_id": "test",
                     "secret_access_key": "test",
                     "session_token": "test",
+                    "expiration": str(
+                        datetime.now(tz=timezone.utc) + timedelta(minutes=30)
+                    ),
                 },
             )
 
@@ -274,7 +334,7 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     mock_client = httpx.Client(transport=httpx.MockTransport(_handler))
     monkeypatch.setattr("pusher.http_client.http_client", mock_client)
     monkeypatch.setattr("pusher.core_functions.delivery.http_client", mock_client)
-    monkeypatch.setattr("pusher.core_functions.core_functions.http_client", mock_client)
+    monkeypatch.setattr("pusher.auth.http_client", mock_client)
     monkeypatch.setattr("pusher.s3_client.http_client", mock_client)
 
     yield mock_client

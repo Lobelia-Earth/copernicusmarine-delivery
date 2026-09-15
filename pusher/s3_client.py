@@ -1,17 +1,20 @@
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import timedelta
+from datetime import datetime, timedelta
+from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
 from delivery_common.domain import now_in_utc_isoformat
+from pusher.auth import login
 from pusher.core_functions.domain import (
     ErrorFile,
+    GetConfigResponse,
     PutFilesResult,
     S3File,
     S3Path,
@@ -23,12 +26,12 @@ from pusher.core_functions.exceptions import (
 from pusher.environment_variables import (
     ALLOW_HTTP,
     INGESTION_SERVICE_URL,
-    MDL_METADATA_BUCKET,
-    MDL_METADATA_ENDPOINT,
-    OPDV_S3_ENDPOINT,
 )
 from pusher.http_client import http_client
 from pusher.logger import logger
+
+if TYPE_CHECKING:
+    from obstore.store import S3Credential, S3CredentialProvider
 
 _RETRY_CONFIG: Any = {
     "max_retries": 5,
@@ -54,27 +57,39 @@ def _extract_error_message(e: Exception) -> str:
     return match.group(1) if match else str(e).splitlines()[0]
 
 
+def _fetch_s3_credentials(
+    pushing_entity_id: str, config: GetConfigResponse
+) -> S3Credential:
+    token = login(config)
+    resp = http_client.get(
+        f"{INGESTION_SERVICE_URL}/credentials/{pushing_entity_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    creds = resp.json()
+    return {
+        "access_key_id": creds["access_key_id"],
+        "secret_access_key": creds["secret_access_key"],
+        "token": creds["session_token"],
+        "expires_at": datetime.fromisoformat(creds["expiration"]),
+    }
+
+
 def _get_s3_store(
     endpoint_url: str,
     bucket_name: str,
-    access_key_id: str | None,
-    secret_access_key: str | None,
-    session_token: str | None = None,
+    pushing_entity_id: str,
+    config: GetConfigResponse,
 ) -> S3Store:
-    skip_signature = (
-        "true" if access_key_id is None and secret_access_key is None else None
+    credential_provider: S3CredentialProvider = partial(
+        _fetch_s3_credentials, pushing_entity_id, config
     )
-    config = {
-        "endpoint": endpoint_url,
-        "access_key_id": access_key_id,
-        "secret_access_key": secret_access_key,
-        "session_token": session_token,
-        "skip_signature": skip_signature,
-    }
-    s3_config: Any = {k: v for k, v in config.items() if v is not None}
+    s3_config = {"endpoint": endpoint_url}
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
         config=s3_config,
+        credential_provider=credential_provider,
         retry_config=_RETRY_CONFIG,
         client_options=_CLIENT_CONFIG,
     )
@@ -94,45 +109,23 @@ def _make_client(
     )
 
 
-def get_s3_metadata_client() -> "S3Client":
-    return _make_client(
-        bucket_name=MDL_METADATA_BUCKET,
-        store=_get_s3_store(
-            endpoint_url=MDL_METADATA_ENDPOINT,
-            bucket_name=MDL_METADATA_BUCKET,
-            access_key_id=None,
-            secret_access_key=None,
-        ),
-        assert_bucket_exists=False,
-    )
-
-
 def get_s3_ingestion_client(
     pushing_entity_id: str,
     bucket_name: str,
-    token: str,
+    config: GetConfigResponse,
+    endpoint_url: str,
     chunk_concurrency: int = 6,
 ) -> "S3Client":
     # TODO: add a refresh in the credentials
-    # TODO: The bucket name should be returned by the OPDV
+    # TODO: The bucket name should be returned by the OPDV as part of the pushing_entities file
     # TODO: The endpoint URL should be returned by the OPDV
-    credentials_response = http_client.post(
-        f"{INGESTION_SERVICE_URL}/credentials",
-        params={"pu_name": pushing_entity_id},
-        headers={"Authorization": f"Bearer {token}"},
-        timeout=30,
-    )
-    credentials_response.raise_for_status()
-    credentials = credentials_response.json()
-
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(
             bucket_name=bucket_name,
-            access_key_id=credentials["access_key_id"],
-            secret_access_key=credentials["secret_access_key"],
-            session_token=credentials["session_token"],
-            endpoint_url=OPDV_S3_ENDPOINT,
+            endpoint_url=endpoint_url,
+            pushing_entity_id=pushing_entity_id,
+            config=config,
         ),
         chunk_concurrency=chunk_concurrency,
     )
