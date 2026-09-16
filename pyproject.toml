@@ -52,9 +52,6 @@ clean-local = "python tests/resources/setup.py --clean"
 
 [tool.pixi.feature.dev.activation.env]
 ALLOW_HTTP = "true"
-MDL_METADATA_BUCKET = "mdl-metadata-dta"
-MDL_METADATA_ENDPOINT = "http://localhost:4566"
-OPDV_S3_ENDPOINT = "http://localhost:4566"
 COPERNICUSMARINE_USERNAME = "test"
 COPERNICUSMARINE_PASSWORD = "test"
 INGESTION_SERVICE_URL = "http://localhost:8005"

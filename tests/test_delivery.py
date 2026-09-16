@@ -32,7 +32,6 @@ DATASET_ID = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311"
 def test_delivery_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -58,7 +57,7 @@ def test_delivery_python_interface(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_early_exit_with_validation_error(
-    glo_mercator_bucket, set_env, skip_delivery_ids_validation, ingestion_service
+    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
 ):
     with pytest.raises(InvalidFilesError) as exc_info:
         delivery_function(
@@ -82,7 +81,6 @@ def test_delivery_early_exit_with_validation_error(
 def test_delivery_cli_with_delivery_file(
     snapshot,
     glo_mercator_bucket,
-    cli_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -112,7 +110,6 @@ def test_delivery_cli_with_delivery_file(
 def test_delivery_dry_run_does_not_call_s3(
     monkeypatch,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -166,7 +163,6 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
     expected_suffixes,
     s3_client,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):

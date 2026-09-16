@@ -123,7 +123,7 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None]:
 
 @pytest.fixture
 def service(
-    ingestion_bucket: str, ministack_endpoint: str, set_env, ingestion_service
+    ingestion_bucket: str, ministack_endpoint: str, ingestion_service
 ) -> S3Client:
     return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
@@ -131,22 +131,6 @@ def service(
         config=get_config(),
         endpoint_url=ministack_endpoint,
     )
-
-
-@pytest.fixture
-def cli_env(ministack_endpoint: str) -> dict:
-    return {
-        "OPDV_ACCESS_KEY_ID": "test",
-        "OPDV_SECRET_ACCESS_KEY": "test",
-        "OPDV_S3_ENDPOINT": ministack_endpoint,
-        "ENVIRONMENT": "local",
-    }
-
-
-@pytest.fixture(autouse=False)
-def set_env(monkeypatch, cli_env):
-    for key, value in cli_env.items():
-        monkeypatch.setenv(key, value)
 
 
 @pytest.fixture

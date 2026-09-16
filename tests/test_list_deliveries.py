@@ -39,7 +39,6 @@ def _upload(files: list[str], dataset_id: str, product_id: str, anchor: str | No
 def test_list_deliveries_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -65,7 +64,6 @@ def test_list_deliveries_python_interface(
 @freeze_time("2012-01-14 12:00:01")
 def test_list_deliveries_cli(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -90,13 +88,12 @@ def test_list_deliveries_cli(
             "--anchor",
             "dataset1",
         ]
-        upload_result = runner.invoke(cli, args, env=cli_env)
+        upload_result = runner.invoke(cli, args)
         assert upload_result.exit_code == 0, upload_result.output
 
     result = runner.invoke(
         cli,
         ["list-deliveries", "--pushing-entity-id", PUSHING_ENTITY_ID],
-        env=cli_env,
     )
     assert result.exit_code == 0, result.output.strip()
     assert result.output.strip() == snapshot

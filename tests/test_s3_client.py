@@ -23,7 +23,7 @@ from pusher.s3_client import (
 RESOURCES = Path("tests/resources/dataset1")
 
 
-def test_no_such_bucket_raises(ministack_endpoint: str, set_env, ingestion_service):
+def test_no_such_bucket_raises(ministack_endpoint: str, ingestion_service):
     with pytest.raises(NoSuchBucketException):
         get_s3_ingestion_client(
             pushing_entity_id="TEST-ENTITY-FR",

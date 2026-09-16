@@ -43,7 +43,6 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
 def test_upload_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -71,7 +70,6 @@ def test_upload_python_interface(
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_cli(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -94,7 +92,6 @@ def test_upload_cli(
             "--anchor",
             "dataset1",
         ],
-        env=cli_env,
     )
     assert result.exit_code == 0
     assert result.output.strip() == snapshot
@@ -103,7 +100,6 @@ def test_upload_cli(
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_cli_save_delivery_json(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -127,7 +123,6 @@ def test_upload_cli_save_delivery_json(
             "dataset1",
             "--save-delivery-json",
         ],
-        env=cli_env,
     )
     assert result.exit_code == 0
     assert result.output.strip() == snapshot
@@ -145,7 +140,7 @@ def test_upload_cli_save_delivery_json(
             os.remove(jf)
 
 
-def test_upload_cli_no_source_exits(cli_env):
+def test_upload_cli_no_source_exits():
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -158,7 +153,6 @@ def test_upload_cli_no_source_exits(cli_env):
             "--product-id",
             "product1",
         ],
-        env=cli_env,
     )
     assert result.exit_code == 1
 
