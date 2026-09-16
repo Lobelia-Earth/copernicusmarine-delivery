@@ -12,7 +12,7 @@ from delivery_common.domain import (
     UploadOperation,
 )
 from delivery_common.validation import validate_delivery_ids
-from pusher.auth import get_config, get_pushing_entity_config, login
+from pusher.auth import get_config, get_keycloak_token, get_pushing_entity_config
 from pusher.core_functions.constants import (
     NEW_DATA_BUCKET_PATH,
 )
@@ -96,7 +96,7 @@ def upload(
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
@@ -163,7 +163,7 @@ def delete(
         f"\n\tFiles: {files}"
     )
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
@@ -207,7 +207,7 @@ def delivery(
     dry_run: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)

@@ -11,7 +11,7 @@ import yaml
 from pydantic import ValidationError
 
 from delivery_common.domain import Delivery
-from pusher.auth import get_config, login
+from pusher.auth import get_config, get_keycloak_token
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -401,7 +401,7 @@ def status(
             )
         )
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     if delivery_json:
         try:
             with open(delivery_json) as delivery_file:
@@ -443,7 +443,7 @@ def list_deliveries(pushing_entity_id: str) -> None:
     if not pushing_entity_id:
         raise click.MissingParameter("pushing_entity_id must be provided!")
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, token=token)
     print_list_deliveries(deliveries, pushing_entity_id)
 

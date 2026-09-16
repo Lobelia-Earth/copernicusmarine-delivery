@@ -8,16 +8,20 @@ from pusher.environment_variables import (
     INGESTION_SERVICE_URL,
 )
 from pusher.http_client import http_client
+from pusher.logger import logger
 
 _token_cache: dict = {}
 
 
-def login(config: GetConfigResponse) -> str:
+def get_keycloak_token(config: GetConfigResponse) -> str:
+    """Gets the Keycloak token necessary to operate with OPDV using username nd password.
+    Small cache built to reuse token whenever possible"""
     now = time.time()
     if (
         _token_cache.get("access_token")
         and now < _token_cache["access_expires_at"] - 30
     ):
+        logger.debug("Keycloak Token -> Reusing from cache")
         return _token_cache["access_token"]
 
     discovery_response = http_client.get(
@@ -31,12 +35,14 @@ def login(config: GetConfigResponse) -> str:
         _token_cache.get("refresh_token")
         and now < _token_cache["refresh_expires_at"] - 30
     ):
+        logger.debug("Keycloak Token -> Fetching from refresh token")
         data = {
             "grant_type": "refresh_token",
             "client_id": config.oidc_config.oidc_client_id,
             "refresh_token": _token_cache["refresh_token"],
         }
     else:
+        logger.debug("Keycloak Token -> Fetching new access token")
         data = {
             "grant_type": config.oidc_config.grant_type,
             "client_id": config.oidc_config.oidc_client_id,

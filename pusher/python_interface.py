@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from delivery_common.domain import Delivery as DeliveryModel
-from pusher.auth import get_config, login
+from pusher.auth import get_config, get_keycloak_token
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -180,7 +180,7 @@ def delivery_status(delivery_id: str, pushing_entity_id: str) -> DeliveryModel:
     Right now, returns the delivery.
     """
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     delivery = get_deliveries(
         delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,
@@ -202,6 +202,6 @@ def list_deliveries(pushing_entity_id: str) -> list[DeliveryModel]:
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    token = login(config)
+    token = get_keycloak_token(config)
     deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, token=token)
     return deliveries
