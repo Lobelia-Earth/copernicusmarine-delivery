@@ -2,7 +2,6 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -11,7 +10,7 @@ from obstore import list as list_obstore
 from obstore.store import S3Store
 
 from delivery_common.domain import now_in_utc_isoformat
-from pusher.auth import login
+from pusher.auth import get_keycloak_token
 from pusher.core_functions.domain import (
     ErrorFile,
     GetConfigResponse,
@@ -51,29 +50,52 @@ _CLIENT_CONFIG: Any = {
 _OS_ERROR_RETRIES = 3
 _OS_ERROR_BACKOFF_SECONDS = 5
 
+# obstore only reuses a cached S3 credential while it has more than this much
+# life left; below that, it refetches on the next request. It reads this off
+# a `refresh_threshold` attribute set on the credential_provider callable
+# (see obstore's pyo3-object_store/src/aws/credentials.rs), not from the
+# credential dict itself. obstore's own default is 300s; we set it explicitly
+# so the intent is visible here rather than relying on an implicit library default.
+_CREDENTIAL_REFRESH_THRESHOLD = timedelta(minutes=5)
+
 
 def _extract_error_message(e: Exception) -> str:
     match = re.search(r'message: "([^"]+)"', str(e))
     return match.group(1) if match else str(e).splitlines()[0]
 
 
-def _fetch_s3_credentials(
-    pushing_entity_id: str, config: GetConfigResponse
-) -> S3Credential:
-    token = login(config)
-    resp = http_client.get(
-        f"{INGESTION_SERVICE_URL}/credentials/{pushing_entity_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    creds = resp.json()
-    return {
-        "access_key_id": creds["access_key_id"],
-        "secret_access_key": creds["secret_access_key"],
-        "token": creds["session_token"],
-        "expires_at": datetime.fromisoformat(creds["expiration"]),
-    }
+class OpdvS3CredentialProvider:
+    """Callable used as `S3Store`'s `credential_provider`. Fetches/refreshes the
+    Keycloak token and the S3 credentials for a pushing entity from OPDV's API.
+    See: https://developmentseed.org/obstore/latest/api/store/aws/#obstore.store.S3CredentialProvider
+    """
+
+    def __init__(
+        self,
+        pushing_entity_id: str,
+        config: GetConfigResponse,
+        refresh_threshold: timedelta = _CREDENTIAL_REFRESH_THRESHOLD,
+    ) -> None:
+        self._pushing_entity_id = pushing_entity_id
+        self._config = config
+        self.refresh_threshold = refresh_threshold
+
+    def __call__(self) -> S3Credential:
+        logger.debug("Getting new set of S3 Credentials from OPDV's API.")
+        token = get_keycloak_token(self._config)
+        resp = http_client.get(
+            f"{INGESTION_SERVICE_URL}/credentials/{self._pushing_entity_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        creds = resp.json()
+        return {
+            "access_key_id": creds["access_key_id"],
+            "secret_access_key": creds["secret_access_key"],
+            "token": creds["session_token"],
+            "expires_at": datetime.fromisoformat(creds["expiration"]),
+        }
 
 
 def _get_s3_store(
@@ -82,13 +104,12 @@ def _get_s3_store(
     pushing_entity_id: str,
     config: GetConfigResponse,
 ) -> S3Store:
-    credential_provider: S3CredentialProvider = partial(
-        _fetch_s3_credentials, pushing_entity_id, config
+    credential_provider: S3CredentialProvider = OpdvS3CredentialProvider(
+        pushing_entity_id, config
     )
-    s3_config = {"endpoint": endpoint_url}
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
-        config=s3_config,
+        config={"endpoint": endpoint_url},
         credential_provider=credential_provider,
         retry_config=_RETRY_CONFIG,
         client_options=_CLIENT_CONFIG,
