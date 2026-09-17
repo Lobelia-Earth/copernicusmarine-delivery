@@ -1,7 +1,9 @@
 import time
 
-from delivery_common.domain import PushingEntity
-from pusher.core_functions.domain import GetConfigResponse
+from pusher.core_functions.domain import (
+    GetConfigResponse,
+    GetPushingEntityConfigResponse,
+)
 from pusher.environment_variables import (
     COPERNICUSMARINE_PASSWORD,
     COPERNICUSMARINE_USERNAME,
@@ -13,7 +15,7 @@ from pusher.logger import logger
 _token_cache: dict = {}
 
 
-def get_keycloak_token(config: GetConfigResponse) -> str:
+def fetch_keycloak_token(config: GetConfigResponse) -> str:
     """Gets the Keycloak token necessary to operate with OPDV using username nd password.
     Small cache built to reuse token whenever possible"""
     now = time.time()
@@ -68,10 +70,14 @@ def get_config() -> GetConfigResponse:
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(pushing_entity_id: str, token: str) -> PushingEntity:
+def get_pushing_entity_config(
+    pushing_entity_id: str, token: str
+) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
         f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config/{pushing_entity_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
     pushing_entity_config_response.raise_for_status()
-    return PushingEntity.model_validate_json(pushing_entity_config_response.content)
+    return GetPushingEntityConfigResponse.model_validate_json(
+        pushing_entity_config_response.content
+    )

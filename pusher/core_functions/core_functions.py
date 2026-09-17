@@ -12,7 +12,7 @@ from delivery_common.domain import (
     UploadOperation,
 )
 from delivery_common.validation import validate_delivery_ids
-from pusher.auth import get_config, get_keycloak_token, get_pushing_entity_config
+from pusher.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
 from pusher.core_functions.constants import (
     NEW_DATA_BUCKET_PATH,
 )
@@ -96,10 +96,13 @@ def upload(
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
     config = get_config()
-    token = get_keycloak_token(config)
-    pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
+    pushing_entity_config = get_pushing_entity_config(
+        pushing_entity_id, fetch_keycloak_token(config)
+    )
 
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
+    validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
+    )
 
     to_upload_operation = create_and_validate_to_upload_operation(
         files,
@@ -110,10 +113,10 @@ def upload(
 
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
-        pushing_entity.bucket,
+        pushing_entity_config.pushing_entity.bucket,
         config=config,
         chunk_concurrency=chunk_concurrency,
-        endpoint_url=config.s3_config.endpoint_url,
+        endpoint_url=pushing_entity_config.opdv_s3_endpoint_url,
     )
     delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
@@ -135,7 +138,7 @@ def upload(
         dataset_id=dataset_id,
         operations=[upload_operation],
         delivery_id=delivery_id,
-        token=token,
+        config=config,
         dry_run=dry_run,
     )
 
@@ -163,10 +166,13 @@ def delete(
         f"\n\tFiles: {files}"
     )
     config = get_config()
-    token = get_keycloak_token(config)
-    pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
+    pushing_entity_config = get_pushing_entity_config(
+        pushing_entity_id, fetch_keycloak_token(config)
+    )
 
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
+    validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
+    )
 
     delete_operation = create_and_validate_delete_operation(files)
 
@@ -175,7 +181,7 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[delete_operation],
-        token=token,
+        config=config,
         dry_run=dry_run,
     )
     return (
@@ -207,20 +213,23 @@ def delivery(
     dry_run: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
-    token = get_keycloak_token(config)
-    pushing_entity = get_pushing_entity_config(pushing_entity_id, token)
+    pushing_entity_config = get_pushing_entity_config(
+        pushing_entity_id, fetch_keycloak_token(config)
+    )
 
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity)
+    validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
+    )
 
     delivery_id = create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
 
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
-        pushing_entity.bucket,
+        pushing_entity_config.pushing_entity.bucket,
         chunk_concurrency=chunk_concurrency,
         config=config,
-        endpoint_url=config.s3_config.endpoint_url,
+        endpoint_url=pushing_entity_config.opdv_s3_endpoint_url,
     )
     for operation in operations:
         match operation:
@@ -270,7 +279,7 @@ def delivery(
         dataset_id,
         all_operations,
         dry_run,
-        token=token,
+        config=config,
         delivery_id=delivery_id,
     )
     return (

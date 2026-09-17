@@ -2,6 +2,8 @@ from datetime import datetime
 from random import randint
 
 from delivery_common.domain import Delivery, Operation
+from pusher.auth import fetch_keycloak_token
+from pusher.core_functions.domain import GetConfigResponse
 from pusher.environment_variables import INGESTION_SERVICE_URL
 from pusher.http_client import http_client
 from pusher.logger import logger
@@ -36,7 +38,7 @@ def create_and_upload_delivery(
     dataset_id: str,
     operations: list[Operation],
     dry_run: bool,
-    token: str,
+    config: GetConfigResponse,
     delivery_id: str | None = None,
 ) -> Delivery:
     if not delivery_id:
@@ -55,7 +57,7 @@ def create_and_upload_delivery(
         response = http_client.post(
             f"{INGESTION_SERVICE_URL}/delivery",
             json=delivery.model_dump(by_alias=True),
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
         )
         response.raise_for_status()
 
@@ -64,12 +66,12 @@ def create_and_upload_delivery(
 
 def get_deliveries(
     pushing_entity_id: str,
-    token: str,
+    config: GetConfigResponse,
     delivery_id: str | None = None,
 ) -> list[Delivery]:
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery/{pushing_entity_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
     )
     response.raise_for_status()
 

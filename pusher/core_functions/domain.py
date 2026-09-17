@@ -8,6 +8,7 @@ from delivery_common.domain import (
     ErrorResponseFile,
     InvalidFile,
     OperationNames,
+    PushingEntity,
 )
 from pusher.logger import logger
 
@@ -210,4 +211,8 @@ class S3Config(BaseModel):
 
 class GetConfigResponse(BaseModel):
     oidc_config: OIDCConfig
-    s3_config: S3Config
+
+
+class GetPushingEntityConfigResponse(BaseModel):
+    pushing_entity: PushingEntity
+    opdv_s3_endpoint_url: str

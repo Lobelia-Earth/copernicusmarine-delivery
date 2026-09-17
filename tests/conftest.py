@@ -251,11 +251,6 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                         "grant_type": "all-granted",
                         "scope": "sky",
                     },
-                    "s3_config": {
-                        "endpoint_url": os.environ.get(
-                            "S3_ENDPOINT_URL", "http://localhost:4566"
-                        )
-                    },
                     "pushing_entities": _PUSHING_ENTITIES_DICT,
                 },
             )
@@ -283,7 +278,15 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                         "error": f"Pushing Entity ID {pushing_entity_id} was not found"
                     },
                 )
-            return httpx.Response(200, json=pushing_entity)
+            return httpx.Response(
+                200,
+                json={
+                    "pushing_entity": pushing_entity,
+                    "opdv_s3_endpoint_url": os.environ.get(
+                        "S3_ENDPOINT_URL", "http://localhost:4566"
+                    ),
+                },
+            )
 
         if path.startswith("/credentials/") and request.method == "GET":
             bearer = request.headers.get("Authorization")

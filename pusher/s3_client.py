@@ -10,7 +10,7 @@ from obstore import list as list_obstore
 from obstore.store import S3Store
 
 from delivery_common.domain import now_in_utc_isoformat
-from pusher.auth import get_keycloak_token
+from pusher.auth import fetch_keycloak_token
 from pusher.core_functions.domain import (
     ErrorFile,
     GetConfigResponse,
@@ -82,7 +82,7 @@ class OpdvS3CredentialProvider:
 
     def __call__(self) -> S3Credential:
         logger.debug("Getting new set of S3 Credentials from OPDV's API.")
-        token = get_keycloak_token(self._config)
+        token = fetch_keycloak_token(self._config)
         resp = http_client.get(
             f"{INGESTION_SERVICE_URL}/credentials/{self._pushing_entity_id}",
             headers={"Authorization": f"Bearer {token}"},
