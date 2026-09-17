@@ -14,6 +14,8 @@ from pusher.logger import logger
 
 _token_cache: dict = {}
 
+OIDC_DISCOVERY_URL = "https://{oidc_provider_url}/.well-known/openid-configuration"
+
 
 def fetch_keycloak_token(config: GetConfigResponse) -> str:
     """Gets the Keycloak token necessary to operate with OPDV using username nd password.
@@ -27,7 +29,9 @@ def fetch_keycloak_token(config: GetConfigResponse) -> str:
         return _token_cache["access_token"]
 
     discovery_response = http_client.get(
-        f"https://{config.oidc_config.oidc_provider_url}/.well-known/openid-configuration"
+        OIDC_DISCOVERY_URL.format(
+            oidc_provider_url=config.oidc_config.oidc_provider_url
+        )
     )
     discovery_response.raise_for_status()
 

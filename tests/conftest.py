@@ -175,6 +175,12 @@ def mock_keycloak():
     return _mock_keycloak_handler
 
 
+def validate_test_token_header(request) -> httpx.Response | None:
+    bearer = request.headers.get("Authorization")
+    if bearer != "Bearer test-token":
+        return httpx.Response(401, json={"error": "Invalid bearer token"})
+
+
 @pytest.fixture
 def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     """Patches http_client with an httpx-backed mock transport that mimics the ingestion service.
@@ -195,10 +201,9 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
         path = request.url.path
 
         if path == "/delivery" and request.method == "POST":
+            if invalid_token_response := validate_test_token_header(request):
+                return invalid_token_response
             body = json.loads(request.content)
-            bearer = request.headers.get("Authorization")
-            if bearer != "Bearer test-token":
-                return httpx.Response(401, json={"error": "Invalid bearer token"})
             delivery_id = body["delivery_id"]
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(
@@ -225,9 +230,9 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             pushing_entity_id = path.split("/")[2]
             if not pushing_entity_id:
                 return httpx.Response(400, json={"error": "Missing pushing_entity_id"})
-            bearer = request.headers.get("Authorization")
-            if bearer != "Bearer test-token":
-                return httpx.Response(401, json={"error": "Invalid bearer token"})
+
+            if invalid_token_response := validate_test_token_header(request):
+                return invalid_token_response
             bucket = next(
                 pe["bucket"]
                 for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
@@ -259,9 +264,8 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             path.startswith("/.well-known/pushing-entity-config/")
             and request.method == "GET"
         ):
-            bearer = request.headers.get("Authorization")
-            if bearer != "Bearer test-token":
-                return httpx.Response(401, json={"error": "Invalid bearer token"})
+            if invalid_token_response := validate_test_token_header(request):
+                return invalid_token_response
             pushing_entity_id = path.split("/")[-1]
             pushing_entity = next(
                 (
@@ -289,9 +293,8 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             )
 
         if path.startswith("/credentials/") and request.method == "GET":
-            bearer = request.headers.get("Authorization")
-            if bearer != "Bearer test-token":
-                return httpx.Response(401, json={"error": "Invalid bearer token"})
+            if invalid_token_response := validate_test_token_header(request):
+                return invalid_token_response
             pushing_entity_id = path.split("/")[-1]
             pushing_entity_exists = any(
                 pe["name"] == pushing_entity_id

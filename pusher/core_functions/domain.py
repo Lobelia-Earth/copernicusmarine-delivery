@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal, NewType
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from delivery_common.domain import (
     DeleteFile,
@@ -196,8 +196,6 @@ class InvalidFilesError(Exception):
         )
 
 
-# This is a copy from what comes from the API.
-# We do not need to, but it helps to type things.
 class OIDCConfig(BaseModel):
     oidc_provider_url: str
     oidc_client_id: str
@@ -205,14 +203,16 @@ class OIDCConfig(BaseModel):
     grant_type: str = "password"
 
 
-class S3Config(BaseModel):
-    endpoint_url: str
-
-
+# model_config to allow extra fields to allow us to potentially add them without
+# breaking the toolbox in the future.
 class GetConfigResponse(BaseModel):
     oidc_config: OIDCConfig
+
+    model_config = ConfigDict(extra="allow")
 
 
 class GetPushingEntityConfigResponse(BaseModel):
     pushing_entity: PushingEntity
     s3_endpoint_url: str
+
+    model_config = ConfigDict(extra="allow")

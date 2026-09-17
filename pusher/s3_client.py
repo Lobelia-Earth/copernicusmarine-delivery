@@ -137,9 +137,6 @@ def get_s3_ingestion_client(
     endpoint_url: str,
     chunk_concurrency: int = 6,
 ) -> "S3Client":
-    # TODO: add a refresh in the credentials
-    # TODO: The bucket name should be returned by the OPDV as part of the pushing_entities file
-    # TODO: The endpoint URL should be returned by the OPDV
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(
