@@ -282,7 +282,7 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                 200,
                 json={
                     "pushing_entity": pushing_entity,
-                    "opdv_s3_endpoint_url": os.environ.get(
+                    "s3_endpoint_url": os.environ.get(
                         "S3_ENDPOINT_URL", "http://localhost:4566"
                     ),
                 },

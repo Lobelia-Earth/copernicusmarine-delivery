@@ -215,4 +215,4 @@ class GetConfigResponse(BaseModel):
 
 class GetPushingEntityConfigResponse(BaseModel):
     pushing_entity: PushingEntity
-    opdv_s3_endpoint_url: str
+    s3_endpoint_url: str
