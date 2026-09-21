@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from delivery_common.domain import Delivery as DeliveryModel
+from pusher.auth import get_config
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -178,9 +179,11 @@ def delivery_status(delivery_id: str, pushing_entity_id: str) -> DeliveryModel:
 
     Right now, returns the delivery.
     """
+    config = get_config()
     delivery = get_deliveries(
         delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,
+        config=config,
     )
     if not delivery:
         raise ValueError(
@@ -197,5 +200,6 @@ def list_deliveries(pushing_entity_id: str) -> list[DeliveryModel]:
     :param pushing_entity_id: The ID of the pushing entity.
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
-    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id)
+    config = get_config()
+    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, config=config)
     return deliveries

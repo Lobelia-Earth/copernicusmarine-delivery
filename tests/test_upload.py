@@ -23,6 +23,8 @@ MOCK_FILES = [
     "tests/resources/dataset1/file2.txt",
 ]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
+PRODUCT_ID = "GLOBAL_ANALYSISFORECAST_BGC_001_028"
+DATASET_ID = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311"
 
 _UNKNOWN_ENTITY_YAML = yaml.dump(
     {
@@ -41,7 +43,6 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
 def test_upload_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -69,7 +70,6 @@ def test_upload_python_interface(
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_cli(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -92,7 +92,6 @@ def test_upload_cli(
             "--anchor",
             "dataset1",
         ],
-        env=cli_env,
     )
     assert result.exit_code == 0
     assert result.output.strip() == snapshot
@@ -101,7 +100,6 @@ def test_upload_cli(
 @freeze_time("2012-01-14 12:00:01")
 def test_upload_cli_save_delivery_json(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -125,7 +123,6 @@ def test_upload_cli_save_delivery_json(
             "dataset1",
             "--save-delivery-json",
         ],
-        env=cli_env,
     )
     assert result.exit_code == 0
     assert result.output.strip() == snapshot
@@ -143,7 +140,7 @@ def test_upload_cli_save_delivery_json(
             os.remove(jf)
 
 
-def test_upload_cli_no_source_exits(cli_env):
+def test_upload_cli_no_source_exits():
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -156,12 +153,11 @@ def test_upload_cli_no_source_exits(cli_env):
             "--product-id",
             "product1",
         ],
-        env=cli_env,
     )
     assert result.exit_code == 1
 
 
-def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
+def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
     monkeypatch.setattr(
         S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
     )
@@ -169,7 +165,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
         upload(
             pushing_entity_id=PUSHING_ENTITY_ID,
             files=MOCK_FILES,
-            dataset_id="dataset1",
+            dataset_id=DATASET_ID,
             product_id="product1",
             anchor="dataset1",
             raise_on_upload_error=False,
@@ -178,7 +174,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch):
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
         )
-    assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
+    assert f"product1 is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(
         exc_info.value
     )
 
@@ -199,8 +195,8 @@ def test_upload_one_file_cannot_be_uploaded(
     response, delivery = upload(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
-        dataset_id="dataset1",
-        product_id="product1",
+        dataset_id=DATASET_ID,
+        product_id=PRODUCT_ID,
         anchor="dataset1",
         raise_on_upload_error=False,
         max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
@@ -219,7 +215,7 @@ def test_upload_one_file_cannot_be_uploaded(
 
 
 def test_upload_one_file_cannot_be_uploaded_with_raise(
-    monkeypatch, glo_mercator_bucket
+    monkeypatch, glo_mercator_bucket, ingestion_service
 ):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
@@ -233,8 +229,8 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
     with pytest.raises(Exception) as exc_info:
         upload.submit(
             pushing_entity_id=PUSHING_ENTITY_ID,
-            dataset_id="dataset1",
-            product_id="product1",
+            dataset_id=DATASET_ID,
+            product_id=PRODUCT_ID,
             anchor="dataset1",
             raise_on_upload_error=True,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,

@@ -1,25 +1,16 @@
-from delivery_common.domain import InvalidDeliveryIdsError, PushingEntities
+from delivery_common.domain import InvalidDeliveryIdsError, PushingEntity
 
 
 def validate_delivery_ids(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
-    pushing_entities: PushingEntities,
+    pushing_entity: PushingEntity,
 ) -> None:
-    valid_pushing_entity = next(
-        (e for e in pushing_entities.pushing_entities if e.name == pushing_entity_id),
-        None,
-    )
-    if not valid_pushing_entity:
-        raise InvalidDeliveryIdsError(
-            f"{pushing_entity_id} is not a valid registered Pushing Entity. "
-            "Please ask User Support to register your Pushing Entity or to give you the ID."
-        )
     valid_product = next(
         (
             product
-            for product in valid_pushing_entity.products
+            for product in pushing_entity.products
             if product.product_id == product_id
         ),
         None,

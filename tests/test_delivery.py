@@ -24,13 +24,14 @@ MOCK_FILES = [
 ]
 MOCK_FILES_ABS = [str(Path(f).resolve()) for f in MOCK_FILES]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
+PRODUCT_ID = "GLOBAL_ANALYSISFORECAST_BGC_001_028"
+DATASET_ID = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311"
 
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -56,7 +57,7 @@ def test_delivery_python_interface(
 
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_early_exit_with_validation_error(
-    glo_mercator_bucket, set_env, skip_delivery_ids_validation, ingestion_service
+    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
 ):
     with pytest.raises(InvalidFilesError) as exc_info:
         delivery_function(
@@ -80,7 +81,6 @@ def test_delivery_early_exit_with_validation_error(
 def test_delivery_cli_with_delivery_file(
     snapshot,
     glo_mercator_bucket,
-    cli_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -110,7 +110,6 @@ def test_delivery_cli_with_delivery_file(
 def test_delivery_dry_run_does_not_call_s3(
     monkeypatch,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -164,7 +163,6 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
     expected_suffixes,
     s3_client,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -197,7 +195,7 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
 
 
 def test_upload_one_file_cannot_be_uploaded_with_raise(
-    monkeypatch, glo_mercator_bucket
+    monkeypatch, glo_mercator_bucket, ingestion_service
 ):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
@@ -212,8 +210,8 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
     with pytest.raises(Exception) as exc_info:
         delivery.submit(
             pushing_entity_id=PUSHING_ENTITY_ID,
-            dataset_id="dataset1",
-            product_id="product1",
+            dataset_id=DATASET_ID,
+            product_id=PRODUCT_ID,
             raise_on_upload_error=True,
             max_concurrent_uploads=MAX_CONCURRENT_UPLOADS,
             chunk_size_mb=DEFAULT_CHUNK_SIZE_MB,

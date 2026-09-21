@@ -3,10 +3,10 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-1409
+  	delivery_id: 20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-1409
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
-  	product_id: product1
-  	dataset_id: dataset1
+  	product_id: GLOBAL_ANALYSISFORECAST_BGC_001_028
+  	dataset_id: cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311
   
   The following delete operation have been submitted:
   
@@ -20,10 +20,10 @@
   '''
   Delivery summary:
   
-  	delivery_id: 20120114T120001-product1-5506
+  	delivery_id: 20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-5506
   	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
-  	product_id: product1
-  	dataset_id: dataset1
+  	product_id: GLOBAL_ANALYSISFORECAST_BGC_001_028
+  	dataset_id: cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311
   
   The following delete operation have been submitted:
   
@@ -35,8 +35,8 @@
 # ---
 # name: test_delete_cli_save_delivery_json.1
   dict({
-    'dataset_id': 'dataset1',
-    'delivery_id': '20120114T120001-product1-5506',
+    'dataset_id': 'cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311',
+    'delivery_id': '20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-5506',
     'error_message': None,
     'operations': list([
       dict({
@@ -53,7 +53,7 @@
         'operation': 'delete',
       }),
     ]),
-    'product_id': 'product1',
+    'product_id': 'GLOBAL_ANALYSISFORECAST_BGC_001_028',
     'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
     'status': 'pending',
     'status_timestamp': None,
@@ -62,7 +62,7 @@
 # name: test_delete_python_interface
   '''
   {
-    "delivery_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-2824",
     "fatal_error": null,
     "files_to_delete": [
       {
@@ -80,10 +80,10 @@
 # name: test_delete_python_interface.1
   '''
   {
-    "delivery_id": "20120114T120001-product1-2824",
+    "delivery_id": "20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-2824",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
-    "product_id": "product1",
-    "dataset_id": "dataset1",
+    "product_id": "GLOBAL_ANALYSISFORECAST_BGC_001_028",
+    "dataset_id": "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311",
     "operations": [
       {
         "operation": "delete",

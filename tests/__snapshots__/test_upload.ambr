@@ -70,10 +70,10 @@
 # name: test_upload_one_file_cannot_be_uploaded
   '''
   {
-    "delivery_id": "20120114T120001-product1-3615",
+    "delivery_id": "20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-3615",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
-    "product_id": "product1",
-    "dataset_id": "dataset1",
+    "product_id": "GLOBAL_ANALYSISFORECAST_BGC_001_028",
+    "dataset_id": "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311",
     "operations": [
       {
         "operation": "upload",

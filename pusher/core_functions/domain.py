@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import Literal, NewType
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from delivery_common.domain import (
     DeleteFile,
     ErrorResponseFile,
     InvalidFile,
     OperationNames,
+    PushingEntity,
 )
 from pusher.logger import logger
 
@@ -193,3 +194,25 @@ class InvalidFilesError(Exception):
         super().__init__(
             f"Found {len(invalid_files)} invalid files. See logs for details."
         )
+
+
+class OIDCConfig(BaseModel):
+    oidc_provider_url: str
+    oidc_client_id: str
+    scope: str = "openid"
+    grant_type: str = "password"
+
+
+# model_config to allow extra fields to allow us to potentially add them without
+# breaking the toolbox in the future.
+class GetConfigResponse(BaseModel):
+    oidc_config: OIDCConfig
+
+    model_config = ConfigDict(extra="allow")
+
+
+class GetPushingEntityConfigResponse(BaseModel):
+    pushing_entity: PushingEntity
+    s3_endpoint_url: str
+
+    model_config = ConfigDict(extra="allow")

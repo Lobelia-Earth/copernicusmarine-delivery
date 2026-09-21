@@ -12,6 +12,7 @@ from delivery_common.domain import (
     UploadOperation,
 )
 from delivery_common.validation import validate_delivery_ids
+from pusher.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
 from pusher.core_functions.constants import (
     NEW_DATA_BUCKET_PATH,
 )
@@ -20,7 +21,6 @@ from pusher.core_functions.delivery import (
     create_delivery_id,
 )
 from pusher.core_functions.delivery_validator import (
-    fetch_pushing_entities,
     validate_delete_files,
     validate_upload_files,
 )
@@ -36,7 +36,6 @@ from pusher.core_functions.domain import (
     Upload,
 )
 from pusher.core_functions.utils import (
-    get_ingestion_bucket_name,
     human_readable_size,
 )
 from pusher.logger import logger
@@ -46,7 +45,8 @@ from pusher.s3_client import S3Client, get_s3_ingestion_client
 def strip_to_anchor(local_path: str, anchor: str | None = None) -> str:
     """Anchor is not enforced. If it is None, the logic does not check whether local path is absolute
     because these are rejected if no anchor is given in the validation.
-    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe."""
+    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe.
+    """
     if anchor is None:
         return local_path
     parts = Path(local_path).parts
@@ -95,9 +95,14 @@ def upload(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
+    config = get_config()
+    pushing_entity_config = get_pushing_entity_config(
+        pushing_entity_id, fetch_keycloak_token(config)
+    )
 
-    pushing_entities = fetch_pushing_entities()
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
+    validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
+    )
 
     to_upload_operation = create_and_validate_to_upload_operation(
         files,
@@ -106,11 +111,12 @@ def upload(
         anchor,
     )
 
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
     s3_client = get_s3_ingestion_client(
-        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+        pushing_entity_id,
+        pushing_entity_config.pushing_entity.bucket,
+        config=config,
+        chunk_concurrency=chunk_concurrency,
+        endpoint_url=pushing_entity_config.s3_endpoint_url,
     )
     delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
@@ -132,6 +138,7 @@ def upload(
         dataset_id=dataset_id,
         operations=[upload_operation],
         delivery_id=delivery_id,
+        config=config,
         dry_run=dry_run,
     )
 
@@ -158,21 +165,23 @@ def delete(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
     )
-    pushing_entities = fetch_pushing_entities()
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
+    config = get_config()
+    pushing_entity_config = get_pushing_entity_config(
+        pushing_entity_id, fetch_keycloak_token(config)
+    )
+
+    validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
+    )
 
     delete_operation = create_and_validate_delete_operation(files)
-
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
-    s3_client = get_s3_ingestion_client(pushing_entity_id, ingestion_bucket_name)
 
     delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[delete_operation],
+        config=config,
         dry_run=dry_run,
     )
     return (
@@ -203,17 +212,24 @@ def delivery(
     chunk_concurrency: int,
     dry_run: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
+    config = get_config()
+    pushing_entity_config = get_pushing_entity_config(
+        pushing_entity_id, fetch_keycloak_token(config)
+    )
 
-    pushing_entities = fetch_pushing_entities()
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entities)
+    validate_delivery_ids(
+        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
+    )
 
     delivery_id = create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
-    ingestion_bucket_name = get_ingestion_bucket_name(
-        pushing_entity_id, pushing_entities
-    )
+
     s3_client = get_s3_ingestion_client(
-        pushing_entity_id, ingestion_bucket_name, chunk_concurrency=chunk_concurrency
+        pushing_entity_id,
+        pushing_entity_config.pushing_entity.bucket,
+        chunk_concurrency=chunk_concurrency,
+        config=config,
+        endpoint_url=pushing_entity_config.s3_endpoint_url,
     )
     for operation in operations:
         match operation:
@@ -263,6 +279,7 @@ def delivery(
         dataset_id,
         all_operations,
         dry_run,
+        config=config,
         delivery_id=delivery_id,
     )
     return (

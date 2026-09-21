@@ -1,17 +1,19 @@
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
 from delivery_common.domain import now_in_utc_isoformat
+from pusher.auth import fetch_keycloak_token
 from pusher.core_functions.domain import (
     ErrorFile,
+    GetConfigResponse,
     PutFilesResult,
     S3File,
     S3Path,
@@ -22,13 +24,13 @@ from pusher.core_functions.exceptions import (
 )
 from pusher.environment_variables import (
     ALLOW_HTTP,
-    MDL_METADATA_BUCKET,
-    MDL_METADATA_ENDPOINT,
-    OPDV_ACCESS_KEY_ID,
-    OPDV_S3_ENDPOINT,
-    OPDV_SECRET_ACCESS_KEY,
+    INGESTION_SERVICE_URL,
 )
+from pusher.http_client import http_client
 from pusher.logger import logger
+
+if TYPE_CHECKING:
+    from obstore.store import S3Credential, S3CredentialProvider
 
 _RETRY_CONFIG: Any = {
     "max_retries": 5,
@@ -48,31 +50,67 @@ _CLIENT_CONFIG: Any = {
 _OS_ERROR_RETRIES = 3
 _OS_ERROR_BACKOFF_SECONDS = 5
 
+# obstore only reuses a cached S3 credential while it has more than this much
+# life left; below that, it refetches on the next request. It reads this off
+# a `refresh_threshold` attribute set on the credential_provider callable
+# (see obstore's pyo3-object_store/src/aws/credentials.rs), not from the
+# credential dict itself. obstore's own default is 300s; we set it explicitly
+# so the intent is visible here rather than relying on an implicit library default.
+_CREDENTIAL_REFRESH_THRESHOLD = timedelta(minutes=5)
+
 
 def _extract_error_message(e: Exception) -> str:
     match = re.search(r'message: "([^"]+)"', str(e))
     return match.group(1) if match else str(e).splitlines()[0]
 
 
+class OpdvS3CredentialProvider:
+    """Callable used as `S3Store`'s `credential_provider`. Fetches/refreshes the
+    Keycloak token and the S3 credentials for a pushing entity from OPDV's API.
+    See: https://developmentseed.org/obstore/latest/api/store/aws/#obstore.store.S3CredentialProvider
+    """
+
+    def __init__(
+        self,
+        pushing_entity_id: str,
+        config: GetConfigResponse,
+        refresh_threshold: timedelta = _CREDENTIAL_REFRESH_THRESHOLD,
+    ) -> None:
+        self._pushing_entity_id = pushing_entity_id
+        self._config = config
+        self.refresh_threshold = refresh_threshold
+
+    def __call__(self) -> S3Credential:
+        logger.debug("Getting new set of S3 Credentials from OPDV's API.")
+        token = fetch_keycloak_token(self._config)
+        resp = http_client.get(
+            f"{INGESTION_SERVICE_URL}/credentials/{self._pushing_entity_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        creds = resp.json()
+        return {
+            "access_key_id": creds["access_key_id"],
+            "secret_access_key": creds["secret_access_key"],
+            "token": creds["session_token"],
+            "expires_at": datetime.fromisoformat(creds["expiration"]),
+        }
+
+
 def _get_s3_store(
     endpoint_url: str,
     bucket_name: str,
-    access_key_id: str | None,
-    secret_access_key: str | None,
+    pushing_entity_id: str,
+    config: GetConfigResponse,
 ) -> S3Store:
-    skip_signature = (
-        "true" if access_key_id is None and secret_access_key is None else None
+    credential_provider: S3CredentialProvider = OpdvS3CredentialProvider(
+        pushing_entity_id, config
     )
-    config = {
-        "endpoint": endpoint_url,
-        "access_key_id": access_key_id,
-        "secret_access_key": secret_access_key,
-        "skip_signature": skip_signature,
-    }
-    s3_config: Any = {k: v for k, v in config.items() if v is not None}
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
-        config=s3_config,
+        config={"endpoint": endpoint_url},
+        credential_provider=credential_provider,
         retry_config=_RETRY_CONFIG,
         client_options=_CLIENT_CONFIG,
     )
@@ -92,29 +130,20 @@ def _make_client(
     )
 
 
-def get_s3_metadata_client() -> "S3Client":
-    return _make_client(
-        bucket_name=MDL_METADATA_BUCKET,
-        store=_get_s3_store(
-            endpoint_url=MDL_METADATA_ENDPOINT,
-            bucket_name=MDL_METADATA_BUCKET,
-            access_key_id=None,
-            secret_access_key=None,
-        ),
-        assert_bucket_exists=False,
-    )
-
-
 def get_s3_ingestion_client(
-    pushing_entity_id: str, bucket_name: str, chunk_concurrency: int = 6
+    pushing_entity_id: str,
+    bucket_name: str,
+    config: GetConfigResponse,
+    endpoint_url: str,
+    chunk_concurrency: int = 6,
 ) -> "S3Client":
     return _make_client(
         bucket_name=bucket_name,
         store=_get_s3_store(
             bucket_name=bucket_name,
-            access_key_id=OPDV_ACCESS_KEY_ID,
-            secret_access_key=OPDV_SECRET_ACCESS_KEY,
-            endpoint_url=OPDV_S3_ENDPOINT,
+            endpoint_url=endpoint_url,
+            pushing_entity_id=pushing_entity_id,
+            config=config,
         ),
         chunk_concurrency=chunk_concurrency,
     )

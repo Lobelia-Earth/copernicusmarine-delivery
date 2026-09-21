@@ -9,10 +9,11 @@ from freezegun import freeze_time
 from pusher import InvalidDeliveryIdsError
 from pusher.command_line_interface import cli
 from pusher.core_functions.core_functions import delete
-from pusher.s3_client import S3Client
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
+PRODUCT_ID = "GLOBAL_ANALYSISFORECAST_BGC_001_028"
+DATASET_ID = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311"
 
 _UNKNOWN_ENTITY_YAML = yaml.dump(
     {
@@ -20,7 +21,7 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
             {
                 "name": "OTHER-ENTITY",
                 "bucket": "mdl-ing-other-entity",
-                "products": [{"name": "product1", "datasets": ["dataset1"]}],
+                "products": [{"name": "product1", "datasets": [DATASET_ID]}],
             }
         ]
     }
@@ -31,7 +32,6 @@ _UNKNOWN_ENTITY_YAML = yaml.dump(
 def test_delete_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -39,8 +39,8 @@ def test_delete_python_interface(
     response, delivery = delete(
         pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
-        dataset_id="dataset1",
-        product_id="product1",
+        dataset_id=DATASET_ID,
+        product_id=PRODUCT_ID,
         dry_run=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
@@ -51,7 +51,6 @@ def test_delete_python_interface(
 @freeze_time("2012-01-14 12:00:01")
 def test_delete_cli(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -68,11 +67,10 @@ def test_delete_cli(
             "--source",
             MOCK_FILES[1],
             "--dataset-id",
-            "dataset1",
+            DATASET_ID,
             "--product-id",
-            "product1",
+            PRODUCT_ID,
         ],
-        env=cli_env,
     )
     assert result.exit_code == 0
     assert result.output.strip() == snapshot
@@ -81,7 +79,6 @@ def test_delete_cli(
 @freeze_time("2012-01-14 12:00:01")
 def test_delete_cli_save_delivery_json(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -99,12 +96,11 @@ def test_delete_cli_save_delivery_json(
                 "--source",
                 MOCK_FILES[1],
                 "--dataset-id",
-                "dataset1",
+                DATASET_ID,
                 "--product-id",
-                "product1",
+                PRODUCT_ID,
                 "--save-delivery-json",
             ],
-            env=cli_env,
         )
         assert result.exit_code == 0
         assert result.output.strip() == snapshot
@@ -116,7 +112,7 @@ def test_delete_cli_save_delivery_json(
         assert delivery == snapshot
 
 
-def test_delete_cli_no_source_exits(cli_env):
+def test_delete_cli_no_source_exits():
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -125,28 +121,25 @@ def test_delete_cli_no_source_exits(cli_env):
             "--pushing-entity-id",
             PUSHING_ENTITY_ID,
             "--dataset-id",
-            "dataset1",
+            DATASET_ID,
             "--product-id",
-            "product1",
+            PRODUCT_ID,
         ],
-        env=cli_env,
     )
     assert result.exit_code == 1
 
 
-def test_delete_raises_on_invalid_delivery_ids(monkeypatch):
-    monkeypatch.setattr(
-        S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
-    )
+def test_delete_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
 
     with pytest.raises(InvalidDeliveryIdsError) as exc_info:
         delete(
             pushing_entity_id=PUSHING_ENTITY_ID,
             files=MOCK_FILES,
-            dataset_id="dataset1",
-            product_id="product1",
+            dataset_id=DATASET_ID,
+            product_id="Made-Up-Product-Id",
             dry_run=False,
         )
-    assert f"{PUSHING_ENTITY_ID} is not a valid registered Pushing Entity" in str(
-        exc_info.value
+    assert (
+        f"Made-Up-Product-Id is not a valid Product ID for {PUSHING_ENTITY_ID}"
+        in str(exc_info.value)
     )

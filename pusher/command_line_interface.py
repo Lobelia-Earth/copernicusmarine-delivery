@@ -11,6 +11,7 @@ import yaml
 from pydantic import ValidationError
 
 from delivery_common.domain import Delivery
+from pusher.auth import get_config
 from pusher.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -399,7 +400,7 @@ def status(
                 "or a path to a delivery json file."
             )
         )
-
+    config = get_config()
     if delivery_json:
         try:
             with open(delivery_json) as delivery_file:
@@ -412,10 +413,10 @@ def status(
     else:
         delivery_id = delivery_id
         pushing_entity_id = pushing_entity_id
-
     deliveries = get_deliveries(
         delivery_id=delivery_id,
         pushing_entity_id=pushing_entity_id,  # type: ignore
+        config=config,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
@@ -438,12 +439,18 @@ def list_deliveries(pushing_entity_id: str) -> None:
     List all deliveries for a given pushing entity.
     The result is sorted by delivery_id in descending order (most recent first).
     """
-    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id)
-    print_list_deliveries(deliveries)
+    if not pushing_entity_id:
+        raise click.MissingParameter("pushing_entity_id must be provided!")
+    config = get_config()
+    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, config=config)
+    print_list_deliveries(deliveries, pushing_entity_id)
 
 
-def print_list_deliveries(deliveries: list[Delivery]) -> None:
-    click.echo(f"\nDeliveries for pushing entity {deliveries[0].pushing_entity_id}:\n")
+def print_list_deliveries(deliveries: list[Delivery], pushing_entity_id: str) -> None:
+    if not deliveries:
+        click.echo(f"No delieveries found for pushing entity {pushing_entity_id}")
+        return
+    click.echo(f"\nDeliveries for pushing entity {pushing_entity_id}:\n")
     for delivery in deliveries:
         click.echo(f"\t[DELIVERY] {delivery.delivery_id}")
         click.echo(f"\tproduct_id: {delivery.product_id}")

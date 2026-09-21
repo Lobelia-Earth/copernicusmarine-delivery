@@ -24,7 +24,6 @@ PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 def test_delivery_status_python_interface(
     snapshot,
     glo_mercator_bucket,
-    set_env,
     skip_delivery_ids_validation,
     ingestion_service,
 ):
@@ -52,7 +51,6 @@ def test_delivery_status_python_interface(
 @freeze_time("2012-01-14 12:00:01")
 def test_delivery_status_cli(
     glo_mercator_bucket,
-    cli_env,
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
@@ -77,7 +75,6 @@ def test_delivery_status_cli(
             "--anchor",
             "dataset1",
         ],
-        env=cli_env,
     )
     assert upload_result.exit_code == 0
     delivery_id = re.search(r"delivery_id: (\S+)", upload_result.output).group(1)  # type: ignore
@@ -92,7 +89,6 @@ def test_delivery_status_cli(
             "--pushing-entity-id",
             PUSHING_ENTITY_ID,
         ],
-        env=cli_env,
     )
     assert result.exit_code == 0, result.output.strip()
     assert result.output.strip() == snapshot
