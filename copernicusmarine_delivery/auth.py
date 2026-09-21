@@ -1,16 +1,16 @@
 import time
 
-from pusher.core_functions.domain import (
+from copernicusmarine_delivery.core_functions.domain import (
     GetConfigResponse,
     GetPushingEntityConfigResponse,
 )
-from pusher.environment_variables import (
+from copernicusmarine_delivery.environment_variables import (
     COPERNICUSMARINE_PASSWORD,
     COPERNICUSMARINE_USERNAME,
     INGESTION_SERVICE_URL,
 )
-from pusher.http_client import http_client
-from pusher.logger import logger
+from copernicusmarine_delivery.http_client import http_client
+from copernicusmarine_delivery.logger import logger
 
 _token_cache: dict = {}
 

@@ -12,12 +12,12 @@ import httpx
 import pytest
 import yaml
 
-from pusher.core_functions.core_functions import get_config
-from pusher.environment_variables import (
+from copernicusmarine_delivery.core_functions.core_functions import get_config
+from copernicusmarine_delivery.environment_variables import (
     COPERNICUSMARINE_PASSWORD,
     COPERNICUSMARINE_USERNAME,
 )
-from pusher.s3_client import S3Client, get_s3_ingestion_client
+from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
 
 random.seed(42)
 
@@ -135,7 +135,7 @@ def service(
 
 @pytest.fixture
 def skip_delivery_ids_validation(monkeypatch):
-    from pusher.core_functions import core_functions
+    from copernicusmarine_delivery.core_functions import core_functions
 
     monkeypatch.setattr(core_functions, "validate_delivery_ids", lambda *a, **kw: None)
 
@@ -322,10 +322,14 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
         return httpx.Response(404)
 
     mock_client = httpx.Client(transport=httpx.MockTransport(_handler))
-    monkeypatch.setattr("pusher.http_client.http_client", mock_client)
-    monkeypatch.setattr("pusher.core_functions.delivery.http_client", mock_client)
-    monkeypatch.setattr("pusher.auth.http_client", mock_client)
-    monkeypatch.setattr("pusher.s3_client.http_client", mock_client)
+    monkeypatch.setattr(
+        "copernicusmarine_delivery.http_client.http_client", mock_client
+    )
+    monkeypatch.setattr(
+        "copernicusmarine_delivery.core_functions.delivery.http_client", mock_client
+    )
+    monkeypatch.setattr("copernicusmarine_delivery.auth.http_client", mock_client)
+    monkeypatch.setattr("copernicusmarine_delivery.s3_client.http_client", mock_client)
 
     yield mock_client
 

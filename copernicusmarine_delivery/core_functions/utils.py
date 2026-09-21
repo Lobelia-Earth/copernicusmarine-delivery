@@ -1,5 +1,5 @@
+from copernicusmarine_delivery.core_functions.domain import NoIngestionBucketError
 from delivery_common.domain import PushingEntities
-from pusher.core_functions.domain import NoIngestionBucketError
 
 
 def get_ingestion_bucket_name(

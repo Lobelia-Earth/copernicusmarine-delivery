@@ -41,13 +41,19 @@ pip install .
 Then check that the installation was successful by running:
 
 ``` bash
-pusher --help
+copernicusmarine-delivery --help
+```
+
+or
+
+```bash
+cm-de --help
 ```
 
 It's also installed in your Python environment, so you can use it in your Python scripts:
 
 ```python
-from pusher import Upload, Delete, Delivery, delivery_status
+from copernicusmarine_delivery import Upload, Delete, Delivery, delivery_status
 ```
 
 ### With pixi
@@ -57,7 +63,7 @@ Pixi is a tool to manage Python environments and dependencies. You can find inst
 Then you can use the `pixi run` command to run the toolbox:
 
 ``` bash
-pixi run pusher --help
+pixi run copernicusmarine-delivery --help
 ```
 
 If you want to use the toolbox in your Python scripts, you can run your script with `pixi run`:
@@ -75,7 +81,7 @@ pixi shell
 And then you can run the toolbox:
 
 ``` bash
-pusher --help
+copernicusmarine-delivery --help
 ```
 
 ## Concepts
@@ -130,7 +136,7 @@ The Python interface is designed so that you can build your delivery step by ste
 Here are some examples for simple upload and delete:
 
 ```python
-from pusher import Upload, Delete
+from copernicusmarine_delivery import Upload, Delete
 
 pushing_entity_id = "some-pushing-entity-id"
 product_id = "some-product-id"
@@ -154,7 +160,7 @@ upload.submit(pushing_entity_id, product_id, dataset_id)
 And here are some examples for complex deliveries:
 
 ```python
-from pusher import Upload, Delete, Delivery
+from copernicusmarine_delivery import Upload, Delete, Delivery
 
 pushing_entity_id = "some-pushing-entity-id"
 product_id = "some-product-id"
@@ -175,7 +181,7 @@ delivery.submit(pushing_entity_id, product_id, dataset_id)
 You can then check the status of your delivery with the delivery ID:
 
 ```python
-from pusher import delivery_status
+from copernicusmarine_delivery import delivery_status
 
 delivery = delivery_status(delivery_id, pushing_entity_id)
 ```
@@ -183,7 +189,7 @@ delivery = delivery_status(delivery_id, pushing_entity_id)
 You can also list all the deliveries of a pushing entity:
 
 ```python
-from pusher import list_deliveries
+from copernicusmarine_delivery import list_deliveries
 
 deliveries = list_deliveries(pushing_entity_id)
 ```
@@ -191,7 +197,7 @@ deliveries = list_deliveries(pushing_entity_id)
 It lists all the deliveries for a given pushing entity, sorted by delivery ID in descending order (most recent first). For example, if you want to have all the deliveries IDs for a given dataset, simply do:
 
 ```python
-from pusher import list_deliveries
+from copernicusmarine_delivery import list_deliveries
 
 deliveries = list_deliveries(pushing_entity_id)
 dataset_deliveries = [
@@ -210,25 +216,25 @@ Submit a delivery for one upload operation.
 See the help for the inputs:
 
 ``` bash
-pusher upload --help
+copernicusmarine-delivery upload --help
 ```
 
 You can pass multiple sources:
 
 ``` bash
-pusher upload --source some/file.nc --source some/other/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo
+copernicusmarine-delivery upload --source some/file.nc --source some/other/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo
 ```
 
 You can validate without performing any actual operation with `--dry-run`:
 
 ``` bash
-pusher upload --source some/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo --dry-run
+copernicusmarine-delivery upload --source some/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo --dry-run
 ```
 
 To save the delivery document to a JSON file (for later use with `pusher status`), use `--save-delivery-json`:
 
 ``` bash
-pusher upload --source some/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo --save-delivery-json
+copernicusmarine-delivery upload --source some/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo --save-delivery-json
 ```
 
 > WARNING: the path for the files should be relative. It should point to a local file.
@@ -241,13 +247,13 @@ Submit a delivery for one delete operation.
 See the help for the inputs:
 
 ``` bash
-pusher delete --help
+copernicusmarine-delivery delete --help
 ```
 
 You can pass multiple sources:
 
 ``` bash
-pusher delete --source some/file.nc --source some/other/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo
+copernicusmarine-delivery delete --source some/file.nc --source some/other/file.nc --dataset-id hello --product-id world --pushing-entity-id lololo
 ```
 
 You can also use `--dry-run` and `--save-delivery-json` as with the upload command.
@@ -261,13 +267,13 @@ Submit a delivery with possibly multiple operations based on a YAML file.
 See the help for the inputs:
 
 ``` bash
-pusher delivery --help
+copernicusmarine-delivery delivery --help
 ```
 
 Example:
 
 ``` bash
-pusher delivery --file delivery_file.yaml --dataset-id hello --product-id world --pushing-entity-id lololo
+copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id hello --product-id world --pushing-entity-id lololo
 ```
 
 You can also use `--dry-run` and `--save-delivery-json` as with the upload command.
@@ -294,19 +300,19 @@ delivery:
 Given the delivery ID, prints the delivery summary fetched from OPDV.
 
 ``` bash
-pusher status --help
+copernicusmarine-delivery status --help
 ```
 
 You can provide the IDs directly:
 
 ``` bash
-pusher status --delivery-id some-delivery-id --pushing-entity-id lololo
+copernicusmarine-delivery status --delivery-id some-delivery-id --pushing-entity-id lololo
 ```
 
 Or provide a delivery JSON file (saved with `--save-delivery-json`):
 
 ``` bash
-pusher status --delivery-json some-delivery-id.json
+copernicusmarine-delivery status --delivery-json some-delivery-id.json
 ```
 
 ### List deliveries command
@@ -314,11 +320,11 @@ pusher status --delivery-json some-delivery-id.json
 List all the deliveries fetched from OPDV for a given pushing entity, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the python interface.
 
 ``` bash
-pusher list-deliveries --help
+copernicusmarine-delivery list-deliveries --help
 ```
 
 ``` bash
-pusher list-deliveries --pushing-entity-id lololo
+copernicusmarine-delivery list-deliveries --pushing-entity-id lololo
 ```
 
 ## Error handling

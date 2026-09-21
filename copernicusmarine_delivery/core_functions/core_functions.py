@@ -2,29 +2,23 @@ import os
 from pathlib import Path
 from typing import Sequence
 
-from delivery_common.domain import (
-    DeleteFile,
-    DeleteOperation,
-    Delivery,
-    Operation,
-    OperationNames,
-    UploadFile,
-    UploadOperation,
+from copernicusmarine_delivery.auth import (
+    fetch_keycloak_token,
+    get_config,
+    get_pushing_entity_config,
 )
-from delivery_common.validation import validate_delivery_ids
-from pusher.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
-from pusher.core_functions.constants import (
+from copernicusmarine_delivery.core_functions.constants import (
     NEW_DATA_BUCKET_PATH,
 )
-from pusher.core_functions.delivery import (
+from copernicusmarine_delivery.core_functions.delivery import (
     create_and_upload_delivery,
     create_delivery_id,
 )
-from pusher.core_functions.delivery_validator import (
+from copernicusmarine_delivery.core_functions.delivery_validator import (
     validate_delete_files,
     validate_upload_files,
 )
-from pusher.core_functions.domain import (
+from copernicusmarine_delivery.core_functions.domain import (
     Delete,
     FileToUpload,
     NoSuccessfulUploadsError,
@@ -35,11 +29,21 @@ from pusher.core_functions.domain import (
     ToUploadOperation,
     Upload,
 )
-from pusher.core_functions.utils import (
+from copernicusmarine_delivery.core_functions.utils import (
     human_readable_size,
 )
-from pusher.logger import logger
-from pusher.s3_client import S3Client, get_s3_ingestion_client
+from copernicusmarine_delivery.logger import logger
+from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
+from delivery_common.domain import (
+    DeleteFile,
+    DeleteOperation,
+    Delivery,
+    Operation,
+    OperationNames,
+    UploadFile,
+    UploadOperation,
+)
+from delivery_common.validation import validate_delivery_ids
 
 
 def strip_to_anchor(local_path: str, anchor: str | None = None) -> str:

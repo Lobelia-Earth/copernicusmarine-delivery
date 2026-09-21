@@ -9,25 +9,25 @@ from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
 
-from delivery_common.domain import now_in_utc_isoformat
-from pusher.auth import fetch_keycloak_token
-from pusher.core_functions.domain import (
+from copernicusmarine_delivery.auth import fetch_keycloak_token
+from copernicusmarine_delivery.core_functions.domain import (
     ErrorFile,
     GetConfigResponse,
     PutFilesResult,
     S3File,
     S3Path,
 )
-from pusher.core_functions.exceptions import (
+from copernicusmarine_delivery.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
 )
-from pusher.environment_variables import (
+from copernicusmarine_delivery.environment_variables import (
     ALLOW_HTTP,
     INGESTION_SERVICE_URL,
 )
-from pusher.http_client import http_client
-from pusher.logger import logger
+from copernicusmarine_delivery.http_client import http_client
+from copernicusmarine_delivery.logger import logger
+from delivery_common.domain import now_in_utc_isoformat
 
 if TYPE_CHECKING:
     from obstore.store import S3Credential, S3CredentialProvider

@@ -7,16 +7,16 @@ import yaml
 from click.testing import CliRunner
 from freezegun import freeze_time
 
-from pusher import InvalidDeliveryIdsError, Upload
-from pusher.command_line_interface import cli
-from pusher.core_functions.constants import (
+from copernicusmarine_delivery import InvalidDeliveryIdsError, Upload
+from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
     MAX_CONCURRENT_UPLOADS,
 )
-from pusher.core_functions.core_functions import upload
-from pusher.core_functions.utils import megabytes_to_bytes
-from pusher.s3_client import S3Client
+from copernicusmarine_delivery.core_functions.core_functions import upload
+from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
+from copernicusmarine_delivery.s3_client import S3Client
 
 MOCK_FILES = [
     "tests/resources/dataset1/file1.txt",

@@ -10,25 +10,27 @@ import click
 import yaml
 from pydantic import ValidationError
 
-from delivery_common.domain import Delivery
-from pusher.auth import get_config
-from pusher.core_functions.constants import (
+from copernicusmarine_delivery.auth import get_config
+from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
     MAX_CONCURRENT_UPLOADS,
 )
-from pusher.core_functions.core_functions import delete as _delete
-from pusher.core_functions.core_functions import delivery as _delivery
-from pusher.core_functions.core_functions import upload as _upload
-from pusher.core_functions.delivery import get_deliveries
-from pusher.core_functions.domain import (
+from copernicusmarine_delivery.core_functions.core_functions import delete as _delete
+from copernicusmarine_delivery.core_functions.core_functions import (
+    delivery as _delivery,
+)
+from copernicusmarine_delivery.core_functions.core_functions import upload as _upload
+from copernicusmarine_delivery.core_functions.delivery import get_deliveries
+from copernicusmarine_delivery.core_functions.domain import (
     DeliveryFile,
     ResponseDelete,
     ResponseDelivery,
     ResponseUpload,
 )
-from pusher.core_functions.utils import megabytes_to_bytes
-from pusher.logger import logger
+from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
+from copernicusmarine_delivery.logger import logger
+from delivery_common.domain import Delivery
 
 
 def _exception_to_sentence(exception: Exception) -> str:

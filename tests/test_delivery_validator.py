@@ -3,15 +3,15 @@ from pathlib import Path
 import pytest
 import yaml
 
-from delivery_common.domain import PushingEntities
-from delivery_common.validation import validate_delivery_ids
-from pusher import InvalidDeliveryIdsError, InvalidFilesError
-from pusher.core_functions.core_functions import strip_to_anchor
-from pusher.core_functions.delivery_validator import (
+from copernicusmarine_delivery import InvalidDeliveryIdsError, InvalidFilesError
+from copernicusmarine_delivery.core_functions.core_functions import strip_to_anchor
+from copernicusmarine_delivery.core_functions.delivery_validator import (
     validate_delete_files,
     validate_upload_files,
 )
-from pusher.s3_client import S3Client
+from copernicusmarine_delivery.s3_client import S3Client
+from delivery_common.domain import PushingEntities
+from delivery_common.validation import validate_delivery_ids
 
 _PUSHING_ENTITIES_YAML = yaml.dump(
     {
