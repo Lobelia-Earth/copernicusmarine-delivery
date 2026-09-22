@@ -3,6 +3,7 @@ from typing import Literal, NewType
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import (
     DeleteFile,
     ErrorResponseFile,
@@ -10,7 +11,6 @@ from delivery_common.domain import (
     OperationNames,
     PushingEntity,
 )
-from pusher.logger import logger
 
 # Represents an S3 Path stripped of `data/delivery_id`
 S3KeySuffix = NewType("S3KeySuffix", str)
@@ -62,7 +62,7 @@ class BaseResponse(BaseModel):
 
 
 class ResponseUpload(BaseResponse):
-    """Metadata returned when using :func:`~pusher.upload`"""
+    """Metadata returned when using :func:`~copernicusmarine_delivery.upload`"""
 
     #: Successful uploaded file names
     files_uploaded: list[tuple[Path, S3KeySuffix]] = Field(default_factory=list)
@@ -92,7 +92,7 @@ class ResponseUpload(BaseResponse):
 
 
 class ResponseDelete(BaseResponse):
-    """Metadata returned when using :func:`~pusher.delete`"""
+    """Metadata returned when using :func:`~copernicusmarine_delivery.delete`"""
 
     files_to_delete: list[DeleteFile] = Field(default_factory=list)
 
@@ -111,7 +111,7 @@ class ResponseDelete(BaseResponse):
 
 
 class ResponseDelivery(BaseResponse):
-    """Metadata returned when using :func:`~pusher.delivery`"""
+    """Metadata returned when using :func:`~copernicusmarine_delivery.delivery`"""
 
     #: List of responses for each operation in the delivery.
     operations_responses: list[ResponseUpload | ResponseDelete] = Field(

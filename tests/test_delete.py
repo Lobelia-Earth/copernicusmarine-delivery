@@ -6,9 +6,9 @@ import yaml
 from click.testing import CliRunner
 from freezegun import freeze_time
 
-from pusher import InvalidDeliveryIdsError
-from pusher.command_line_interface import cli
-from pusher.core_functions.core_functions import delete
+from copernicusmarine_delivery import InvalidDeliveryIdsError
+from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.core_functions.core_functions import delete
 
 MOCK_FILES = ["tests/resources/file1.txt", "tests/resources/file2.txt"]
 PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"

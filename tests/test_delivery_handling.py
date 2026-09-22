@@ -3,6 +3,11 @@ from pathlib import Path
 import yaml
 from freezegun import freeze_time
 
+from copernicusmarine_delivery.core_functions.delivery import (
+    create_delivery,
+    create_delivery_id,
+)
+from copernicusmarine_delivery.core_functions.domain import ResponseUpload
 from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
@@ -11,11 +16,6 @@ from delivery_common.domain import (
     UploadFile,
     UploadOperation,
 )
-from pusher.core_functions.delivery import (
-    create_delivery,
-    create_delivery_id,
-)
-from pusher.core_functions.domain import ResponseUpload
 
 RESOURCES = Path("tests/resources")
 

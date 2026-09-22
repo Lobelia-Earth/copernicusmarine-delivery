@@ -1491,7 +1491,7 @@ packages:
   size: 433413
   timestamp: 1764777166076
 - pypi: .
-  name: pusher
+  name: copernicusmarine-delivery
   requires_dist:
   - click>=8.4.0,<9
   - obstore>=0.10.0,<1

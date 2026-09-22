@@ -6,12 +6,12 @@ import httpx
 import pytest
 from obstore.store import S3Store
 
-from pusher.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
-from pusher.core_functions.core_functions import get_config
-from pusher.core_functions.domain import ErrorFile, S3File
-from pusher.core_functions.exceptions import NoSuchBucketException
-from pusher.core_functions.utils import megabytes_to_bytes
-from pusher.s3_client import (
+from copernicusmarine_delivery.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
+from copernicusmarine_delivery.core_functions.core_functions import get_config
+from copernicusmarine_delivery.core_functions.domain import ErrorFile, S3File
+from copernicusmarine_delivery.core_functions.exceptions import NoSuchBucketException
+from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
+from copernicusmarine_delivery.s3_client import (
     _CLIENT_CONFIG,
     _RETRY_CONFIG,
     OpdvS3CredentialProvider,
@@ -158,8 +158,8 @@ def _build_service_with_mock_transport(
     handler, monkeypatch, ministack_endpoint: str, ingestion_bucket: str
 ) -> S3Client:
     mock_client = httpx.Client(transport=httpx.MockTransport(handler))
-    monkeypatch.setattr("pusher.auth.http_client", mock_client)
-    monkeypatch.setattr("pusher.s3_client.http_client", mock_client)
+    monkeypatch.setattr("copernicusmarine_delivery.auth.http_client", mock_client)
+    monkeypatch.setattr("copernicusmarine_delivery.s3_client.http_client", mock_client)
     return get_s3_ingestion_client(
         pushing_entity_id="TEST-ENTITY-FR",
         bucket_name=ingestion_bucket,
@@ -232,8 +232,8 @@ def _build_service_with_refresh_threshold(
     can be passed in. `get_s3_ingestion_client` always uses the production
     default, so this bypasses it to reach the lower-level pieces."""
     mock_client = httpx.Client(transport=httpx.MockTransport(handler))
-    monkeypatch.setattr("pusher.auth.http_client", mock_client)
-    monkeypatch.setattr("pusher.s3_client.http_client", mock_client)
+    monkeypatch.setattr("copernicusmarine_delivery.auth.http_client", mock_client)
+    monkeypatch.setattr("copernicusmarine_delivery.s3_client.http_client", mock_client)
 
     credential_provider = OpdvS3CredentialProvider(
         "TEST-ENTITY-FR", get_config(), refresh_threshold=refresh_threshold
