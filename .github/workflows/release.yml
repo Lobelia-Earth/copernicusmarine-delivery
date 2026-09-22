@@ -7,6 +7,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Enforce release branch
+        run: |
+          if [[ "${GITHUB_REF}" != refs/heads/release/* ]]; then
+            echo "::error::Releases can only be run from a 'release/' branch (got ${GITHUB_REF#refs/heads/})."
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -17,15 +24,24 @@ jobs:
         with:
           environments: publish
 
+      - name: Set VERSION environment variable
+        id: set-version
+        run: echo "VERSION=$(pixi run -e publish version)" >> $GITHUB_OUTPUT
+
+      - name: Ensure version is not already published on PyPI
+        run: |
+          VERSION="${{ steps.set-version.outputs.VERSION }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/copernicusmarine-delivery/${VERSION}/json")
+          if [[ "${STATUS}" == "200" ]]; then
+            echo "::error::Version ${VERSION} is already published on PyPI. Bump the version before releasing."
+            exit 1
+          fi
+
       - name: Build and publish Pypi package
         run: pixi run -e publish publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
-      - name: Set VERSION environment variable
-        id: set-version
-        run: echo "VERSION=$(pixi run -e publish version)" >> $GITHUB_OUTPUT
 
       - name: Create tag
         run: |
