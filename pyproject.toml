@@ -58,6 +58,17 @@ COPERNICUSMARINE_PASSWORD = "test"
 INGESTION_SERVICE_URL = "http://localhost:8005"
 PYTHON_LOG_DEBUG = "true"
 
+[tool.pixi.feature.docs.dependencies]
+sphinx = ">=7"
+furo = "*"
+myst-parser = "*"
+sphinx-copybutton = "*"
+
+[tool.pixi.feature.docs.tasks]
+docs-build = "sphinx-build -b html doc doc/_build/html -W --keep-going"
+docs-clean = "rm -rf doc/_build"
+docs-serve = "python -m http.server --directory doc/_build/html"
+
 [tool.ruff.lint]
 select = ["F401", "I"]
 fixable = ["F401", "I"]
@@ -68,6 +79,7 @@ dev = ["httpx>=0.28.1,<0.29"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
+docs = { features = ["docs"], solve-group = "default" }
 
 [tool.pytest]
 markers = [

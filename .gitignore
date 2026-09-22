@@ -231,3 +231,6 @@ __marimo__/
 
 # mac
 .DS_Store
+
+# Documentation build
+doc/_build/

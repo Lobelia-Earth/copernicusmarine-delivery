@@ -13,6 +13,21 @@ Python library to help you upload data to the Copernicus Marine ingestion platfo
 This package exposes both a **command line interface (CLI)** and a **Python API** to
 submit deliveries (uploads and deletes) to the ingestion platform.
 
-## Documentation
+```{toctree}
+:maxdepth: 2
+:caption: Contents:
 
-Please refer to the [documentation](https://copernicusmarine-delivery.readthedocs.io/en/stable/) for more information on how to use this package.
+installation
+concepts
+python-interface
+command-line-interface
+error-handling
+roadmap
+```
+
+## Setup
+
+You need to set the following environment variables:
+
+- `COPERNICUSMARINE_USERNAME`: your Copernicus Marine username.
+- `COPERNICUSMARINE_PASSWORD`: your Copernicus Marine password.

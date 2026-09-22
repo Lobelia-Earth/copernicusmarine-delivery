@@ -15,6 +15,7 @@ from copernicusmarine_delivery.python_interface import (
     delivery_status,
     list_deliveries,
 )
+from copernicusmarine_delivery.versioner import __version__
 from delivery_common.domain import Delivery as DeliveryModel
 from delivery_common.domain import InvalidDeliveryIdsError
 
@@ -28,5 +29,6 @@ __all__ = [
     "InvalidDeliveryIdsError",
     "NoIngestionBucketError",
     "NoSuccessfulUploadsError",
+    "__version__",
     "InvalidFilesError",
 ]
