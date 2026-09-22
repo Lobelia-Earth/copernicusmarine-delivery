@@ -1,12 +1,10 @@
 # Copernicusmarine Delivery package
 
-```{warning}
-This is a package for the **data producers** of the Copernicus Marine Service. If you need to access and download data, please use the [`copernicusmarine` package](https://toolbox-docs.marine.copernicus.eu/en/stable/).
-```
+> [!WARNING]  
+>This is a package for the **data producers** of the Copernicus Marine Service. If you need to access and download data, please use the [`copernicusmarine` package](https://toolbox-docs.marine.copernicus.eu/en/stable/).
 
-```{warning}
-This package is in development and may undergo significant changes.
-```
+> [!WARNING]  
+> This package is in development and may undergo significant changes.
 
 Python library to help you upload data to the Copernicus Marine ingestion platform. After uploading your data to the ingestion system, the data will be validated and pushed to the Copernicus Marine Data Store.
 
