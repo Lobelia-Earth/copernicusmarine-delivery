@@ -11,9 +11,9 @@ data = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Copernicus Marine Producers Toolbox"
+project = data["project"]["name"]
 copyright = "2026, Lobelia Earth"
-author = "Lobelia Earth"
+author = data["project"]["authors"][0]["name"]
 version = data["project"]["version"]
 release = version
 
