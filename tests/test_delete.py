@@ -37,7 +37,6 @@ def test_delete_python_interface(
 ):
 
     response, delivery = delete(
-        pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id=DATASET_ID,
         product_id=PRODUCT_ID,
@@ -60,8 +59,6 @@ def test_delete_cli(
         cli,
         [
             "delete",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--source",
             MOCK_FILES[0],
             "--source",
@@ -89,8 +86,6 @@ def test_delete_cli_save_delivery_json(
             cli,
             [
                 "delete",
-                "--pushing-entity-id",
-                PUSHING_ENTITY_ID,
                 "--source",
                 MOCK_FILES[0],
                 "--source",
@@ -118,8 +113,6 @@ def test_delete_cli_no_source_exits():
         cli,
         [
             "delete",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--dataset-id",
             DATASET_ID,
             "--product-id",
@@ -133,7 +126,6 @@ def test_delete_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
 
     with pytest.raises(InvalidDeliveryIdsError) as exc_info:
         delete(
-            pushing_entity_id=PUSHING_ENTITY_ID,
             files=MOCK_FILES,
             dataset_id=DATASET_ID,
             product_id="Made-Up-Product-Id",

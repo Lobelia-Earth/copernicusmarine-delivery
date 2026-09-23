@@ -25,6 +25,7 @@ _MANIFESTS_PATH_PREFIX = "deliveries/{pushing_entity_id}/"
 _MANIFESTS_PATH = "deliveries/{pushing_entity_id}/{delivery_id}.json"
 _PUSHING_ENTITY_ID = "TEST-ENTITY-FR"
 _BUCKET_NAME = f"mdl-ing-{_PUSHING_ENTITY_ID.lower()}"
+_TOKEN_PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 _PUSHING_ENTITIES_PATH = Path(__file__).parent / "resources" / "pushing_entities.yml"
 _PUSHING_ENTITIES_DICT = yaml.safe_load(_PUSHING_ENTITIES_PATH.read_text())
@@ -186,9 +187,9 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     """Patches http_client with an httpx-backed mock transport that mimics the ingestion service.
 
     - POST /delivery: accepts a delivery JSON, saves it to S3, returns 201.
-    - GET /delivery/{pushing_entity_id}: returns all stored delivery for the entity.
+    - GET /delivery: returns all stored deliveries for the entity resolved from the token.
     - GET /.well-known/config: returns the oidc config needed to authenticate.
-    - POST /credentials: returns temporary S3 credentials for the pushing entity.
+    - GET /credentials: returns temporary S3 credentials for the entity resolved from the token.
 
     Keycloak calls (discovery + token) are mocked separately by `mock_keycloak`.
     """
@@ -226,13 +227,10 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             )
             return httpx.Response(201, json=body)
 
-        if path.startswith("/delivery/") and request.method == "GET":
-            pushing_entity_id = path.split("/")[2]
-            if not pushing_entity_id:
-                return httpx.Response(400, json={"error": "Missing pushing_entity_id"})
-
+        if path == "/delivery" and request.method == "GET":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
+            pushing_entity_id = _TOKEN_PUSHING_ENTITY_ID
             bucket = next(
                 pe["bucket"]
                 for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
@@ -260,28 +258,14 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                 },
             )
 
-        if (
-            path.startswith("/.well-known/pushing-entity-config/")
-            and request.method == "GET"
-        ):
+        if path == "/.well-known/pushing-entity-config" and request.method == "GET":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
-            pushing_entity_id = path.split("/")[-1]
             pushing_entity = next(
-                (
-                    pe
-                    for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
-                    if pe["name"] == pushing_entity_id
-                ),
-                None,
+                pe
+                for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
+                if pe["name"] == _TOKEN_PUSHING_ENTITY_ID
             )
-            if pushing_entity is None:
-                return httpx.Response(
-                    404,
-                    json={
-                        "error": f"Pushing Entity ID {pushing_entity_id} was not found"
-                    },
-                )
             return httpx.Response(
                 200,
                 json={
@@ -292,21 +276,9 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                 },
             )
 
-        if path.startswith("/credentials/") and request.method == "GET":
+        if path == "/credentials" and request.method == "GET":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
-            pushing_entity_id = path.split("/")[-1]
-            pushing_entity_exists = any(
-                pe["name"] == pushing_entity_id
-                for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
-            )
-            if not pushing_entity_exists:
-                return httpx.Response(
-                    404,
-                    json={
-                        "error": f"Pushing Entity ID {pushing_entity_id} was not found"
-                    },
-                )
             return httpx.Response(
                 200,
                 json={

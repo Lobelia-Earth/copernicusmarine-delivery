@@ -22,7 +22,6 @@ PUSHING_ENTITY_ID = "GLO-MERCATOR-TOULOUSE-FR"
 
 def _upload(files: list[str], dataset_id: str, product_id: str, anchor: str | None):
     return upload(
-        pushing_entity_id=PUSHING_ENTITY_ID,
         files=files,
         dataset_id=dataset_id,
         product_id=product_id,
@@ -51,7 +50,7 @@ def test_list_deliveries_python_interface(
     )
     _upload(MOCK_FILES, dataset_id="dataset1", product_id="product1", anchor="dataset1")
 
-    deliveries = list_deliveries(pushing_entity_id=PUSHING_ENTITY_ID)
+    deliveries = list_deliveries()
 
     assert len(deliveries) == 3
     dumped = json.dumps(
@@ -77,7 +76,7 @@ def test_list_deliveries_cli(
         (MOCK_FILES, "dataset1"),
     ]
     for sources, dataset_id in uploads:
-        args = ["upload", "--pushing-entity-id", PUSHING_ENTITY_ID]
+        args = ["upload"]
         for source in sources:
             args += ["--source", source]
         args += [
@@ -93,7 +92,7 @@ def test_list_deliveries_cli(
 
     result = runner.invoke(
         cli,
-        ["list-deliveries", "--pushing-entity-id", PUSHING_ENTITY_ID],
+        ["list-deliveries"],
     )
     assert result.exit_code == 0, result.output.strip()
     assert result.output.strip() == snapshot

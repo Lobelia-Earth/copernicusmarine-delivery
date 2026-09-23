@@ -81,9 +81,6 @@ _shared_options = [
     click.option("--dataset-id", type=str, help="ID of the dataset.", required=True),
     click.option("--product-id", type=str, help="ID of the product.", required=True),
     click.option(
-        "--pushing-entity-id", type=str, help="ID of the pushing entity.", required=True
-    ),
-    click.option(
         "--save-delivery-json",
         is_flag=True,
         help="Output delivery document to a json file named with the deliveryID.",
@@ -163,7 +160,6 @@ def cli(max_content_width=200) -> None:
 @log_exception_and_exit
 def delivery(
     file: Path,
-    pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     raise_on_upload_error: bool = False,
@@ -179,7 +175,6 @@ def delivery(
 
     response_delivery, delivery = _delivery(
         [operation for operation in delivery_file.delivery],
-        pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -223,7 +218,6 @@ def delivery(
 @log_exception_and_exit
 def upload(
     source: list[str],
-    pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     anchor: str | None,
@@ -248,7 +242,6 @@ def upload(
         sys.exit(1)
 
     response, delivery = _upload(
-        pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
@@ -276,7 +269,6 @@ def upload(
 @log_exception_and_exit
 def delete(
     source: list[str],
-    pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     save_delivery_json: bool = False,
@@ -296,7 +288,6 @@ def delete(
         sys.exit(1)
 
     response, delivery = _delete(
-        pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
@@ -380,7 +371,6 @@ def print_operation_summary(
 
 @cli.command()
 @click.option("--delivery-id", help="ID of the delivery to check status for.")
-@click.option("--pushing-entity-id", help="ID of the pushing entity.")
 @click.option(
     "--delivery-json",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
@@ -389,18 +379,14 @@ def print_operation_summary(
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
-    pushing_entity_id: str | None = None,
     delivery_json: Path | None = None,
 ) -> None:
-    """Get the status of a delivery (upload and/or delete). Specify either ids
-    [delivery_id, pushing_entity_id] or a path to a delivery json file.
+    """Get the status of a delivery (upload and/or delete). Specify either
+    delivery_id or a path to a delivery json file.
     """
-    if not all([delivery_id, pushing_entity_id]) and not delivery_json:
+    if not delivery_id and not delivery_json:
         raise click.UsageError(
-            message=(
-                "Specify either the set of ids delivery_id, pushing_entity_id "
-                "or a path to a delivery json file."
-            )
+            message=("Specify either delivery_id or a path to a delivery json file.")
         )
     config = get_config()
     if delivery_json:
@@ -410,21 +396,14 @@ def status(
         except (json.JSONDecodeError, ValidationError) as e:
             raise click.UsageError(f"Invalid delivery json: {e}")
         delivery_id = delivery.delivery_id
-        pushing_entity_id = delivery.pushing_entity_id
 
-    else:
-        delivery_id = delivery_id
-        pushing_entity_id = pushing_entity_id
     deliveries = get_deliveries(
         delivery_id=delivery_id,
-        pushing_entity_id=pushing_entity_id,  # type: ignore
         config=config,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
-        raise ValueError(
-            f"Delivery with id {delivery_id} not found for pushing entity {pushing_entity_id}."
-        )
+        raise ValueError(f"Delivery with id {delivery_id} not found.")
     click.echo(
         delivery.model_dump_json(
             indent=2,
@@ -434,25 +413,22 @@ def status(
 
 
 @cli.command()
-@click.option("--pushing-entity-id", help="ID of the pushing entity.")
 @log_exception_and_exit
-def list_deliveries(pushing_entity_id: str) -> None:
+def list_deliveries() -> None:
     """
-    List all deliveries for a given pushing entity.
+    List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
-    if not pushing_entity_id:
-        raise click.MissingParameter("pushing_entity_id must be provided!")
     config = get_config()
-    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, config=config)
-    print_list_deliveries(deliveries, pushing_entity_id)
+    deliveries = get_deliveries(config=config)
+    print_list_deliveries(deliveries)
 
 
-def print_list_deliveries(deliveries: list[Delivery], pushing_entity_id: str) -> None:
+def print_list_deliveries(deliveries: list[Delivery]) -> None:
     if not deliveries:
-        click.echo(f"No delieveries found for pushing entity {pushing_entity_id}")
+        click.echo("No deliveries found.")
         return
-    click.echo(f"\nDeliveries for pushing entity {pushing_entity_id}:\n")
+    click.echo("\nDeliveries:\n")
     for delivery in deliveries:
         click.echo(f"\t[DELIVERY] {delivery.delivery_id}")
         click.echo(f"\tproduct_id: {delivery.product_id}")

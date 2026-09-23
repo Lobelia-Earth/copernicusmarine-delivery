@@ -74,11 +74,9 @@ def get_config() -> GetConfigResponse:
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(
-    pushing_entity_id: str, token: str
-) -> GetPushingEntityConfigResponse:
+def get_pushing_entity_config(token: str) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config/{pushing_entity_id}",
+        f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config",
         headers={"Authorization": f"Bearer {token}"},
     )
     pushing_entity_config_response.raise_for_status()

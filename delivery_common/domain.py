@@ -59,6 +59,9 @@ class PushingEntities(BaseModel):
             data = yaml.safe_load(input_config_file)
         return cls(**data)
 
+    def filter(self, candidates: list[str]) -> list[str]:
+        return list(set(pu.name for pu in self.pushing_entities) & set(candidates))
+
 
 class DeliveryStatus(str, Enum):
     pending = "pending"
