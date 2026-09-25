@@ -5,9 +5,9 @@ from copernicusmarine_delivery.core_functions.domain import (
     GetPushingEntityConfigResponse,
 )
 from copernicusmarine_delivery.environment_variables import (
-    COPERNICUSMARINE_PASSWORD,
-    COPERNICUSMARINE_USERNAME,
     INGESTION_SERVICE_URL,
+    get_copernicusmarine_password,
+    get_copernicusmarine_username,
 )
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
@@ -52,8 +52,8 @@ def fetch_keycloak_token(config: GetConfigResponse) -> str:
         data = {
             "grant_type": config.oidc_config.grant_type,
             "client_id": config.oidc_config.oidc_client_id,
-            "username": COPERNICUSMARINE_USERNAME,
-            "password": COPERNICUSMARINE_PASSWORD,
+            "username": get_copernicusmarine_username(),
+            "password": get_copernicusmarine_password(),
             "scope": config.oidc_config.scope,
         }
     token_response = http_client.post(token_endpoint, data=data)
@@ -74,11 +74,9 @@ def get_config() -> GetConfigResponse:
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(
-    pushing_entity_id: str, token: str
-) -> GetPushingEntityConfigResponse:
+def get_pushing_entity_config(token: str) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config/{pushing_entity_id}",
+        f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config",
         headers={"Authorization": f"Bearer {token}"},
     )
     pushing_entity_config_response.raise_for_status()

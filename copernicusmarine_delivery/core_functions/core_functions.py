@@ -78,7 +78,6 @@ def get_local_path_s3_keys_mapping(
 
 
 def upload(
-    pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
     files: list[str],
@@ -94,14 +93,13 @@ def upload(
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
     3. Create Delivery with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
     """
+    config = get_config()
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config))
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {[Path(file).name for file in files]}"
-    )
-    config = get_config()
-    pushing_entity_config = get_pushing_entity_config(
-        pushing_entity_id, fetch_keycloak_token(config)
     )
 
     validate_delivery_ids(
@@ -156,7 +154,6 @@ def upload(
 
 
 def delete(
-    pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
     files: list[str],
@@ -165,13 +162,13 @@ def delete(
     """
     Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
+    config = get_config()
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config))
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+
     logger.debug(
         f"Creating delivery for:\n\tPU: {pushing_entity_id}\n\tProduct ID: {product_id}\n\tDataset ID: {dataset_id}"
         f"\n\tFiles: {files}"
-    )
-    config = get_config()
-    pushing_entity_config = get_pushing_entity_config(
-        pushing_entity_id, fetch_keycloak_token(config)
     )
 
     validate_delivery_ids(
@@ -207,7 +204,6 @@ def create_and_validate_delete_operation(
 
 def delivery(
     operations: Sequence[Upload | Delete],
-    pushing_entity_id: str,
     dataset_id: str,
     product_id: str,
     raise_on_upload_error: bool,
@@ -217,9 +213,8 @@ def delivery(
     dry_run: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(
-        pushing_entity_id, fetch_keycloak_token(config)
-    )
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config))
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     validate_delivery_ids(
         pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity

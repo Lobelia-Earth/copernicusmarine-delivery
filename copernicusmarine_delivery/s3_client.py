@@ -84,7 +84,7 @@ class OpdvS3CredentialProvider:
         logger.debug("Getting new set of S3 Credentials from OPDV's API.")
         token = fetch_keycloak_token(self._config)
         resp = http_client.get(
-            f"{INGESTION_SERVICE_URL}/credentials/{self._pushing_entity_id}",
+            f"{INGESTION_SERVICE_URL}/credentials",
             headers={"Authorization": f"Bearer {token}"},
             timeout=30,
         )

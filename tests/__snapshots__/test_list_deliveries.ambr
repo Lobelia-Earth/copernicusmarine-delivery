@@ -1,17 +1,20 @@
 # serializer version: 1
 # name: test_list_deliveries_cli
   '''
-  Deliveries for pushing entity GLO-MERCATOR-TOULOUSE-FR:
+  Deliveries:
   
-  	[DELIVERY] 20120114T120001-product1-9928
+  	[DELIVERY] 20120114T120001-product1-9928 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
-  	[DELIVERY] 20120114T120001-product1-7873
+  	[DELIVERY] 20120114T120001-product1-7873 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset2
   	status: pending
-  	[DELIVERY] 20120114T120001-product1-4611
+  	[DELIVERY] 20120114T120001-product1-4611 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending

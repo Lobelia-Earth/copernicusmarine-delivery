@@ -7,7 +7,6 @@ Here are some examples for simple upload and delete:
 ```python
 from copernicusmarine_delivery import Upload, Delete
 
-pushing_entity_id = "some-pushing-entity-id"
 product_id = "some-product-id"
 dataset_id = "some-dataset-id"
 
@@ -22,8 +21,8 @@ delete.add("another/file.nc")
 upload.add("another/file.nc")
 
 # --- submit ---
-delete.submit(pushing_entity_id, product_id, dataset_id)
-upload.submit(pushing_entity_id, product_id, dataset_id)
+delete.submit(product_id, dataset_id)
+upload.submit(product_id, dataset_id)
 ```
 
 And here are some examples for complex deliveries:
@@ -31,7 +30,6 @@ And here are some examples for complex deliveries:
 ```python
 from copernicusmarine_delivery import Upload, Delete, Delivery
 
-pushing_entity_id = "some-pushing-entity-id"
 product_id = "some-product-id"
 dataset_id = "some-dataset-id"
 
@@ -44,7 +42,7 @@ delivery.add(Delete(["some/other/file.nc"]))
 delivery.add(Upload(["some/other/file.nc"]))
 
 # --- submit ---
-delivery.submit(pushing_entity_id, product_id, dataset_id)
+delivery.submit(product_id, dataset_id)
 ```
 
 You can then check the status of your delivery with the delivery ID:
@@ -52,23 +50,23 @@ You can then check the status of your delivery with the delivery ID:
 ```python
 from copernicusmarine_delivery import delivery_status
 
-delivery = delivery_status(delivery_id, pushing_entity_id)
+delivery = delivery_status(delivery_id)
 ```
 
-You can also list all the deliveries of a pushing entity:
+You can also list all your deliveries:
 
 ```python
 from copernicusmarine_delivery import list_deliveries
 
-deliveries = list_deliveries(pushing_entity_id)
+deliveries = list_deliveries()
 ```
 
-It lists all the deliveries for a given pushing entity, sorted by delivery ID in descending order (most recent first). For example, if you want to have all the deliveries IDs for a given dataset, simply do:
+It lists all your deliveries, sorted by delivery ID in descending order (most recent first). For example, if you want to have all the deliveries IDs for a given dataset, simply do:
 
 ```python
 from copernicusmarine_delivery import list_deliveries
 
-deliveries = list_deliveries(pushing_entity_id)
+deliveries = list_deliveries()
 dataset_deliveries = [
   d.delivery_id
   for d in deliveries
