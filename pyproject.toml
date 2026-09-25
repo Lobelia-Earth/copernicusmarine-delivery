@@ -2,7 +2,7 @@
 name = "copernicusmarine-delivery"
 version = "0.1.0"
 description = "Python tool for data producers from the Copernicus Marine services"
-authors = [{ name = "lobelia", email = "support@lobelia.earth" }]
+authors = [{ name = "Lobelia", email = "support@lobelia.earth" }]
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.4.0,<9",
@@ -58,6 +58,26 @@ COPERNICUSMARINE_PASSWORD = "test"
 INGESTION_SERVICE_URL = "http://localhost:8005"
 PYTHON_LOG_DEBUG = "true"
 
+[tool.pixi.feature.docs.dependencies]
+sphinx = ">=7"
+furo = "*"
+myst-parser = "*"
+sphinx-copybutton = "*"
+
+[tool.pixi.feature.docs.tasks]
+docs-build = "sphinx-build -b html doc doc/_build/html -W --keep-going"
+docs-clean = "rm -rf doc/_build"
+docs-serve = "python -m http.server --directory doc/_build/html"
+
+[tool.pixi.feature.publish.dependencies]
+python-build = "*"
+twine = "*"
+
+[tool.pixi.feature.publish.tasks]
+build = { cmd = "python -m build", description = "Build the sdist and wheel into dist/" }
+publish = { cmd = "twine upload dist/*", depends-on = ["build"], description = "Build and upload the package to PyPI" }
+version = { cmd = "python -c \"import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])\"", description = "Print the current package version" }
+
 [tool.ruff.lint]
 select = ["F401", "I"]
 fixable = ["F401", "I"]
@@ -68,6 +88,8 @@ dev = ["httpx>=0.28.1,<0.29"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
+docs = { features = ["docs"], solve-group = "default" }
+publish = { features = ["publish"], solve-group = "default" }
 
 [tool.pytest]
 markers = [
