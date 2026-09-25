@@ -14,8 +14,8 @@ import yaml
 
 from copernicusmarine_delivery.core_functions.core_functions import get_config
 from copernicusmarine_delivery.environment_variables import (
-    COPERNICUSMARINE_PASSWORD,
-    COPERNICUSMARINE_USERNAME,
+    get_copernicusmarine_password,
+    get_copernicusmarine_username,
 )
 from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
 
@@ -154,8 +154,8 @@ def _mock_keycloak_handler(request: httpx.Request) -> httpx.Response | None:
     if path == "/token" and request.method == "POST":
         body = dict(parse_qsl(request.content.decode()))
         if (
-            body.get("username") == COPERNICUSMARINE_USERNAME
-            and body.get("password") == COPERNICUSMARINE_PASSWORD
+            body.get("username") == get_copernicusmarine_username()
+            and body.get("password") == get_copernicusmarine_password()
         ):
             return httpx.Response(
                 200,

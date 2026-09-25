@@ -428,9 +428,12 @@ def print_list_deliveries(deliveries: list[Delivery]) -> None:
     if not deliveries:
         click.echo("No deliveries found.")
         return
+    pushing_entity_id = deliveries[0].pushing_entity_id
     click.echo("\nDeliveries:\n")
     for delivery in deliveries:
-        click.echo(f"\t[DELIVERY] {delivery.delivery_id}")
+        click.echo(
+            f"\t[DELIVERY] {delivery.delivery_id} for pushing entity {pushing_entity_id}"
+        )
         click.echo(f"\tpushing_entity_id: {delivery.pushing_entity_id}")
         click.echo(f"\tproduct_id: {delivery.product_id}")
         click.echo(f"\tdataset_id: {delivery.dataset_id}")
