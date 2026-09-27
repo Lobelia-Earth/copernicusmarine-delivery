@@ -434,7 +434,6 @@ def print_list_deliveries(deliveries: list[Delivery]) -> None:
         click.echo(
             f"\t[DELIVERY] {delivery.delivery_id} for pushing entity {pushing_entity_id}"
         )
-        click.echo(f"\tpushing_entity_id: {delivery.pushing_entity_id}")
         click.echo(f"\tproduct_id: {delivery.product_id}")
         click.echo(f"\tdataset_id: {delivery.dataset_id}")
         click.echo(f"\tstatus: {delivery.status.value}")

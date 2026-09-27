@@ -1,14 +1,10 @@
 import os
-import sys
 
 
 def required_environment_variable(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        sys.exit(
-            f"Error: {name} environment variable is not set. "
-            f"Set it before running this command."
-        )
+        raise ValueError(f"{name} environment variable is not set.")
     return value
 
 
@@ -19,8 +15,8 @@ INGESTION_SERVICE_URL = os.getenv(
 
 
 def get_copernicusmarine_username() -> str:
-    return required_environment_variable("COPERNICUSMARINE_USERNAME")
+    return required_environment_variable("COPERNICUSMARINE_SERVICE_USERNAME")
 
 
 def get_copernicusmarine_password() -> str:
-    return required_environment_variable("COPERNICUSMARINE_PASSWORD")
+    return required_environment_variable("COPERNICUSMARINE_SERVICE_PASSWORD")
