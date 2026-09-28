@@ -25,12 +25,11 @@ from copernicusmarine_delivery.core_functions.delivery import get_deliveries
 from copernicusmarine_delivery.core_functions.domain import (
     DeliveryFile,
     ResponseDelete,
-    ResponseDelivery,
     ResponseUpload,
 )
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
 from copernicusmarine_delivery.logger import logger
-from delivery_common.domain import Delivery
+from delivery_common.domain import DeleteOperation, Delivery, UploadOperation
 
 
 def _exception_to_sentence(exception: Exception) -> str:
@@ -183,10 +182,10 @@ def delivery(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    print_id_header(delivery, dry_run)
-    print_delivery_summary(response_delivery, dry_run)
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
+
+    print_delivery_summary(delivery, response_delivery.operations_responses, dry_run)
 
 
 @cli.command()
@@ -252,10 +251,10 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
     )
-    print_id_header(delivery, dry_run)
-    print_operation_summary(response, dry_run)
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
+
+    print_delivery_summary(delivery, [response], dry_run=dry_run)
 
 
 @cli.command()
@@ -294,11 +293,10 @@ def delete(
         dry_run=dry_run,
     )
 
-    print_id_header(delivery, dry_run)
-    print_operation_summary(response, dry_run)
-
     if save_delivery_json:
         saving_delivery_file(delivery)
+
+    print_delivery_summary(delivery, [response], dry_run=dry_run)
 
 
 def saving_delivery_file(delivery: Delivery) -> None:
@@ -312,61 +310,56 @@ def saving_delivery_file(delivery: Delivery) -> None:
         )
 
 
-def print_id_header(delivery: Delivery, dry_run: bool) -> None:
-    click.echo(f"\n{'[DRY RUN]: ' if dry_run else ''}Delivery summary:\n")
+def print_delivery_summary(
+    delivery: Delivery, responses: list[ResponseUpload | ResponseDelete], dry_run: bool
+) -> None:
+    prefix = "[DRY RUN] " if dry_run else ""
+    verb = "would be" if dry_run else "have been"
+    if dry_run:
+        click.echo(f"\n{prefix}The following operations {verb} submitted:\n")
+    uploads, failed_uploads, deletes = 0, 0, 0
+    saw_upload_operation, saw_delete_operation = False, False
+    for operation_response in responses:
+        if isinstance(operation_response, ResponseUpload):
+            uploads += len(operation_response.files_uploaded)
+            failed_uploads += len(operation_response.files_failed)
+            saw_upload_operation = True
+        elif isinstance(operation_response, ResponseDelete):
+            deletes += len(operation_response.files_to_delete)
+            saw_delete_operation = True
+        if dry_run:
+            print_operation_summary(operation_response)
+
+    click.echo(f"\n{prefix}Delivery summary:\n")
     click.echo(f"\tdelivery_id: {delivery.delivery_id}")
     click.echo(f"\tpushing_entity_id: {delivery.pushing_entity_id}")
     click.echo(f"\tproduct_id: {delivery.product_id}")
     click.echo(f"\tdataset_id: {delivery.dataset_id}")
-
-
-def print_delivery_summary(response: ResponseDelivery, dry_run: bool) -> None:
-    prefix = "[DRY RUN] " if dry_run else ""
-    verb = "would be" if dry_run else "have been"
-    click.echo(f"\n{prefix}The following operations {verb} submitted:\n")
-    uploads, deletes = 0, 0
-    for operation_response in response.operations_responses:
-        if isinstance(operation_response, ResponseUpload):
-            uploads += len(operation_response.files_uploaded)
-        elif isinstance(operation_response, ResponseDelete):
-            deletes += len(operation_response.files_to_delete)
-        print_operation_summary(operation_response, dry_run, single_operation=False)
-    uploads_message = (
-        f"{uploads} file to upload" if dry_run else f"{uploads} file uploaded"
+    deletes_message = f"{deletes} file to delete" if saw_delete_operation else ""
+    if saw_upload_operation:
+        uploads_message = (
+            f"{uploads} file to upload" if dry_run else f"{uploads} file uploaded"
+        )
+        deletes_message = ", " + deletes_message
+    else:
+        uploads_message = ""
+    failed_uploads_message = (
+        f", {failed_uploads} file failed to upload" if failed_uploads else ""
     )
-    deletes_message = f"{deletes} file to delete"
-    click.echo(f"\nTotal: {uploads_message}, {deletes_message}.\n")
+    click.echo(
+        f"\n\tTotal: {uploads_message}{failed_uploads_message}{deletes_message}.\n"
+    )
 
 
 def print_operation_summary(
     response: ResponseUpload | ResponseDelete,
-    dry_run: bool,
-    single_operation: bool = True,
 ) -> None:
-    kind = "upload" if isinstance(response, ResponseUpload) else "delete"
-
-    if single_operation:
-        prefix = "[DRY RUN] " if dry_run else ""
-        verb = "would be" if dry_run else "have been"
-        click.echo(f"\n{prefix}The following {kind} operation {verb} submitted:\n")
-
     if isinstance(response, ResponseUpload):
         for local_file_path, s3_key_suffix in response.files_uploaded:
             click.echo(f"\t[UPLOAD] {local_file_path} -> {s3_key_suffix}")
-        num_uploads, num_deletes = len(response.files_uploaded), 0
     else:
         for file in response.files_to_delete:
             click.echo(f"\t[DELETE] {file.key_suffix}")
-        num_uploads, num_deletes = 0, len(response.files_to_delete)
-
-    if single_operation:
-        uploads_message = (
-            f"{num_uploads} file to upload"
-            if dry_run
-            else f"{num_uploads} file uploaded"
-        )
-        deletes_message = f"{num_deletes} file to delete"
-        click.echo(f"\nTotal: {uploads_message}, {deletes_message}.\n")
 
 
 @cli.command()
@@ -376,10 +369,16 @@ def print_operation_summary(
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Path to an existing delivery json file",
 )
+@click.option(
+    "--show-all",
+    is_flag=True,
+    help="Show all operations and file statuses. By default, only summary is shown.",
+)
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     delivery_json: Path | None = None,
+    show_all: bool = False,
 ) -> None:
     """Get the status of a delivery (upload and/or delete). Specify either
     delivery_id or a path to a delivery json file.
@@ -404,12 +403,36 @@ def status(
     delivery = deliveries[0] if deliveries else None
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
+    print_delivery(delivery, show_all=show_all)
+
+
+def print_delivery(delivery: Delivery, show_all: bool) -> None:
     click.echo(
-        delivery.model_dump_json(
-            indent=2,
-            exclude_none=True,
-        )
+        f"[DELIVERY] {delivery.delivery_id} for pushing entity {delivery.pushing_entity_id}"
     )
+    click.echo(f"\tproduct_id: {delivery.product_id}")
+    click.echo(f"\tdataset_id: {delivery.dataset_id}")
+    click.echo(f"\tstatus: {delivery.status.value}")
+    failed_uploads, failed_deletes = 0, 0
+    detailed_operations_message = ""
+    for operation in delivery.operations:
+        if isinstance(operation, UploadOperation):
+            detailed_operations_message += "\t[UPLOAD OPERATION]\n"
+            for file in operation.files:
+                if file.error_message:
+                    failed_uploads += 1
+                detailed_operations_message += f"\t\tfile: {file.key_suffix}{', ERROR {file.error_message}' if file.error_message else ''}\n"
+        elif isinstance(operation, DeleteOperation):
+            detailed_operations_message += "\t[DELETE OPERATION]\n"
+            for file in operation.files:
+                if file.error_message:
+                    failed_deletes += 1
+                detailed_operations_message += f"\t\tfile: {file.key_suffix}{', ERROR {file.error_message}' if file.error_message else ''}\n"
+
+    click.echo(f"\terrored uploads: {failed_uploads}")
+    click.echo(f"\terrored deletes: {failed_deletes}")
+    if show_all:
+        click.echo(detailed_operations_message)
 
 
 @cli.command()
@@ -428,15 +451,9 @@ def print_list_deliveries(deliveries: list[Delivery]) -> None:
     if not deliveries:
         click.echo("No deliveries found.")
         return
-    pushing_entity_id = deliveries[0].pushing_entity_id
     click.echo("\nDeliveries:\n")
     for delivery in deliveries:
-        click.echo(
-            f"\t[DELIVERY] {delivery.delivery_id} for pushing entity {pushing_entity_id}"
-        )
-        click.echo(f"\tproduct_id: {delivery.product_id}")
-        click.echo(f"\tdataset_id: {delivery.dataset_id}")
-        click.echo(f"\tstatus: {delivery.status.value}")
+        print_delivery(delivery, show_all=False)
 
 
 if __name__ == "__main__":
