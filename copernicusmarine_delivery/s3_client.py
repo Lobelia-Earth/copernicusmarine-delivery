@@ -186,7 +186,6 @@ class S3Client:
         key: str,
         file: bytes,
         chunk_size: int,
-        use_multipart: bool = True,
     ):
         """Upload a file object (bytes) to S3."""
         try:
@@ -195,7 +194,6 @@ class S3Client:
                 store=self._store,
                 path=key,
                 file=file,
-                use_multipart=use_multipart,
                 chunk_size=chunk_size,
                 max_concurrency=self.max_concurrency,
             )
@@ -203,16 +201,13 @@ class S3Client:
         except Exception as e:
             raise
 
-    def _put_with_os_error_retry(
-        self, key: str, file: Path, use_multipart: bool, chunk_size: int
-    ) -> Any:
+    def _put_with_os_error_retry(self, key: str, file: Path, chunk_size: int) -> Any:
         for attempt in range(1, _OS_ERROR_RETRIES + 1):
             try:
                 return put(
                     store=self._store,
                     path=key,
                     file=file,
-                    use_multipart=use_multipart,
                     chunk_size=chunk_size,
                     max_concurrency=self.max_concurrency,
                 )
@@ -232,7 +227,6 @@ class S3Client:
         chunk_size: int,
         dry_run: bool,
         raise_on_error: bool,
-        use_multipart: bool,
     ) -> S3File | ErrorFile:
         """Upload a local file (by Path) to S3."""
         try:
@@ -243,9 +237,7 @@ class S3Client:
             else:
                 logger.debug(f"Starting upload for {file.name}")
                 upload_start_time = now_in_utc_isoformat()
-                put_result = self._put_with_os_error_retry(
-                    key, file, use_multipart, chunk_size
-                )
+                put_result = self._put_with_os_error_retry(key, file, chunk_size)
                 upload_end_time = now_in_utc_isoformat()
                 logger.debug(
                     f"Successfully uploaded file {file.name} from {upload_start_time} to {upload_end_time}"
@@ -296,7 +288,6 @@ class S3Client:
                     self.upload_file,
                     key=key,
                     file=path,
-                    use_multipart=True,
                     raise_on_error=raise_on_error,
                     chunk_size=chunk_size,
                     dry_run=dry_run,

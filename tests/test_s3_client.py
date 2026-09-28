@@ -41,7 +41,6 @@ def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
         raise_on_error=False,
-        use_multipart=True,
     )
     assert isinstance(result, S3File)
     assert result.ingestion_system_s3_path == key
@@ -59,7 +58,6 @@ def test_upload_file_nonexistent_returns_error(
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
         raise_on_error=False,
-        use_multipart=True,
     )
     assert isinstance(result, ErrorFile)
 
@@ -175,7 +173,6 @@ def _upload_dummy_file(service: S3Client, key: str) -> None:
         chunk_size=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
         raise_on_error=True,
-        use_multipart=True,
     )
 
 
