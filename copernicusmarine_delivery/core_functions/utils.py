@@ -1,5 +1,20 @@
+from pathlib import Path
+
 from copernicusmarine_delivery.core_functions.domain import NoIngestionBucketError
 from delivery_common.domain import PushingEntities
+
+
+def local_path_to_key_suffix(local_path: str, anchor: str | None = None) -> str:
+    """Anchor is not enforced. If it is None, the logic does not check whether local path is absolute
+    because these are rejected if no anchor is given in the validation.
+    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe.
+    """
+    if anchor is None:
+        return local_path
+    parts = Path(local_path).parts
+    idx = parts.index(anchor)
+    stripped_path = str(Path(*parts[idx + 1 :]))
+    return stripped_path
 
 
 def get_ingestion_bucket_name(

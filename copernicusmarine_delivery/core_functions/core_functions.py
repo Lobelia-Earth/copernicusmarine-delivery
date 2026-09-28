@@ -31,6 +31,7 @@ from copernicusmarine_delivery.core_functions.domain import (
 )
 from copernicusmarine_delivery.core_functions.utils import (
     human_readable_size,
+    local_path_to_key_suffix,
 )
 from copernicusmarine_delivery.logger import logger
 from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
@@ -46,19 +47,6 @@ from delivery_common.domain import (
 from delivery_common.validation import validate_delivery_ids
 
 
-def strip_to_anchor(local_path: str, anchor: str | None = None) -> str:
-    """Anchor is not enforced. If it is None, the logic does not check whether local path is absolute
-    because these are rejected if no anchor is given in the validation.
-    If `anchor` is set, it has already been checked for containment in `validate_upload_files`, so indexing is safe.
-    """
-    if anchor is None:
-        return local_path
-    parts = Path(local_path).parts
-    idx = parts.index(anchor)
-    stripped_path = str(Path(*parts[idx + 1 :]))
-    return stripped_path
-
-
 def get_local_path_s3_keys_mapping(
     list_of_files: list[str],
     delivery_id: str,
@@ -71,7 +59,7 @@ def get_local_path_s3_keys_mapping(
             delivery_id=delivery_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            file_name=strip_to_anchor(file_path, anchor),
+            file_name=local_path_to_key_suffix(file_path, anchor),
         )
         for file_path in list_of_files
     }
@@ -377,7 +365,7 @@ def build_upload_operation_from_put_results(
             continue
         upload_files.append(
             UploadFile(
-                key_suffix=strip_to_anchor(
+                key_suffix=local_path_to_key_suffix(
                     successful_s3_file.ingestion_system_s3_path, anchor=dataset_id
                 ),
                 file_size_mb=file_to_upload.file_size_mb,

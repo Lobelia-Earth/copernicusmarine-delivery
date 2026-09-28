@@ -51,9 +51,9 @@ def test_create_delivery_id_format():
 
 
 @freeze_time("2024-03-15 12:00:01")
-def test_create_delivery(tmp_path):
-    f = tmp_path / "file.nc"
-    f.write_bytes(b"x" * 1024)
+def test_create_delivery():
+    f = "file.nc"
+
     delivery_id = create_delivery_id("product1")
     delivery = create_delivery(
         pushing_entity_id="TEST-FR",
