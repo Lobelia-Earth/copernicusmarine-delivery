@@ -19,18 +19,18 @@ copernicusmarine-delivery delivery --help
 Example:
 
 ```bash
-copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity
+copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id
 ```
 
 You can validate without performing any actual operation with `--dry-run`:
 
 ```bash
-copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity --dry-run
+copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id --dry-run
 
 To save the delivery document to a JSON file (for later use with `copernicusmarine-delivery status`), use `--save-delivery-json`:
 
 ```bash
-copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity --save-delivery-json
+copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id --save-delivery-json
 ```
 
 The delivery file should be a YAML file with the following structure:
@@ -61,19 +61,19 @@ copernicusmarine-delivery upload --help
 You can pass multiple sources:
 
 ```bash
-copernicusmarine-delivery upload --source some/file.nc --source some/other/file.nc --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity
+copernicusmarine-delivery upload --source some/file.nc --source some/other/file.nc --dataset-id dataset_id --product-id product_id
 ```
 
 You can validate without performing any actual operation with `--dry-run`:
 
 ```bash
-copernicusmarine-delivery upload --source some/file.nc --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity --dry-run
+copernicusmarine-delivery upload --source some/file.nc --dataset-id dataset_id --product-id product_id --dry-run
 ```
 
 To save the delivery document to a JSON file (for later use with `copernicusmarine-delivery status`), use `--save-delivery-json`:
 
 ```bash
-copernicusmarine-delivery upload --source some/file.nc --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity --save-delivery-json
+copernicusmarine-delivery upload --source some/file.nc --dataset-id dataset_id --product-id product_id --save-delivery-json
 ```
 
 ```{warning}
@@ -94,7 +94,7 @@ copernicusmarine-delivery delete --help
 You can pass multiple sources:
 
 ```bash
-copernicusmarine-delivery delete --source some/file.nc --source some/other/file.nc --dataset-id dataset_id --product-id product_id --pushing-entity-id pushing_entity
+copernicusmarine-delivery delete --source some/file.nc --source some/other/file.nc --dataset-id dataset_id --product-id product_id
 ```
 
 You can also use `--dry-run` and `--save-delivery-json` as with the upload command.
@@ -114,7 +114,7 @@ copernicusmarine-delivery status --help
 You can provide the IDs directly:
 
 ```bash
-copernicusmarine-delivery status --delivery-id some-delivery-id --pushing-entity-id pushing_entity
+copernicusmarine-delivery status --delivery-id some-delivery-id
 ```
 
 Or provide a delivery JSON file (saved with `--save-delivery-json`):
@@ -125,12 +125,12 @@ copernicusmarine-delivery status --delivery-json some-delivery-id.json
 
 ## List deliveries command
 
-List all the deliveries fetched from OPDV for a given pushing entity, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the python interface.
+List all the deliveries fetched from OPDV, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the python interface.
 
 ```bash
 copernicusmarine-delivery list-deliveries --help
 ```
 
 ```bash
-copernicusmarine-delivery list-deliveries --pushing-entity-id pushing_entity
+copernicusmarine-delivery list-deliveries
 ```

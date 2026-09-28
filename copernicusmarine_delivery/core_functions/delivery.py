@@ -65,12 +65,11 @@ def create_and_upload_delivery(
 
 
 def get_deliveries(
-    pushing_entity_id: str,
     config: GetConfigResponse,
     delivery_id: str | None = None,
 ) -> list[Delivery]:
     response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/delivery/{pushing_entity_id}",
+        f"{INGESTION_SERVICE_URL}/delivery",
         headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
     )
     response.raise_for_status()

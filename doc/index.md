@@ -29,5 +29,5 @@ roadmap
 
 You need to set the following environment variables:
 
-- `COPERNICUSMARINE_USERNAME`: your Copernicus Marine username.
-- `COPERNICUSMARINE_PASSWORD`: your Copernicus Marine password.
+- `COPERNICUSMARINE_SERVICE_USERNAME`: your Copernicus Marine username.
+- `COPERNICUSMARINE_SERVICE_PASSWORD`: your Copernicus Marine password.

@@ -9,8 +9,14 @@ def required_environment_variable(name: str) -> str:
 
 
 ALLOW_HTTP = bool(os.getenv("ALLOW_HTTP"))
-COPERNICUSMARINE_USERNAME = required_environment_variable("COPERNICUSMARINE_USERNAME")
-COPERNICUSMARINE_PASSWORD = required_environment_variable("COPERNICUSMARINE_PASSWORD")
 INGESTION_SERVICE_URL = os.getenv(
     "INGESTION_SERVICE_URL", "https://opdv-api-dta.lobelia.earth"
 )
+
+
+def get_copernicusmarine_username() -> str:
+    return required_environment_variable("COPERNICUSMARINE_SERVICE_USERNAME")
+
+
+def get_copernicusmarine_password() -> str:
+    return required_environment_variable("COPERNICUSMARINE_SERVICE_PASSWORD")

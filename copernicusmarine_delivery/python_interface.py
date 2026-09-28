@@ -35,7 +35,6 @@ class Upload(_Upload):
 
     def submit(
         self,
-        pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
         anchor: str | None = None,
@@ -48,7 +47,6 @@ class Upload(_Upload):
         """
         Perform the upload.
 
-        :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
         :param anchor: Optional anchor to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation.
@@ -63,7 +61,6 @@ class Upload(_Upload):
         if not self.files:
             return ResponseUpload(fatal_error="No files added to upload.")
         response, _ = _upload(
-            pushing_entity_id=pushing_entity_id,
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
@@ -86,7 +83,6 @@ class Delete(_Delete):
 
     def submit(
         self,
-        pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
         dry_run: bool = False,
@@ -94,7 +90,6 @@ class Delete(_Delete):
         """
         Perform the delete.
 
-        :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
 
@@ -104,7 +99,6 @@ class Delete(_Delete):
         if not self.files:
             return ResponseDelete(fatal_error="No files added to delete.")
         response, _ = _delete(
-            pushing_entity_id=pushing_entity_id,
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
@@ -134,7 +128,6 @@ class Delivery(BaseModel):
 
     def submit(
         self,
-        pushing_entity_id: str,
         product_id: str,
         dataset_id: str,
         anchor: str | None = None,
@@ -147,7 +140,6 @@ class Delivery(BaseModel):
         """
         Perform the delivery by executing all added operations sequentially.
 
-        :param pushing_entity_id: The ID of the pushing entity.
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
         :param anchor: Optional anchor to convert the local file path to an S3 suffix. See `File paths and anchors` in the documentation for more details.
@@ -162,7 +154,6 @@ class Delivery(BaseModel):
         if not self.operations:
             return ResponseDelivery(fatal_error="No operations added to delivery.")
         response, _ = _delivery(
-            pushing_entity_id=pushing_entity_id,
             product_id=product_id,
             dataset_id=dataset_id,
             operations=self.operations,
@@ -175,7 +166,7 @@ class Delivery(BaseModel):
         return response
 
 
-def delivery_status(delivery_id: str, pushing_entity_id: str) -> DeliveryModel:
+def delivery_status(delivery_id: str) -> DeliveryModel:
     """
     Get the status of a delivery.
 
@@ -184,24 +175,20 @@ def delivery_status(delivery_id: str, pushing_entity_id: str) -> DeliveryModel:
     config = get_config()
     delivery = get_deliveries(
         delivery_id=delivery_id,
-        pushing_entity_id=pushing_entity_id,
         config=config,
     )
     if not delivery:
-        raise ValueError(
-            f"Delivery with id {delivery_id} not found for pushing entity {pushing_entity_id}."
-        )
+        raise ValueError(f"Delivery with id {delivery_id} not found.")
 
     return delivery[0]
 
 
-def list_deliveries(pushing_entity_id: str) -> list[DeliveryModel]:
+def list_deliveries() -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
-    :param pushing_entity_id: The ID of the pushing entity.
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(pushing_entity_id=pushing_entity_id, config=config)
+    deliveries = get_deliveries(config=config)
     return deliveries

@@ -47,7 +47,6 @@ def test_upload_python_interface(
     ingestion_service,
 ):
     response, delivery = upload(
-        pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
@@ -79,8 +78,6 @@ def test_upload_cli(
         cli,
         [
             "upload",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--source",
             MOCK_FILES[0],
             "--source",
@@ -109,8 +106,6 @@ def test_upload_cli_save_delivery_json(
         cli,
         [
             "upload",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--source",
             MOCK_FILES[0],
             "--source",
@@ -146,8 +141,6 @@ def test_upload_cli_no_source_exits():
         cli,
         [
             "upload",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--dataset-id",
             "dataset1",
             "--product-id",
@@ -163,7 +156,6 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
     )
     with pytest.raises(InvalidDeliveryIdsError) as exc_info:
         upload(
-            pushing_entity_id=PUSHING_ENTITY_ID,
             files=MOCK_FILES,
             dataset_id=DATASET_ID,
             product_id="product1",
@@ -193,7 +185,6 @@ def test_upload_one_file_cannot_be_uploaded(
     )
 
     response, delivery = upload(
-        pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id=DATASET_ID,
         product_id=PRODUCT_ID,
@@ -228,7 +219,6 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
     )
     with pytest.raises(Exception) as exc_info:
         upload.submit(
-            pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id=DATASET_ID,
             product_id=PRODUCT_ID,
             anchor="dataset1",

@@ -109,7 +109,7 @@ def test_upload_multiple_files_partial_failure(
 def _make_credentials_handler(
     mock_keycloak, ministack_endpoint: str, expiry_seconds: float
 ):
-    """Builds a mock transport handler that counts calls to `/credentials/`
+    """Builds a mock transport handler that counts calls to `/credentials`
     and issues credentials expiring `expiry_seconds` from now. Returns
     (handler, call_counter) where call_counter is a single-item list used as
     a mutable box so the caller can read the live count."""
@@ -134,7 +134,7 @@ def _make_credentials_handler(
                 },
             )
 
-        if request.url.path.startswith("/credentials/") and request.method == "GET":
+        if request.url.path == "/credentials" and request.method == "GET":
             call_counter[0] += 1
             return httpx.Response(
                 200,

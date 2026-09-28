@@ -28,7 +28,6 @@ def test_delivery_status_python_interface(
     ingestion_service,
 ):
     _, delivery = upload(
-        pushing_entity_id=PUSHING_ENTITY_ID,
         files=MOCK_FILES,
         dataset_id="dataset1",
         product_id="product1",
@@ -43,7 +42,6 @@ def test_delivery_status_python_interface(
 
     result = delivery_status(
         delivery_id=delivery.delivery_id,
-        pushing_entity_id=PUSHING_ENTITY_ID,
     )
     assert result.model_dump_json(indent=2) == snapshot
 
@@ -62,8 +60,6 @@ def test_delivery_status_cli(
         cli,
         [
             "upload",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--source",
             MOCK_FILES[0],
             "--source",
@@ -86,8 +82,6 @@ def test_delivery_status_cli(
             "status",
             "--delivery-id",
             delivery_id,
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
         ],
     )
     assert result.exit_code == 0, result.output.strip()

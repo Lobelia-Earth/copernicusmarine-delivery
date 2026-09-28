@@ -2,7 +2,7 @@
 
 This package will raise in the following cases:
 
-- **Wrong IDs**: if the pushing entity ID, product ID or dataset ID are wrong, the package will raise an error.
+- **Wrong IDs**: if the product ID or dataset ID are wrong, the package will raise an error.
 - **Wrong file paths**: if the file paths are wrong and any of the files cannot be found locally, the package will raise an error. Applies for the "upload" operation.
 - **Duplicate files**: if the same file is added twice to the same operation, the package will raise an error.
 - **All the uploads for an operation fail**: if all the uploads for an operation fail, the package will raise an error.

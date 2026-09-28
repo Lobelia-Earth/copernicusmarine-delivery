@@ -43,7 +43,6 @@ def test_delivery_python_interface(
             Delete(files=MOCK_FILES),
             Upload(files=MOCK_FILES, anchor="dataset1"),
         ],
-        pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
         raise_on_upload_error=False,
@@ -67,7 +66,6 @@ def test_delivery_early_exit_with_validation_error(
                 Delete(files=MOCK_FILES),
                 Upload(files=MOCK_FILES + ["extra_file.txt"], anchor="dataset1"),
             ],
-            pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id="dataset1",
             product_id="product1",
             raise_on_upload_error=False,
@@ -93,8 +91,6 @@ def test_delivery_cli_with_delivery_file(
         cli,
         [
             "delivery",
-            "--pushing-entity-id",
-            PUSHING_ENTITY_ID,
             "--dataset-id",
             "dataset1",
             "--product-id",
@@ -125,7 +121,6 @@ def test_delivery_dry_run_does_not_call_s3(
             Delete(files=MOCK_FILES),
             Upload(files=MOCK_FILES, anchor="dataset1"),
         ],
-        pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
         raise_on_upload_error=False,
@@ -174,7 +169,6 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
     Covers absolute local paths too."""
     response, delivery = delivery_function(
         operations=[Upload(files=files, anchor=anchor)],
-        pushing_entity_id=PUSHING_ENTITY_ID,
         dataset_id="dataset1",
         product_id="product1",
         raise_on_upload_error=False,
@@ -211,7 +205,6 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
     )
     with pytest.raises(Exception) as exc_info:
         delivery.submit(
-            pushing_entity_id=PUSHING_ENTITY_ID,
             dataset_id=DATASET_ID,
             product_id=PRODUCT_ID,
             raise_on_upload_error=True,
