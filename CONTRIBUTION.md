@@ -2,13 +2,13 @@
 
 ## Release
 
-Release are made by triggering the workflow from a `release/*` branch. The idea is to create this release branch if you do a new major or minor release. In the case where you are making a patch release, you can update the existing release branch (cherry-picking or merging changes).
+Releases are made by triggering the workflow from a `release/*` branch. The idea is to create this release branch if you do a new major or minor release. In the case where you are making a patch release, you can update the existing release branch (cherry-picking or merging changes).
 
 To create a new release of the Marine Producer Toolbox, follow these steps:
 
 0. Ensure the version in the `pyproject.toml` file is updated to the new release version.
 
-1. (Locally) Checkout the `release/*` branch you want to create the release from.
+1. (Locally) Check out the `release/*` branch you want to create the release from.
 
     a. If the release branch does not exist, create it from the `main` branch.
 
