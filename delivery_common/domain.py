@@ -63,6 +63,21 @@ class PushingEntities(BaseModel):
         return list(set(pu.name for pu in self.pushing_entities) & set(candidates))
 
 
+FORBIDDEN_KEY_SUFFIX_PATTERNS = ("../", "//", ":/")
+
+
+def raise_on_wrong_key_suffix(key_suffix: str) -> None:
+    if os.path.isabs(key_suffix):
+        raise ValueError(
+            f"Invalid key_suffix '{key_suffix}': it must be a relative path."
+        )
+    for pattern in FORBIDDEN_KEY_SUFFIX_PATTERNS:
+        if pattern in key_suffix:
+            raise ValueError(
+                f"Invalid key_suffix '{key_suffix}': it must not contain '{pattern}'."
+            )
+
+
 class DeliveryStatus(str, Enum):
     pending = "pending"
     validated = "validated"
@@ -82,14 +97,11 @@ class DeliveryFile(BaseModel):
     #: Similarly for a delete, the file will be deleted from the Marine datastore at "/{product_id}/{dataset_id}/{key_suffix}".
     key_suffix: str
 
-    # Relevant when Delivery created without the toolbox.
+    # Relevant especially when Delivery created without the toolbox.
     @field_validator("key_suffix")
     @classmethod
-    def ensure_relative_path(cls, v: str) -> str:
-        if os.path.isabs(v):
-            return os.path.relpath(v).replace(
-                "../", ""
-            )  # disgusting but good enough for now
+    def ensure_normalized_key_suffix(cls, v: str) -> str:
+        raise_on_wrong_key_suffix(v)
         return v
 
     #: Optional error message if the file failed.

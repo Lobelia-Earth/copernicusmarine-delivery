@@ -4,10 +4,12 @@ import pytest
 import yaml
 
 from copernicusmarine_delivery import InvalidDeliveryIdsError, InvalidFilesError
-from copernicusmarine_delivery.core_functions.core_functions import strip_to_anchor
 from copernicusmarine_delivery.core_functions.delivery_validator import (
     validate_delete_files,
     validate_upload_files,
+)
+from copernicusmarine_delivery.core_functions.utils import (
+    local_path_to_key_suffix,
 )
 from copernicusmarine_delivery.s3_client import S3Client
 from delivery_common.domain import PushingEntities
@@ -110,7 +112,7 @@ def test_duplicate_files_delete(file_list, caplog):
     ],
 )
 def test_strip_to_anchor(local_path, anchor, expected):
-    assert strip_to_anchor(local_path, anchor) == expected
+    assert local_path_to_key_suffix(local_path, anchor) == expected
 
 
 def test_missing_anchor_raises(caplog):

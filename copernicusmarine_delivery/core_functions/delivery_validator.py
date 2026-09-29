@@ -2,8 +2,14 @@ from collections import Counter
 from pathlib import Path
 
 from copernicusmarine_delivery.core_functions.domain import InvalidFilesError
+from copernicusmarine_delivery.core_functions.utils import local_path_to_key_suffix
 from copernicusmarine_delivery.logger import logger
-from delivery_common.domain import InvalidFile, T
+from delivery_common.domain import (
+    FORBIDDEN_KEY_SUFFIX_PATTERNS,
+    InvalidFile,
+    T,
+    raise_on_wrong_key_suffix,
+)
 
 SUPPORTED_FILE_EXTENTIONS = {".txt", ".shp", ".zip", ".nc"}
 
@@ -21,6 +27,14 @@ def file_not_empty(file_path: Path) -> bool:
 
 def file_type_supported(file_path: Path) -> bool:
     return file_path.suffix in SUPPORTED_FILE_EXTENTIONS
+
+
+def acceptable_key_suffix(file_path_str: str, anchor: str | None) -> bool:
+    try:
+        raise_on_wrong_key_suffix(local_path_to_key_suffix(file_path_str, anchor))
+    except ValueError:
+        return False
+    return True
 
 
 def duplicate_files(files: list[T]) -> list[T]:
@@ -83,6 +97,15 @@ def validate_upload_files(
                     )
                 )
                 continue
+            if not acceptable_key_suffix(str(file_str), anchor):
+                invalid_files.append(
+                    InvalidFile(
+                        local_path=file,
+                        reason=(
+                            f"Key suffix derived from local path is not acceptable: {file}. Forbidden patterns are: {FORBIDDEN_KEY_SUFFIX_PATTERNS}"
+                        ),
+                    )
+                )
         if not file_type_supported(file):
             # Just a warning for now
             logger.warning(
