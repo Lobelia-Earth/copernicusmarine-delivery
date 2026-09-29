@@ -123,6 +123,12 @@ Or provide a delivery JSON file (saved with `--save-delivery-json`):
 copernicusmarine-delivery status --delivery-json some-delivery-id.json
 ```
 
+To have a more detailed view of the delivery, use the `--show-all` option with the `status` command. It will list all the files and print potential errors associated to the file.
+
+```bash
+copernicusmarine-delivery status --delivery-id some-delivery-id --show-all
+```
+
 ## List deliveries command
 
 List all the deliveries fetched from OPDV, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the python interface.

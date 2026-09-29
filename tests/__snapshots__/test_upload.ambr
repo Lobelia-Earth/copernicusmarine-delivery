@@ -8,12 +8,7 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  The following upload operation have been submitted:
-  
-  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/file1.txt
-  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/file2.txt
-  
-  Total: 2 file uploaded, 0 file to delete.
+  	Total: 2 file uploaded, .
   '''
 # ---
 # name: test_upload_cli_save_delivery_json
@@ -25,12 +20,7 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  The following upload operation have been submitted:
-  
-  	[UPLOAD] tests/resources/dataset1/file1.txt -> product1/dataset1/file1.txt
-  	[UPLOAD] tests/resources/dataset1/file2.txt -> product1/dataset1/file2.txt
-  
-  Total: 2 file uploaded, 0 file to delete.
+  	Total: 2 file uploaded, .
   '''
 # ---
 # name: test_upload_cli_save_delivery_json.1

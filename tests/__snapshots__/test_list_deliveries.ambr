@@ -3,18 +3,24 @@
   '''
   Deliveries:
   
-  	[DELIVERY] 20120114T120001-product1-9928 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  [DELIVERY] 20120114T120001-product1-9928 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
-  	[DELIVERY] 20120114T120001-product1-7873 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	errored uploads: 0
+  	errored deletes: 0
+  [DELIVERY] 20120114T120001-product1-7873 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset2
   	status: pending
-  	[DELIVERY] 20120114T120001-product1-4611 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	errored uploads: 0
+  	errored deletes: 0
+  [DELIVERY] 20120114T120001-product1-4611 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
+  	errored uploads: 0
+  	errored deletes: 0
   '''
 # ---
 # name: test_list_deliveries_python_interface
