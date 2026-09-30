@@ -154,6 +154,13 @@ def cli(max_content_width=200) -> None:
     "containing a set of operations [upload, delete] and their relative files."
     "See the documentation for the format of the delivery file",
 )
+@click.option(
+    "--pushing-entity-id",
+    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+    default=None,
+    hidden=True,
+    help="OPERATOR only: act on behalf of this pushing entity.",
+)
 @shared_options
 @upload_shared_options
 @log_exception_and_exit
@@ -161,6 +168,7 @@ def delivery(
     file: Path,
     dataset_id: str,
     product_id: str,
+    pushing_entity_id: str | None = None,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -174,6 +182,7 @@ def delivery(
 
     response_delivery, delivery = _delivery(
         [operation for operation in delivery_file.delivery],
+        impersonate_pushing_entity_id=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -212,6 +221,13 @@ def delivery(
         """
     ),
 )
+@click.option(
+    "--pushing-entity-id",
+    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+    default=None,
+    hidden=True,
+    help="OPERATOR only: act on behalf of this pushing entity.",
+)
 @shared_options
 @upload_shared_options
 @log_exception_and_exit
@@ -219,6 +235,7 @@ def upload(
     source: list[str],
     dataset_id: str,
     product_id: str,
+    pushing_entity_id: str | None,
     anchor: str | None,
     save_delivery_json: bool = False,
     raise_on_upload_error: bool = False,
@@ -241,6 +258,7 @@ def upload(
         sys.exit(1)
 
     response, delivery = _upload(
+        impersonate_pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
@@ -264,12 +282,20 @@ def upload(
     multiple=True,
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
+@click.option(
+    "--pushing-entity-id",
+    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+    default=None,
+    hidden=True,
+    help="OPERATOR only: act on behalf of this pushing entity.",
+)
 @shared_options
 @log_exception_and_exit
 def delete(
     source: list[str],
     dataset_id: str,
     product_id: str,
+    pushing_entity_id: str | None,
     save_delivery_json: bool = False,
     dry_run: bool = False,
 ) -> None:
@@ -291,6 +317,7 @@ def delete(
         dataset_id=dataset_id,
         files=source,
         dry_run=dry_run,
+        impersonate_pushing_entity_id=pushing_entity_id,
     )
 
     if save_delivery_json:
@@ -436,14 +463,23 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
 
 
 @cli.command()
+@click.option(
+    "--pushing-entity-id",
+    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+    default=None,
+    hidden=True,
+    help="OPERATOR only: act on behalf of this pushing entity.",
+)
 @log_exception_and_exit
-def list_deliveries() -> None:
+def list_deliveries(pushing_entity_id: str | None = None) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config)
+    deliveries = get_deliveries(
+        config=config, impersonate_pushing_entity_id=pushing_entity_id
+    )
     print_list_deliveries(deliveries)
 
 

@@ -67,9 +67,13 @@ def create_and_upload_delivery(
 def get_deliveries(
     config: GetConfigResponse,
     delivery_id: str | None = None,
+    impersonate_pushing_entity_id: str | None = None,
 ) -> list[Delivery]:
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery",
+        params={"pushing-entity-id": impersonate_pushing_entity_id}
+        if impersonate_pushing_entity_id
+        else None,
         headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
     )
     response.raise_for_status()

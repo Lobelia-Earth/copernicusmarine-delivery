@@ -75,6 +75,7 @@ def upload(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
+    impersonate_pushing_entity_id: str | None = None,
 ) -> tuple[ResponseUpload, Delivery]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
@@ -82,7 +83,9 @@ def upload(
     3. Create Delivery with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
     """
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config))
+    pushing_entity_config = get_pushing_entity_config(
+        fetch_keycloak_token(config), impersonate_pushing_entity_id
+    )
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -146,12 +149,15 @@ def delete(
     dataset_id: str,
     files: list[str],
     dry_run: bool,
+    impersonate_pushing_entity_id: str | None = None,
 ) -> tuple[ResponseDelete, Delivery]:
     """
     Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config))
+    pushing_entity_config = get_pushing_entity_config(
+        fetch_keycloak_token(config), impersonate_pushing_entity_id
+    )
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -199,9 +205,12 @@ def delivery(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
+    impersonate_pushing_entity_id: str | None = None,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config))
+    pushing_entity_config = get_pushing_entity_config(
+        fetch_keycloak_token(config), impersonate_pushing_entity_id
+    )
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     validate_delivery_ids(
