@@ -159,7 +159,7 @@ def cli(max_content_width=200) -> None:
     envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
     default=None,
     hidden=True,
-    help="OPERATOR only: act on behalf of this pushing entity.",
+    help="ADMIN only: act on behalf of this pushing entity.",
 )
 @shared_options
 @upload_shared_options
