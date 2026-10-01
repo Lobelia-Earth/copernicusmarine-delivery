@@ -21,7 +21,10 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
 from copernicusmarine_delivery.core_functions.core_functions import upload as _upload
-from copernicusmarine_delivery.core_functions.delivery import get_deliveries
+from copernicusmarine_delivery.core_functions.delivery import (
+    TimeframeLiteral,
+    get_deliveries,
+)
 from copernicusmarine_delivery.core_functions.domain import (
     DeliveryFile,
     ResponseDelete,
@@ -29,7 +32,11 @@ from copernicusmarine_delivery.core_functions.domain import (
 )
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
 from copernicusmarine_delivery.logger import logger
-from delivery_common.domain import DeleteOperation, Delivery, UploadOperation
+from delivery_common.domain import (
+    DeleteOperation,
+    Delivery,
+    UploadOperation,
+)
 
 
 def _exception_to_sentence(exception: Exception) -> str:
@@ -204,13 +211,11 @@ def delivery(
     type=str,
     required=False,
     default=None,
-    help=(
-        """
+    help=("""
         If set, anything before and up to such anchor will be removed
         from the given path upon uploading to the ingestion bucket.
         For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
-        """
-    ),
+        """),
 )
 @shared_options
 @upload_shared_options
@@ -436,14 +441,20 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
 
 
 @cli.command()
+@click.option(
+    "--timeframe",
+    type=click.Choice(["s", "m", "h", "d", "w", "mo", "y", "all"]),
+    default="mo",
+    help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
+)
 @log_exception_and_exit
-def list_deliveries() -> None:
+def list_deliveries(timeframe: TimeframeLiteral) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config)
+    deliveries = get_deliveries(config=config, timeframe=timeframe)
     print_list_deliveries(deliveries)
 
 

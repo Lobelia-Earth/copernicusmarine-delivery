@@ -1,15 +1,18 @@
 import json
 
+import httpx
 from click.testing import CliRunner
 from freezegun import freeze_time
 
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.core_functions import delivery as delivery_module
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
     MAX_CONCURRENT_UPLOADS,
 )
 from copernicusmarine_delivery.core_functions.core_functions import upload
+from copernicusmarine_delivery.core_functions.delivery import get_deliveries
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
 from copernicusmarine_delivery.python_interface import list_deliveries
 
@@ -96,3 +99,25 @@ def test_list_deliveries_cli(
     )
     assert result.exit_code == 0, result.output.strip()
     assert result.output.strip() == snapshot
+
+
+@freeze_time("2012-01-14 12:00:01")
+def test_get_deliveries_sends_timeframe_as_created_after_param(monkeypatch):
+    """The timeframe must be translated into a `created_after` query param so the
+    API performs the filtering."""
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["params"] = dict(request.url.params)
+        return httpx.Response(200, json={"deliveries": []})
+
+    mock_client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(delivery_module, "http_client", mock_client)
+    monkeypatch.setattr(
+        delivery_module, "fetch_keycloak_token", lambda config: "test-token"
+    )
+
+    get_deliveries(config=None, timeframe="w")  # type: ignore[arg-type]
+
+    # now (frozen) minus one week, in ISO 8601 UTC.
+    assert captured["params"] == {"created_after": "2012-01-07T12:00:01Z"}
