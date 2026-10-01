@@ -140,3 +140,22 @@ copernicusmarine-delivery list-deliveries --help
 ```bash
 copernicusmarine-delivery list-deliveries
 ```
+
+By default, only the deliveries created within the last month are returned. Use the `--timeframe` option to change this window. The deliveries are filtered by their creation date, counting back from the current time.
+
+```bash
+copernicusmarine-delivery list-deliveries --timeframe w
+```
+
+The available values are:
+
+| Value  | Timeframe            |
+| ------ | -------------------- |
+| `s`    | last second          |
+| `m`    | last minute          |
+| `h`    | last hour            |
+| `d`    | last day             |
+| `w`    | last week            |
+| `mo`   | last month (default) |
+| `y`    | last year            |
+| `all`  | all deliveries       |

@@ -1,12 +1,25 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from random import randint
+from typing import Literal
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
 from copernicusmarine_delivery.core_functions.domain import GetConfigResponse
 from copernicusmarine_delivery.environment_variables import INGESTION_SERVICE_URL
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
-from delivery_common.domain import Delivery, Operation
+from delivery_common.domain import Delivery, Operation, datetime_to_iso_format
+
+TIMEFRAME_MAPPING = {
+    "s": timedelta(seconds=1),
+    "m": timedelta(minutes=1),
+    "h": timedelta(hours=1),
+    "d": timedelta(days=1),
+    "w": timedelta(weeks=1),
+    "mo": timedelta(days=30),
+    "y": timedelta(days=365),
+}
+
+TimeframeLiteral = Literal["s", "m", "h", "d", "w", "mo", "y", "all"]
 
 
 def create_delivery(
@@ -67,19 +80,37 @@ def create_and_upload_delivery(
 def get_deliveries(
     config: GetConfigResponse,
     delivery_id: str | None = None,
+    timeframe: TimeframeLiteral | None = None,
 ) -> list[Delivery]:
+    params = {}
+    if delivery_id:
+        params["delivery_id"] = delivery_id
+    if timeframe and (create_after := _timeframe_to_created_after(timeframe)):
+        params["created_after"] = create_after
+
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery",
         headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+        params=params,
     )
     response.raise_for_status()
 
     return sorted(
-        [
-            Delivery(**delivery_data)
-            for delivery_data in response.json()["deliveries"]
-            if delivery_id is None or delivery_data["delivery_id"] == delivery_id
-        ],
+        [Delivery(**delivery_data) for delivery_data in response.json()["deliveries"]],
         key=lambda d: d.delivery_id,
         reverse=True,
     )
+
+
+def _timeframe_to_created_after(timeframe: TimeframeLiteral) -> str | None:
+    now = datetime.now(tz=timezone.utc)
+    if timeframe == "all":
+        return None
+    elif timeframe in TIMEFRAME_MAPPING:
+        created_after = now - TIMEFRAME_MAPPING[timeframe]
+    else:
+        raise ValueError(
+            f"Unsupported timeframe: {timeframe}. "
+            f"Available options are: {list(TIMEFRAME_MAPPING.keys()) + ['all']}"
+        )
+    return datetime_to_iso_format(created_after)
