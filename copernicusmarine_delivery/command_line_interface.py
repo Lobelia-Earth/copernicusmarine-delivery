@@ -89,6 +89,13 @@ _shared_options = [
         is_flag=True,
         help="Validate the upload without performing any actual operation in S3.",
     ),
+    click.option(
+        "--pushing-entity-id",
+        envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+        default=None,
+        hidden=True,
+        help="OPERATOR only: act on behalf of this pushing entity.",
+    ),
 ]
 
 _upload_shared_options = [
@@ -154,13 +161,6 @@ def cli(max_content_width=200) -> None:
     "containing a set of operations [upload, delete] and their relative files."
     "See the documentation for the format of the delivery file",
 )
-@click.option(
-    "--pushing-entity-id",
-    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
-    default=None,
-    hidden=True,
-    help="ADMIN only: act on behalf of this pushing entity.",
-)
 @shared_options
 @upload_shared_options
 @log_exception_and_exit
@@ -182,7 +182,7 @@ def delivery(
 
     response_delivery, delivery = _delivery(
         [operation for operation in delivery_file.delivery],
-        impersonate_pushing_entity_id=pushing_entity_id,
+        on_behalf_of=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -221,13 +221,6 @@ def delivery(
         """
     ),
 )
-@click.option(
-    "--pushing-entity-id",
-    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
-    default=None,
-    hidden=True,
-    help="OPERATOR only: act on behalf of this pushing entity.",
-)
 @shared_options
 @upload_shared_options
 @log_exception_and_exit
@@ -258,7 +251,6 @@ def upload(
         sys.exit(1)
 
     response, delivery = _upload(
-        impersonate_pushing_entity_id=pushing_entity_id,
         product_id=product_id,
         dataset_id=dataset_id,
         files=source,
@@ -268,6 +260,7 @@ def upload(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
+        on_behalf_of=pushing_entity_id,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -281,13 +274,6 @@ def upload(
     type=str,
     multiple=True,
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
-)
-@click.option(
-    "--pushing-entity-id",
-    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
-    default=None,
-    hidden=True,
-    help="OPERATOR only: act on behalf of this pushing entity.",
 )
 @shared_options
 @log_exception_and_exit
@@ -317,7 +303,7 @@ def delete(
         dataset_id=dataset_id,
         files=source,
         dry_run=dry_run,
-        impersonate_pushing_entity_id=pushing_entity_id,
+        on_behalf_of=pushing_entity_id,
     )
 
     if save_delivery_json:
@@ -477,9 +463,7 @@ def list_deliveries(pushing_entity_id: str | None = None) -> None:
     The result is sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(
-        config=config, impersonate_pushing_entity_id=pushing_entity_id
-    )
+    deliveries = get_deliveries(config=config, on_behalf_of=pushing_entity_id)
     print_list_deliveries(deliveries)
 
 

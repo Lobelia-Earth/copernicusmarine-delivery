@@ -74,7 +74,7 @@ class Upload(_Upload):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            impersonate_pushing_entity_id=kwargs.get("pushing_entity_id")
+            on_behalf_of=kwargs.get("pushing_entity_id")
             or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
@@ -110,7 +110,7 @@ class Delete(_Delete):
             dataset_id=dataset_id,
             files=self.files,
             dry_run=dry_run,
-            impersonate_pushing_entity_id=kwargs.get("pushing_entity_id")
+            on_behalf_of=kwargs.get("pushing_entity_id")
             or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
@@ -172,7 +172,7 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            impersonate_pushing_entity_id=kwargs.get("pushing_entity_id")
+            on_behalf_of=kwargs.get("pushing_entity_id")
             or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
