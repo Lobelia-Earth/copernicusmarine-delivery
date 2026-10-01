@@ -117,7 +117,17 @@ def test_get_deliveries_sends_timeframe_as_created_after_param(monkeypatch):
         delivery_module, "fetch_keycloak_token", lambda config: "test-token"
     )
 
-    get_deliveries(config=None, timeframe="w")  # type: ignore[arg-type]
+    get_deliveries(config=None, timeframe="w")  # type: ignore
 
     # now (frozen) minus one week, in ISO 8601 UTC.
     assert captured["params"] == {"created_after": "2012-01-07T12:00:01Z"}
+
+    get_deliveries(config=None, timeframe="all")  # type: ignore
+
+    # datetime.min in ISO 8601 UTC.
+    assert captured["params"].get("created_after") == None
+
+    get_deliveries(config=None, timeframe="d")  # type: ignore
+
+    # now (frozen) minus one day, in ISO 8601 UTC.
+    assert captured["params"] == {"created_after": "2012-01-13T12:00:01Z"}

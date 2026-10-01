@@ -9,6 +9,18 @@ from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import Delivery, Operation, datetime_to_iso_format
 
+TIMEFRAME_MAPPING = {
+    "s": timedelta(seconds=1),
+    "m": timedelta(minutes=1),
+    "h": timedelta(hours=1),
+    "d": timedelta(days=1),
+    "w": timedelta(weeks=1),
+    "mo": timedelta(days=30),
+    "y": timedelta(days=365),
+}
+
+TimeframeLiteral = Literal["s", "m", "h", "d", "w", "mo", "y", "all"]
+
 
 def create_delivery(
     pushing_entity_id: str,
@@ -73,8 +85,8 @@ def get_deliveries(
     params = {}
     if delivery_id:
         params["delivery_id"] = delivery_id
-    if timeframe:
-        params["created_after"] = timeframe_to_created_after(timeframe)
+    if timeframe and (create_after := _timeframe_to_created_after(timeframe)):
+        params["created_after"] = create_after
 
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery",
@@ -90,23 +102,10 @@ def get_deliveries(
     )
 
 
-TIMEFRAME_MAPPING = {
-    "s": timedelta(seconds=1),
-    "m": timedelta(minutes=1),
-    "h": timedelta(hours=1),
-    "d": timedelta(days=1),
-    "w": timedelta(weeks=1),
-    "mo": timedelta(days=30),
-    "y": timedelta(days=365),
-}
-
-TimeframeLiteral = Literal["s", "m", "h", "d", "w", "mo", "y", "all"]
-
-
-def timeframe_to_created_after(timeframe: TimeframeLiteral) -> str:
+def _timeframe_to_created_after(timeframe: TimeframeLiteral) -> str | None:
     now = datetime.now(tz=timezone.utc)
     if timeframe == "all":
-        created_after = datetime.min.replace(tzinfo=timezone.utc)
+        return None
     elif timeframe in TIMEFRAME_MAPPING:
         created_after = now - TIMEFRAME_MAPPING[timeframe]
     else:

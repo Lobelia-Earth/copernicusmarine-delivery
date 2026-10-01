@@ -73,3 +73,17 @@ dataset_deliveries = [
   if d.dataset_id == dataset_id
   ]
 ```
+
+By default, only the deliveries created within the last month are returned. Use the `timeframe` argument to change this window, counting back from the current time:
+
+```python
+from copernicusmarine_delivery import list_deliveries
+
+# Only the deliveries created within the last week.
+deliveries = list_deliveries(timeframe="w")
+
+# All the deliveries, regardless of their creation date.
+deliveries = list_deliveries(timeframe="all")
+```
+
+The available values are `"s"` (second), `"m"` (minute), `"h"` (hour), `"d"` (day), `"w"` (week), `"mo"` (month, the default), `"y"` (year) and `"all"`.
