@@ -74,9 +74,12 @@ def get_config() -> GetConfigResponse:
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(token: str) -> GetPushingEntityConfigResponse:
+def get_pushing_entity_config(
+    token: str, on_behalf_of: str | None
+) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
         f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config",
+        params={"on_behalf_of": on_behalf_of} if on_behalf_of else None,
         headers={"Authorization": f"Bearer {token}"},
     )
     pushing_entity_config_response.raise_for_status()

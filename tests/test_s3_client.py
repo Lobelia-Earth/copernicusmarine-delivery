@@ -30,6 +30,7 @@ def test_no_such_bucket_raises(ministack_endpoint: str, ingestion_service):
             bucket_name="nonexistent-entity-bucket-name",
             config=get_config(),
             endpoint_url=ministack_endpoint,
+            on_behalf_of=None,
         )
 
 
@@ -163,6 +164,7 @@ def _build_service_with_mock_transport(
         bucket_name=ingestion_bucket,
         config=get_config(),
         endpoint_url=ministack_endpoint,
+        on_behalf_of=None,
     )
 
 
@@ -233,7 +235,10 @@ def _build_service_with_refresh_threshold(
     monkeypatch.setattr("copernicusmarine_delivery.s3_client.http_client", mock_client)
 
     credential_provider = OpdvS3CredentialProvider(
-        "TEST-ENTITY-FR", get_config(), refresh_threshold=refresh_threshold
+        "TEST-ENTITY-FR",
+        get_config(),
+        refresh_threshold=refresh_threshold,
+        on_behalf_of=None,
     )
     store = S3Store.from_url(
         url=f"s3://{ingestion_bucket}",
