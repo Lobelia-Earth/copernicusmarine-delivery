@@ -131,6 +131,7 @@ def service(
         bucket_name=_BUCKET_NAME,
         config=get_config(),
         endpoint_url=ministack_endpoint,
+        on_behalf_of=None,
     )
 
 

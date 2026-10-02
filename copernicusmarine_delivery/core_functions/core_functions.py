@@ -110,6 +110,7 @@ def upload(
         config=config,
         chunk_concurrency=chunk_concurrency,
         endpoint_url=pushing_entity_config.s3_endpoint_url,
+        on_behalf_of=on_behalf_of,
     )
     delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
@@ -226,6 +227,7 @@ def delivery(
         chunk_concurrency=chunk_concurrency,
         config=config,
         endpoint_url=pushing_entity_config.s3_endpoint_url,
+        on_behalf_of=on_behalf_of,
     )
     for operation in operations:
         match operation:

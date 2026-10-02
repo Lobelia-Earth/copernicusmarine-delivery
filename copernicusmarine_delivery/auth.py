@@ -79,7 +79,7 @@ def get_pushing_entity_config(
 ) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
         f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config",
-        params={"on-behalf-of": on_behalf_of} if on_behalf_of else None,
+        params={"on_behalf_of": on_behalf_of} if on_behalf_of else None,
         headers={"Authorization": f"Bearer {token}"},
     )
     pushing_entity_config_response.raise_for_status()

@@ -58,8 +58,20 @@ def _camel_case_to_sentence(identifier: str) -> str:
     return " ".join(sentence)
 
 
+def _api_error_detail(exception: Exception) -> str | None:
+    """API `detail` from an HTTPError response, else None."""
+    response = getattr(exception, "response", None)
+    if response is None:
+        return None
+    try:
+        detail = response.json()["detail"]
+    except (ValueError, KeyError, TypeError):  # body not JSON / no `detail`
+        return None
+    return detail if isinstance(detail, str) else json.dumps(detail)
+
+
 def _log_exception(log_function: Callable, exception: Exception):
-    exception_string = str(exception).strip('"')
+    exception_string = _api_error_detail(exception) or str(exception).strip('"')
     details = f": {exception_string}" if exception_string else ""
     message = _exception_to_sentence(exception) + details
     log_function(message)
@@ -470,13 +482,19 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
 @log_exception_and_exit
-def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None) -> None:
+def list_deliveries(
+    timeframe: TimeframeLiteral, pushing_entity_id: str | None = None
+) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config, on_behalf_of=pushing_entity_id, timeframe=timeframe,)
+    deliveries = get_deliveries(
+        config=config,
+        on_behalf_of=pushing_entity_id,
+        timeframe=timeframe,
+    )
     print_list_deliveries(deliveries)
 
 
