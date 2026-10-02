@@ -14,7 +14,12 @@ from pydantic import BaseModel, Discriminator, Field, Tag, field_validator
 
 def now_in_utc_isoformat() -> str:
     """Returns the current time in UTC in ISO 8601 format."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime_to_iso_format(datetime.now(timezone.utc))
+
+
+def datetime_to_iso_format(dt: datetime) -> str:
+    """Converts a datetime object to ISO 8601. Assumes the datetime is in UTC."""
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 #############

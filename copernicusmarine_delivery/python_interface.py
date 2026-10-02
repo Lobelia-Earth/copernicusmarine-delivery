@@ -11,7 +11,10 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
 from copernicusmarine_delivery.core_functions.core_functions import upload as _upload
-from copernicusmarine_delivery.core_functions.delivery import get_deliveries
+from copernicusmarine_delivery.core_functions.delivery import (
+    TimeframeLiteral,
+    get_deliveries,
+)
 from copernicusmarine_delivery.core_functions.domain import Delete as _Delete
 from copernicusmarine_delivery.core_functions.domain import (
     ResponseDelete,
@@ -195,12 +198,14 @@ def delivery_status(delivery_id: str) -> DeliveryModel:
     return delivery[0]
 
 
-def list_deliveries() -> list[DeliveryModel]:
+def list_deliveries(timeframe: TimeframeLiteral = "mo") -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
+
+    :param timeframe: The timeframe to filter deliveries by. Defaults to "mo" (last month).
 
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config)
+    deliveries = get_deliveries(config=config, timeframe=timeframe)
     return deliveries
