@@ -58,6 +58,9 @@ COPERNICUSMARINE_SERVICE_PASSWORD = "test"
 INGESTION_SERVICE_URL = "http://localhost:8005"
 PYTHON_LOG_DEBUG = "true"
 
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
 [tool.pixi.feature.docs.dependencies]
 sphinx = ">=7"
 furo = "*"
@@ -88,6 +91,7 @@ dev = ["httpx>=0.28.1,<0.29"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
+dev-py311 = { features = ["dev", "py311"] }
 docs = { features = ["docs"], solve-group = "default" }
 publish = { features = ["publish"], solve-group = "default" }
 

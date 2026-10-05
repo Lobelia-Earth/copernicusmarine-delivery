@@ -98,7 +98,7 @@ def s3_client(ministack_endpoint: str):
 
 
 @pytest.fixture
-def ingestion_bucket(s3_client) -> Generator[str, None]:
+def ingestion_bucket(s3_client) -> Generator[str, None, None]:
     s3_client.create_bucket(Bucket=_BUCKET_NAME)
     yield _BUCKET_NAME
     _cleanup_bucket(s3_client, _BUCKET_NAME)
@@ -115,7 +115,7 @@ def _cleanup_bucket(s3_client, bucket: str) -> None:
 
 
 @pytest.fixture
-def glo_mercator_bucket(s3_client) -> Generator[str, None]:
+def glo_mercator_bucket(s3_client) -> Generator[str, None, None]:
     bucket = "mdl-ing-glo-mercator-toulouse-fr"
     s3_client.create_bucket(Bucket=bucket)
     yield bucket

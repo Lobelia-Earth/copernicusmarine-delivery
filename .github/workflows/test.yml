@@ -7,6 +7,11 @@ on:
 
 jobs:
   test:
+    name: test (${{ matrix.environment }})
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, dev-py311]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -24,9 +29,9 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
         with:
-          environments: dev
+          environments: ${{ matrix.environment }}
           cache: true
       - name: Wait for ministack
         run: until curl -s http://localhost:4566 > /dev/null; do sleep 1; done
       - name: Run tests
-        run: pixi run -e dev test
+        run: pixi run -e ${{ matrix.environment }} test
