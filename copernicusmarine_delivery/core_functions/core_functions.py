@@ -206,7 +206,7 @@ def delivery(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-    on_behalf_of: str | None = None,
+    on_behalf_of: str | None,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
     pushing_entity_config = get_pushing_entity_config(
