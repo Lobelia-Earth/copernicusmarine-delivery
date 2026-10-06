@@ -79,8 +79,8 @@ def create_and_upload_delivery(
 
 def get_deliveries(
     config: GetConfigResponse,
+    on_behalf_of: str | None,
     delivery_id: str | None = None,
-    on_behalf_of: str | None = None,
     timeframe: TimeframeLiteral | None = None,
 ) -> list[Delivery]:
     params = {}

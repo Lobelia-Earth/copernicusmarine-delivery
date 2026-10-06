@@ -108,14 +108,15 @@ _shared_options = [
         is_flag=True,
         help="Validate the upload without performing any actual operation in S3.",
     ),
-    click.option(
-        "--pushing-entity-id",
-        envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
-        default=None,
-        hidden=True,
-        help="ADMIN only: act on behalf of this pushing entity.",
-    ),
 ]
+
+pushing_entity_id_option = click.option(
+    "--pushing-entity-id",
+    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+    default=None,
+    hidden=True,
+    help="ADMIN only: act on behalf of this pushing entity.",
+)
 
 _upload_shared_options = [
     click.option(
@@ -182,6 +183,7 @@ def cli(max_content_width=200) -> None:
 )
 @shared_options
 @upload_shared_options
+@pushing_entity_id_option
 @log_exception_and_exit
 def delivery(
     file: Path,
@@ -242,6 +244,7 @@ def delivery(
 )
 @shared_options
 @upload_shared_options
+@pushing_entity_id_option
 @log_exception_and_exit
 def upload(
     source: list[str],
@@ -295,6 +298,7 @@ def upload(
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
 @shared_options
+@pushing_entity_id_option
 @log_exception_and_exit
 def delete(
     source: list[str],
@@ -406,10 +410,12 @@ def print_operation_summary(
     is_flag=True,
     help="Show all operations and file statuses. By default, only summary is shown.",
 )
+@pushing_entity_id_option
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     delivery_json: Path | None = None,
+    pushing_entity_id: str | None = None,
     show_all: bool = False,
 ) -> None:
     """Get the status of a delivery (upload and/or delete). Specify either
@@ -431,6 +437,7 @@ def status(
     deliveries = get_deliveries(
         delivery_id=delivery_id,
         config=config,
+        on_behalf_of=pushing_entity_id,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
@@ -468,13 +475,7 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
 
 
 @cli.command()
-@click.option(
-    "--pushing-entity-id",
-    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
-    default=None,
-    hidden=True,
-    help="OPERATOR only: act on behalf of this pushing entity.",
-)
+@pushing_entity_id_option
 @click.option(
     "--timeframe",
     type=click.Choice(["s", "m", "h", "d", "w", "mo", "y", "all"]),

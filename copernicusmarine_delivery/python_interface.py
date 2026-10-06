@@ -181,7 +181,7 @@ class Delivery(BaseModel):
         return response
 
 
-def delivery_status(delivery_id: str) -> DeliveryModel:
+def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> DeliveryModel:
     """
     Get the status of a delivery.
 
@@ -191,6 +191,7 @@ def delivery_status(delivery_id: str) -> DeliveryModel:
     delivery = get_deliveries(
         delivery_id=delivery_id,
         config=config,
+        on_behalf_of=on_behalf_of,
     )
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
@@ -198,7 +199,9 @@ def delivery_status(delivery_id: str) -> DeliveryModel:
     return delivery[0]
 
 
-def list_deliveries(timeframe: TimeframeLiteral = "mo") -> list[DeliveryModel]:
+def list_deliveries(
+    timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None
+) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
@@ -207,5 +210,7 @@ def list_deliveries(timeframe: TimeframeLiteral = "mo") -> list[DeliveryModel]:
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config, timeframe=timeframe)
+    deliveries = get_deliveries(
+        config=config, timeframe=timeframe, on_behalf_of=on_behalf_of
+    )
     return deliveries
