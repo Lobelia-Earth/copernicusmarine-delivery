@@ -23,6 +23,9 @@ from copernicusmarine_delivery.core_functions.domain import (
 )
 from copernicusmarine_delivery.core_functions.domain import Upload as _Upload
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
+from copernicusmarine_delivery.environment_variables import (
+    COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+)
 from delivery_common.domain import Delivery as DeliveryModel
 
 
@@ -46,6 +49,7 @@ class Upload(_Upload):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        **kwargs,
     ) -> ResponseUpload:
         """
         Perform the upload.
@@ -73,6 +77,8 @@ class Upload(_Upload):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
+            on_behalf_of=kwargs.get("pushing_entity_id")
+            or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
 
@@ -89,6 +95,7 @@ class Delete(_Delete):
         product_id: str,
         dataset_id: str,
         dry_run: bool = False,
+        **kwargs,
     ) -> ResponseDelete:
         """
         Perform the delete.
@@ -106,6 +113,8 @@ class Delete(_Delete):
             dataset_id=dataset_id,
             files=self.files,
             dry_run=dry_run,
+            on_behalf_of=kwargs.get("pushing_entity_id")
+            or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
 
@@ -139,6 +148,7 @@ class Delivery(BaseModel):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        **kwargs,
     ) -> ResponseDelivery:
         """
         Perform the delivery by executing all added operations sequentially.
@@ -165,11 +175,13 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
+            on_behalf_of=kwargs.get("pushing_entity_id")
+            or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
 
 
-def delivery_status(delivery_id: str) -> DeliveryModel:
+def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> DeliveryModel:
     """
     Get the status of a delivery.
 
@@ -179,6 +191,7 @@ def delivery_status(delivery_id: str) -> DeliveryModel:
     delivery = get_deliveries(
         delivery_id=delivery_id,
         config=config,
+        on_behalf_of=on_behalf_of,
     )
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
@@ -186,7 +199,9 @@ def delivery_status(delivery_id: str) -> DeliveryModel:
     return delivery[0]
 
 
-def list_deliveries(timeframe: TimeframeLiteral = "mo") -> list[DeliveryModel]:
+def list_deliveries(
+    timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None
+) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
@@ -195,5 +210,7 @@ def list_deliveries(timeframe: TimeframeLiteral = "mo") -> list[DeliveryModel]:
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config, timeframe=timeframe)
+    deliveries = get_deliveries(
+        config=config, timeframe=timeframe, on_behalf_of=on_behalf_of
+    )
     return deliveries

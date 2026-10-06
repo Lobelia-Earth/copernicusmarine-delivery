@@ -53,7 +53,7 @@ def test_list_deliveries_python_interface(
     )
     _upload(MOCK_FILES, dataset_id="dataset1", product_id="product1", anchor="dataset1")
 
-    deliveries = list_deliveries()
+    deliveries = list_deliveries(on_behalf_of=None)
 
     assert len(deliveries) == 3
     dumped = json.dumps(
@@ -117,17 +117,17 @@ def test_get_deliveries_sends_timeframe_as_created_after_param(monkeypatch):
         delivery_module, "fetch_keycloak_token", lambda config: "test-token"
     )
 
-    get_deliveries(config=None, timeframe="w")  # type: ignore
+    get_deliveries(config=None, timeframe="w", on_behalf_of=None)  # type: ignore
 
     # now (frozen) minus one week, in ISO 8601 UTC.
     assert captured["params"] == {"created_after": "2012-01-07T12:00:01Z"}
 
-    get_deliveries(config=None, timeframe="all")  # type: ignore
+    get_deliveries(config=None, timeframe="all", on_behalf_of=None)  # type: ignore
 
     # datetime.min in ISO 8601 UTC.
     assert captured["params"].get("created_after") == None
 
-    get_deliveries(config=None, timeframe="d")  # type: ignore
+    get_deliveries(config=None, timeframe="d", on_behalf_of=None)  # type: ignore
 
     # now (frozen) minus one day, in ISO 8601 UTC.
     assert captured["params"] == {"created_after": "2012-01-13T12:00:01Z"}

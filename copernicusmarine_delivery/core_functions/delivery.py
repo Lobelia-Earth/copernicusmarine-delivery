@@ -79,6 +79,7 @@ def create_and_upload_delivery(
 
 def get_deliveries(
     config: GetConfigResponse,
+    on_behalf_of: str | None,
     delivery_id: str | None = None,
     timeframe: TimeframeLiteral | None = None,
 ) -> list[Delivery]:
@@ -87,6 +88,8 @@ def get_deliveries(
         params["delivery_id"] = delivery_id
     if timeframe and (create_after := _timeframe_to_created_after(timeframe)):
         params["created_after"] = create_after
+    if on_behalf_of:
+        params["on_behalf_of"] = on_behalf_of
 
     response = http_client.get(
         f"{INGESTION_SERVICE_URL}/delivery",

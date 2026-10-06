@@ -18,6 +18,6 @@ jobs:
           environments: dev
           cache: true
       - name: Format check
-        run: pixi run format-check
+        run: pixi run -e dev format-check
       - name: Type check
-        run: pixi run type-check
+        run: pixi run -e dev type-check

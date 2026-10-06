@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -74,18 +76,22 @@ class OpdvS3CredentialProvider:
         self,
         pushing_entity_id: str,
         config: GetConfigResponse,
+        on_behalf_of: str | None,
         refresh_threshold: timedelta = _CREDENTIAL_REFRESH_THRESHOLD,
     ) -> None:
         self._pushing_entity_id = pushing_entity_id
         self._config = config
         self.refresh_threshold = refresh_threshold
+        self.on_behalf_of = on_behalf_of
 
     def __call__(self) -> S3Credential:
         logger.debug("Getting new set of S3 Credentials from OPDV's API.")
         token = fetch_keycloak_token(self._config)
+        params = {"on_behalf_of": self.on_behalf_of} if self.on_behalf_of else None
         resp = http_client.get(
             f"{INGESTION_SERVICE_URL}/credentials",
             headers={"Authorization": f"Bearer {token}"},
+            params=params,
             timeout=30,
         )
         resp.raise_for_status()
@@ -102,10 +108,13 @@ def _get_s3_store(
     endpoint_url: str,
     bucket_name: str,
     pushing_entity_id: str,
+    on_behalf_of: str | None,
     config: GetConfigResponse,
 ) -> S3Store:
     credential_provider: S3CredentialProvider = OpdvS3CredentialProvider(
-        pushing_entity_id, config
+        pushing_entity_id=pushing_entity_id,
+        config=config,
+        on_behalf_of=on_behalf_of,
     )
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
@@ -135,6 +144,7 @@ def get_s3_ingestion_client(
     bucket_name: str,
     config: GetConfigResponse,
     endpoint_url: str,
+    on_behalf_of: str | None,
     chunk_concurrency: int = 6,
 ) -> "S3Client":
     return _make_client(
@@ -144,6 +154,7 @@ def get_s3_ingestion_client(
             endpoint_url=endpoint_url,
             pushing_entity_id=pushing_entity_id,
             config=config,
+            on_behalf_of=on_behalf_of,
         ),
         chunk_concurrency=chunk_concurrency,
     )

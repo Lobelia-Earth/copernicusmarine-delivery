@@ -58,8 +58,20 @@ def _camel_case_to_sentence(identifier: str) -> str:
     return " ".join(sentence)
 
 
+def _api_error_detail(exception: Exception) -> str | None:
+    """API `detail` from an HTTPError response, else None."""
+    response = getattr(exception, "response", None)
+    if response is None:
+        return None
+    try:
+        detail = response.json()["detail"]
+    except (ValueError, KeyError, TypeError):  # body not JSON / no `detail`
+        return None
+    return detail if isinstance(detail, str) else json.dumps(detail)
+
+
 def _log_exception(log_function: Callable, exception: Exception):
-    exception_string = str(exception).strip('"')
+    exception_string = _api_error_detail(exception) or str(exception).strip('"')
     details = f": {exception_string}" if exception_string else ""
     message = _exception_to_sentence(exception) + details
     log_function(message)
@@ -97,6 +109,14 @@ _shared_options = [
         help="Validate the upload without performing any actual operation in S3.",
     ),
 ]
+
+pushing_entity_id_option = click.option(
+    "--pushing-entity-id",
+    envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
+    default=None,
+    hidden=True,
+    help="ADMIN only: act on behalf of this pushing entity.",
+)
 
 _upload_shared_options = [
     click.option(
@@ -163,11 +183,13 @@ def cli(max_content_width=200) -> None:
 )
 @shared_options
 @upload_shared_options
+@pushing_entity_id_option
 @log_exception_and_exit
 def delivery(
     file: Path,
     dataset_id: str,
     product_id: str,
+    pushing_entity_id: str | None = None,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -181,6 +203,7 @@ def delivery(
 
     response_delivery, delivery = _delivery(
         [operation for operation in delivery_file.delivery],
+        on_behalf_of=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -221,11 +244,13 @@ def delivery(
 )
 @shared_options
 @upload_shared_options
+@pushing_entity_id_option
 @log_exception_and_exit
 def upload(
     source: list[str],
     dataset_id: str,
     product_id: str,
+    pushing_entity_id: str | None,
     anchor: str | None,
     save_delivery_json: bool = False,
     raise_on_upload_error: bool = False,
@@ -257,6 +282,7 @@ def upload(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
+        on_behalf_of=pushing_entity_id,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -272,11 +298,13 @@ def upload(
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
 @shared_options
+@pushing_entity_id_option
 @log_exception_and_exit
 def delete(
     source: list[str],
     dataset_id: str,
     product_id: str,
+    pushing_entity_id: str | None,
     save_delivery_json: bool = False,
     dry_run: bool = False,
 ) -> None:
@@ -298,6 +326,7 @@ def delete(
         dataset_id=dataset_id,
         files=source,
         dry_run=dry_run,
+        on_behalf_of=pushing_entity_id,
     )
 
     if save_delivery_json:
@@ -381,10 +410,12 @@ def print_operation_summary(
     is_flag=True,
     help="Show all operations and file statuses. By default, only summary is shown.",
 )
+@pushing_entity_id_option
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     delivery_json: Path | None = None,
+    pushing_entity_id: str | None = None,
     show_all: bool = False,
 ) -> None:
     """Get the status of a delivery (upload and/or delete). Specify either
@@ -406,6 +437,7 @@ def status(
     deliveries = get_deliveries(
         delivery_id=delivery_id,
         config=config,
+        on_behalf_of=pushing_entity_id,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
@@ -443,6 +475,7 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
 
 
 @cli.command()
+@pushing_entity_id_option
 @click.option(
     "--timeframe",
     type=click.Choice(["s", "m", "h", "d", "w", "mo", "y", "all"]),
@@ -450,13 +483,19 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
 @log_exception_and_exit
-def list_deliveries(timeframe: TimeframeLiteral) -> None:
+def list_deliveries(
+    timeframe: TimeframeLiteral, pushing_entity_id: str | None = None
+) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(config=config, timeframe=timeframe)
+    deliveries = get_deliveries(
+        config=config,
+        on_behalf_of=pushing_entity_id,
+        timeframe=timeframe,
+    )
     print_list_deliveries(deliveries)
 
 
