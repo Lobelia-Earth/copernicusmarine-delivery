@@ -7,19 +7,31 @@
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
+  	created at: None
+  	total uploads: 1
+  	total volume (MB): 0
   	errored uploads: 0
+  	total deletes: 0
   	errored deletes: 0
   [DELIVERY] 20120114T120001-product1-7873 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset2
   	status: pending
+  	created at: None
+  	total uploads: 1
+  	total volume (MB): 0
   	errored uploads: 0
+  	total deletes: 0
   	errored deletes: 0
   [DELIVERY] 20120114T120001-product1-4611 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
+  	created at: None
+  	total uploads: 2
+  	total volume (MB): 0
   	errored uploads: 0
+  	total deletes: 0
   	errored deletes: 0
   '''
 # ---
@@ -33,7 +45,6 @@
       "dataset_id": "dataset1",
       "operations": [
         {
-          "operation": "upload",
           "files": [
             {
               "key_suffix": "file1.txt",
@@ -43,9 +54,11 @@
               "upload_start_time": "2012-01-14T12:00:01Z",
               "upload_end_time": "2012-01-14T12:00:01Z"
             }
-          ]
+          ],
+          "operation": "upload"
         }
       ],
+      "creation_timestamp": null,
       "status": "pending",
       "status_timestamp": null,
       "error_message": null
@@ -57,7 +70,6 @@
       "dataset_id": "dataset1",
       "operations": [
         {
-          "operation": "upload",
           "files": [
             {
               "key_suffix": "file1.txt",
@@ -75,9 +87,11 @@
               "upload_start_time": "2012-01-14T12:00:01Z",
               "upload_end_time": "2012-01-14T12:00:01Z"
             }
-          ]
+          ],
+          "operation": "upload"
         }
       ],
+      "creation_timestamp": null,
       "status": "pending",
       "status_timestamp": null,
       "error_message": null
@@ -89,7 +103,6 @@
       "dataset_id": "dataset2",
       "operations": [
         {
-          "operation": "upload",
           "files": [
             {
               "key_suffix": "file2.txt",
@@ -99,9 +112,11 @@
               "upload_start_time": "2012-01-14T12:00:01Z",
               "upload_end_time": "2012-01-14T12:00:01Z"
             }
-          ]
+          ],
+          "operation": "upload"
         }
       ],
+      "creation_timestamp": null,
       "status": "pending",
       "status_timestamp": null,
       "error_message": null

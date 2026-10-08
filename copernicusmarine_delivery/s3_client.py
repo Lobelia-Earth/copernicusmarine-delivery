@@ -269,9 +269,8 @@ class S3Client:
                     f"There won't be any delivery."
                 )
                 raise e
-            logger.error(
-                f"Something went wrong uploading: {file.name}. "
-                f"Skipping this file. Error: {_extract_error_message(e)}"
+            logger.warning(
+                f"Something went wrong uploading: {file.name}. Skipping this file."
             )
             return ErrorFile(
                 local_path=file,

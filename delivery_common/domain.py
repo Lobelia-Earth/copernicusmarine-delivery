@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, TypeVar, Union
+from typing import Annotated, Any, Generic, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Discriminator, Field, Tag, field_validator
@@ -127,7 +127,22 @@ class DeleteFile(DeliveryFile):
     pass
 
 
-class UploadOperation(BaseModel):
+FileT = TypeVar("FileT", bound=DeliveryFile)
+
+
+class _BaseOperation(BaseModel, Generic[FileT]):
+    files: list[FileT]
+
+    def get_errored_file_names(self) -> list[tuple[str, str]]:
+        """Returns a list of all file key_suffixes that have an error message."""
+        return [
+            (file.key_suffix, file.error_message)
+            for file in self.files
+            if file.error_message
+        ]
+
+
+class UploadOperation(_BaseOperation[UploadFile]):
     operation: OperationNames = Field(default=OperationNames.upload)
     files: list[UploadFile] = Field(default_factory=list)
 
@@ -136,7 +151,7 @@ class UploadOperation(BaseModel):
         return sum(file.file_size_mb or 0 for file in self.files)
 
 
-class DeleteOperation(BaseModel):
+class DeleteOperation(_BaseOperation[DeleteFile]):
     operation: OperationNames = Field(default=OperationNames.delete)
     files: list[DeleteFile] = Field(default_factory=list)
 
@@ -174,6 +189,11 @@ class Delivery(BaseModel):
     #: List of operations associated with the delivery.
     #: These operations will be done sequentially in the order they are listed.
     operations: list[Operation] = Field(default_factory=list)
+    #: Creation timestamp of the delivery in ISO 8601 format (UTC).
+    #: As a producer, do not set.
+    #: Corresponds to the time the server received the delivery request.
+    #: Not necessarily the time the delivery was created by the client/user.
+    creation_timestamp: str | None = None
 
     #: status of the delivery in the OPDV system.
     #: todo: The delivery has not been picked up yet by the OPDV system.

@@ -8,7 +8,7 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  	Total: 2 file uploaded, 2 file to delete.
+  	Total: 2 files uploaded, 2 files to delete.
   '''
 # ---
 # name: test_delivery_python_interface
@@ -59,7 +59,6 @@
     "dataset_id": "dataset1",
     "operations": [
       {
-        "operation": "delete",
         "files": [
           {
             "key_suffix": "tests/resources/dataset1/file1.txt",
@@ -69,10 +68,10 @@
             "key_suffix": "tests/resources/dataset1/file2.txt",
             "error_message": null
           }
-        ]
+        ],
+        "operation": "delete"
       },
       {
-        "operation": "upload",
         "files": [
           {
             "key_suffix": "file1.txt",
@@ -90,9 +89,11 @@
             "upload_start_time": "2012-01-14T12:00:01Z",
             "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ]
+        ],
+        "operation": "upload"
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null

@@ -8,7 +8,7 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  	Total: 2 file uploaded, .
+  	Total: 2 files uploaded.
   '''
 # ---
 # name: test_upload_cli_save_delivery_json
@@ -20,11 +20,12 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  	Total: 2 file uploaded, .
+  	Total: 2 files uploaded.
   '''
 # ---
 # name: test_upload_cli_save_delivery_json.1
   dict({
+    'creation_timestamp': None,
     'dataset_id': 'dataset1',
     'delivery_id': '20120114T120001-product1-1106',
     'error_message': None,
@@ -66,7 +67,6 @@
     "dataset_id": "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311",
     "operations": [
       {
-        "operation": "upload",
         "files": [
           {
             "key_suffix": "file2.txt",
@@ -76,9 +76,11 @@
             "upload_start_time": "2012-01-14T12:00:01Z",
             "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ]
+        ],
+        "operation": "upload"
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null
@@ -113,7 +115,6 @@
     "dataset_id": "dataset1",
     "operations": [
       {
-        "operation": "upload",
         "files": [
           {
             "key_suffix": "file1.txt",
@@ -131,9 +132,11 @@
             "upload_start_time": "2012-01-14T12:00:01Z",
             "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ]
+        ],
+        "operation": "upload"
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null

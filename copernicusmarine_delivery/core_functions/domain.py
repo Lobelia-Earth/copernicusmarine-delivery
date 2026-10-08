@@ -130,20 +130,19 @@ class ResponseDelivery(BaseResponse):
         )
 
 
-class BaseOperation(BaseModel):
-    operation: OperationNames
+class _BaseOperation(BaseModel):
     files: list[str]
 
     def add(self, file: str) -> None:
         self.files.append(file)
 
 
-class Upload(BaseOperation):
+class Upload(_BaseOperation):
     operation: Literal[OperationNames.upload] = OperationNames.upload
     anchor: str | None = None
 
 
-class Delete(BaseOperation):
+class Delete(_BaseOperation):
     operation: Literal[OperationNames.delete] = OperationNames.delete
 
 

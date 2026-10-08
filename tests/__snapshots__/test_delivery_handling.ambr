@@ -8,7 +8,6 @@
     "dataset_id": "dataset1",
     "operations": [
       {
-        "operation": "upload",
         "files": [
           {
             "key_suffix": "file.nc",
@@ -18,18 +17,20 @@
             "upload_start_time": "2024-03-15T12:00:01Z",
             "upload_end_time": "2024-03-15T12:00:02Z"
           }
-        ]
+        ],
+        "operation": "upload"
       },
       {
-        "operation": "delete",
         "files": [
           {
             "key_suffix": "file2.nc",
             "error_message": null
           }
-        ]
+        ],
+        "operation": "delete"
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null

@@ -34,7 +34,10 @@ from copernicusmarine_delivery.core_functions.utils import (
     local_path_to_key_suffix,
 )
 from copernicusmarine_delivery.logger import logger
-from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
+from copernicusmarine_delivery.s3_client import (
+    S3Client,
+    get_s3_ingestion_client,
+)
 from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
@@ -335,6 +338,9 @@ def _put_files_to_ingestion_system(
     )
     if not put_files_result.successful_files:
         raise NoSuccessfulUploadsError(put_files_result.errored_files)
+    elif put_files_result.errored_files:
+        for errored_file in put_files_result.errored_files:
+            logger.error(f"Skipping errored file: {errored_file}.")
 
     operation = build_upload_operation_from_put_results(
         to_upload_operation, put_files_result, dataset_id
