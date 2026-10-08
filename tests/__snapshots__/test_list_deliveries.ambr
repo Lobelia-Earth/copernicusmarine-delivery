@@ -45,7 +45,6 @@
       "dataset_id": "dataset1",
       "operations": [
         {
-          "operation": "upload",
           "files": [
             {
               "key_suffix": "file1.txt",
@@ -55,7 +54,8 @@
               "upload_start_time": "2012-01-14T12:00:01Z",
               "upload_end_time": "2012-01-14T12:00:01Z"
             }
-          ]
+          ],
+          "operation": "upload"
         }
       ],
       "creation_timestamp": null,
@@ -70,7 +70,6 @@
       "dataset_id": "dataset1",
       "operations": [
         {
-          "operation": "upload",
           "files": [
             {
               "key_suffix": "file1.txt",
@@ -88,7 +87,8 @@
               "upload_start_time": "2012-01-14T12:00:01Z",
               "upload_end_time": "2012-01-14T12:00:01Z"
             }
-          ]
+          ],
+          "operation": "upload"
         }
       ],
       "creation_timestamp": null,
@@ -103,7 +103,6 @@
       "dataset_id": "dataset2",
       "operations": [
         {
-          "operation": "upload",
           "files": [
             {
               "key_suffix": "file2.txt",
@@ -113,7 +112,8 @@
               "upload_start_time": "2012-01-14T12:00:01Z",
               "upload_end_time": "2012-01-14T12:00:01Z"
             }
-          ]
+          ],
+          "operation": "upload"
         }
       ],
       "creation_timestamp": null,

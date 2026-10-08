@@ -77,7 +77,6 @@
     "dataset_id": "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311",
     "operations": [
       {
-        "operation": "delete",
         "files": [
           {
             "key_suffix": "tests/resources/file1.txt",
@@ -87,7 +86,8 @@
             "key_suffix": "tests/resources/file2.txt",
             "error_message": null
           }
-        ]
+        ],
+        "operation": "delete"
       }
     ],
     "creation_timestamp": null,

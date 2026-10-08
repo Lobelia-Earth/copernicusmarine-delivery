@@ -59,7 +59,6 @@
     "dataset_id": "dataset1",
     "operations": [
       {
-        "operation": "delete",
         "files": [
           {
             "key_suffix": "tests/resources/dataset1/file1.txt",
@@ -69,10 +68,10 @@
             "key_suffix": "tests/resources/dataset1/file2.txt",
             "error_message": null
           }
-        ]
+        ],
+        "operation": "delete"
       },
       {
-        "operation": "upload",
         "files": [
           {
             "key_suffix": "file1.txt",
@@ -90,7 +89,8 @@
             "upload_start_time": "2012-01-14T12:00:01Z",
             "upload_end_time": "2012-01-14T12:00:01Z"
           }
-        ]
+        ],
+        "operation": "upload"
       }
     ],
     "creation_timestamp": null,
