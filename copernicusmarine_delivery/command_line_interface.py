@@ -41,6 +41,7 @@ from delivery_common.domain import (
     Delivery,
     UploadOperation,
 )
+from delivery_common.domain import DeliveryFile as DeliveryCommonFile
 
 
 def _exception_to_sentence(exception: Exception) -> str:
@@ -475,21 +476,18 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
 
     for operation in delivery.operations:
         if isinstance(operation, UploadOperation):
+            total_uploads += len(operation.files)
+            total_volumes += operation.total_size()
+            failed_uploads += len(operation.get_errored_file_names())
             detailed_operations_message += "\t[UPLOAD OPERATION]\n"
             for file in operation.files:
-                total_uploads += 1
-                total_volumes += file.file_size_mb if file.file_size_mb else 0
-                if file.error_message:
-                    failed_uploads += 1
-                detailed_operations_message += f"\t\tfile: {file.key_suffix}{', ERROR {file.error_message}' if file.error_message else ''}\n"
+                detailed_operations_message += get_file_summary(file)
         elif isinstance(operation, DeleteOperation):
+            total_deletes += len(operation.files)
+            failed_deletes += len(operation.get_errored_file_names())
             detailed_operations_message += "\t[DELETE OPERATION]\n"
             for file in operation.files:
-                total_deletes += 1
-                if file.error_message:
-                    failed_deletes += 1
-                detailed_operations_message += f"\t\tfile: {file.key_suffix}{', ERROR {file.error_message}' if file.error_message else ''}\n"
-
+                detailed_operations_message += get_file_summary(file)
     click.echo(f"\ttotal uploads: {total_uploads}")
     click.echo(f"\ttotal volume (MB): {total_volumes}")
     click.echo(f"\terrored uploads: {failed_uploads}")
@@ -497,6 +495,14 @@ def print_delivery(delivery: Delivery, show_all: bool) -> None:
     click.echo(f"\terrored deletes: {failed_deletes}")
     if show_all:
         click.echo(detailed_operations_message)
+
+
+def get_file_summary(file: DeliveryCommonFile) -> str:
+    summary = f"\t\tfile: {file.key_suffix}"
+    if file.error_message:
+        summary += f", ERROR {file.error_message}"
+
+    return f"{summary}\n"
 
 
 @cli.command()
