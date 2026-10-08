@@ -5,7 +5,11 @@
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
+  	created at: None
+  	total uploads: 2
+  	total volume (MB): 0
   	errored uploads: 0
+  	total deletes: 0
   	errored deletes: 0
   	[UPLOAD OPERATION]
   		file: file1.txt
@@ -42,6 +46,7 @@
         ]
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null

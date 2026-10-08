@@ -174,6 +174,11 @@ class Delivery(BaseModel):
     #: List of operations associated with the delivery.
     #: These operations will be done sequentially in the order they are listed.
     operations: list[Operation] = Field(default_factory=list)
+    #: Creation timestamp of the delivery in ISO 8601 format (UTC).
+    #: As a producer, do not set.
+    #: Corresponds to the time the server received the delivery request.
+    #: Not necessarily the time the delivery was created by the client/user.
+    creation_timestamp: str | None = None
 
     #: status of the delivery in the OPDV system.
     #: todo: The delivery has not been picked up yet by the OPDV system.

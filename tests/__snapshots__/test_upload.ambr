@@ -8,7 +8,7 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  	Total: 2 file uploaded, .
+  	Total: 2 files uploaded.
   '''
 # ---
 # name: test_upload_cli_save_delivery_json
@@ -20,11 +20,12 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  	Total: 2 file uploaded, .
+  	Total: 2 files uploaded.
   '''
 # ---
 # name: test_upload_cli_save_delivery_json.1
   dict({
+    'creation_timestamp': None,
     'dataset_id': 'dataset1',
     'delivery_id': '20120114T120001-product1-1106',
     'error_message': None,
@@ -79,6 +80,7 @@
         ]
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null
@@ -134,6 +136,7 @@
         ]
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null

@@ -8,7 +8,7 @@
   	product_id: product1
   	dataset_id: dataset1
   
-  	Total: 2 file uploaded, 2 file to delete.
+  	Total: 2 files uploaded, 2 files to delete.
   '''
 # ---
 # name: test_delivery_python_interface
@@ -93,6 +93,7 @@
         ]
       }
     ],
+    "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
     "error_message": null
