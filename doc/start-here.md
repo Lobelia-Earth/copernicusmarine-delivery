@@ -1,10 +1,10 @@
-# Start here - Quick setup and test
+# Start here
 
 Quick guide to setup and test the Copernicus Marine Delivery tool, using the command line interface (CLI).
 
 See the other pages for more detailed documentation.
 
-## Credentials
+## Get an account
 
 You need a **Copernicus Marine account** configured as your **Pushing Entity**.
 
@@ -19,7 +19,7 @@ export COPERNICUSMARINE_SERVICE_PASSWORD="*************"
 
 For more details, see: [credentials.md](credentials.md)
 
-## Installation
+## Install package
 
 Install via pip and check that the installation was successful:
 

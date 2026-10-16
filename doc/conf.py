@@ -41,7 +41,7 @@ pygments_dark_style = "monokai"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
-html_title = "Copernicus Marine Producers Toolbox"
+html_title = "Copernicus Marine Delivery documentation"
 html_static_path = ["_static"]
 html_favicon = "_static/favicon_cmems.ico"
 html_css_files = ["css/custom.css"]
