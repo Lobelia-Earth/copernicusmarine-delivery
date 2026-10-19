@@ -6,11 +6,15 @@ from copernicusmarine_delivery.core_functions.constants import (
     DEFAULT_CHUNK_SIZE_MB,
     MAX_CONCURRENT_UPLOADS,
 )
-from copernicusmarine_delivery.core_functions.core_functions import delete as _delete
+from copernicusmarine_delivery.core_functions.core_functions import (
+    delete as _delete,
+)
 from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
-from copernicusmarine_delivery.core_functions.core_functions import upload as _upload
+from copernicusmarine_delivery.core_functions.core_functions import (
+    upload as _upload,
+)
 from copernicusmarine_delivery.core_functions.delivery import (
     TimeframeLiteral,
     get_deliveries,
@@ -185,7 +189,10 @@ def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> Delive
     """
     Get the status of a delivery.
 
-    Right now, returns the delivery.
+    :param delivery_id: The ID of the delivery to check.
+    :param on_behalf_of: For internal usage only.
+
+    :return: DeliveryModel object representing the status of the delivery.
     """
     config = get_config()
     delivery = get_deliveries(

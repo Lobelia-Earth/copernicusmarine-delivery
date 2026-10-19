@@ -26,6 +26,7 @@ You can validate without performing any actual operation with `--dry-run`:
 
 ```bash
 copernicusmarine-delivery delivery --file delivery_file.yaml --dataset-id dataset_id --product-id product_id --dry-run
+```
 
 To save the delivery document to a JSON file (for later use with `copernicusmarine-delivery status`), use `--save-delivery-json`:
 
@@ -111,7 +112,7 @@ Given the delivery ID, prints the delivery summary fetched from OPDV.
 copernicusmarine-delivery status --help
 ```
 
-You can provide the IDs directly:
+You can provide the ID directly:
 
 ```bash
 copernicusmarine-delivery status --delivery-id some-delivery-id
@@ -123,7 +124,7 @@ Or provide a delivery JSON file (saved with `--save-delivery-json`):
 copernicusmarine-delivery status --delivery-json some-delivery-id.json
 ```
 
-To have a more detailed view of the delivery, use the `--show-all` option with the `status` command. It will list all the files and print potential errors associated to the file.
+To get a more detailed view of the delivery, use the `--show-all` option with the `status` command. It lists all the files and prints any errors associated with each file.
 
 ```bash
 copernicusmarine-delivery status --delivery-id some-delivery-id --show-all
@@ -131,7 +132,7 @@ copernicusmarine-delivery status --delivery-id some-delivery-id --show-all
 
 ## List deliveries command
 
-List all the deliveries fetched from OPDV, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the python interface.
+List all the deliveries fetched from OPDV, printed as a list. If you want to see the details of a delivery, use the `status` command with the delivery ID or use the Python interface.
 
 ```bash
 copernicusmarine-delivery list-deliveries --help

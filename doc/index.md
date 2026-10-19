@@ -1,4 +1,4 @@
-# Copernicusmarine Delivery package
+# Copernicus Marine Delivery documentation
 
 ```{warning}
 This is a package for the **data producers** of the Copernicus Marine Service. If you need to access and download data, please use the [`copernicusmarine` package](https://toolbox-docs.marine.copernicus.eu/en/stable/).
@@ -8,26 +8,22 @@ This is a package for the **data producers** of the Copernicus Marine Service. I
 This package is in development and may undergo significant changes.
 ```
 
-Python library to help you upload data to the Copernicus Marine ingestion platform. After uploading your data to the ingestion system, the data will be validated and pushed to the Copernicus Marine Data Store.
+The `copernicusmarine-delivery` package helps data producers upload data to the Copernicus Marine Data Store (MDS).
 
-This package exposes both a **command line interface (CLI)** and a **Python API** to
-submit deliveries (uploads and deletes) to the ingestion platform.
+This package exposes both a **command line interface (CLI)** and a **Python API** to submit and get the status of data deliveries (uploads and deletes).
+
+Once data is delivered, it will be validated and published to the MDS Data Lake, available to users.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Contents:
 
-installation
+quick-start
 concepts
-python-interface
+credentials
+installation
 command-line-interface
+python-interface
 error-handling
 roadmap
 ```
-
-## Setup
-
-You need to set the following environment variables:
-
-- `COPERNICUSMARINE_SERVICE_USERNAME`: your Copernicus Marine username.
-- `COPERNICUSMARINE_SERVICE_PASSWORD`: your Copernicus Marine password.
