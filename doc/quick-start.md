@@ -17,7 +17,7 @@ export COPERNICUSMARINE_SERVICE_USERNAME="my-pe-account"
 export COPERNICUSMARINE_SERVICE_PASSWORD="*************"
 ```
 
-For more details, see: [credentials.md](credentials.md)
+For more details, see [the page about credentials](credentials.md).
 
 ## Install
 
@@ -28,7 +28,7 @@ pip install copernicusmarine-delivery
 copernicusmarine-delivery --help
 ```
 
-For installation alternatives, see [the installation guide.](installation.md)
+For installation alternatives, see [the installation guide](installation.md).
 
 ## Test Access
 
