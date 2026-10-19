@@ -4,7 +4,7 @@
 
 You need a **Copernicus Marine account** configured as your **Pushing Entity** in order to deliver data to the MDS.
 
-If you do not have it, please contact the MDS Service Desk: `mds-service` at `lobelia.earth`.
+If you do not have one, please contact the MDS Service Desk.
 
 ## Passing the credentials
 

@@ -7,9 +7,7 @@
 > [!WARNING]  
 > This package is in development and may undergo significant changes.
 
-Python library to help data producers upload data to the Copernicus Marine Data
-Store (MDS). After uploading your data to the ingestion service, it will be
-validated and published to the MDS Data Lake, available to users.
+Python library to help data producers upload data to the Copernicus Marine Data Store (MDS). After uploading your data to the ingestion service, it will be validated and published to the MDS Data Lake, available to users.
 
 This package exposes both a **command line interface (CLI)** and a **Python API**
 to submit and get the status of data deliveries (uploads and deletes).

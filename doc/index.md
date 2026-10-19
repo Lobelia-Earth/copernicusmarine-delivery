@@ -18,7 +18,7 @@ Once data is delivered, it will be validated and published to the MDS Data Lake,
 :maxdepth: 2
 :caption: Contents:
 
-start-here
+quick-start
 concepts
 credentials
 installation

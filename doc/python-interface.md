@@ -61,7 +61,7 @@ from copernicusmarine_delivery import list_deliveries
 deliveries = list_deliveries()
 ```
 
-It lists all your deliveries, sorted by delivery ID in descending order (most recent first). For example, if you want to have all the deliveries IDs for a given dataset, simply do:
+It lists all your deliveries, sorted by delivery ID in descending order (most recent first). For example, if you want all the delivery IDs for a given dataset, simply do:
 
 ```python
 from copernicusmarine_delivery import list_deliveries
