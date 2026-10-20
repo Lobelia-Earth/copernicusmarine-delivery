@@ -26,6 +26,7 @@ command-line-interface/index
 python-interface/index
 error-handling
 troubleshooting
+faq
 best-practices
 roadmap
 ```

@@ -1,6 +1,6 @@
 # Troubleshooting
 
-If the problem is not listed here, or persists after following the steps, please contact the MDS Service Desk.
+If the problem is not listed here, or persists after following the steps, please contact the MDS Service Desk. For general questions, see the [FAQ](faq.md).
 
 ```{note}
 The messages below are the ones printed by the CLI. With the Python interface, the same errors are raised as exceptions with the same text, without the prefix (for example, `AuthenticationError`).
