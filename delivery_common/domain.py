@@ -40,15 +40,12 @@ class PushingEntity(BaseModel):
 
 
 class InvalidDeliveryIdsError(Exception):
+    """Raised when one or more IDs in the delivery are not expected."""
     def __init__(self, message: str):
         super().__init__(message)
 
 
 class PushingEntities(BaseModel):
-    """
-    TODO: create an endpoint on OPDV side to get this information.
-    """
-
     pushing_entities: list[PushingEntity] = Field(..., alias="pushing-entities")
 
     @classmethod

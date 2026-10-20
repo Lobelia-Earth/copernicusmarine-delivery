@@ -140,6 +140,10 @@ class Delivery(BaseModel):
     operations: list[Upload | Delete] = Field(default_factory=list)
 
     def add(self, operation: Upload | Delete) -> None:
+        """Add an operation to the delivery. Operations are performed in the order they are added.
+
+        :param operation: An :class:`Upload` or :class:`Delete` operation.
+        """
         self.operations.append(operation)
 
     def submit(

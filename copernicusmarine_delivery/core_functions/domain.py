@@ -134,6 +134,10 @@ class _BaseOperation(BaseModel):
     files: list[str]
 
     def add(self, file: str) -> None:
+        """Add a file to the operation.
+
+        :param file: Path of the file. See `File paths and anchors` in the documentation.
+        """
         self.files.append(file)
 
 
