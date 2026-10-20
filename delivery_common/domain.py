@@ -41,6 +41,7 @@ class PushingEntity(BaseModel):
 
 class InvalidDeliveryIdsError(Exception):
     """Raised when one or more IDs in the delivery are not expected."""
+
     def __init__(self, message: str):
         super().__init__(message)
 

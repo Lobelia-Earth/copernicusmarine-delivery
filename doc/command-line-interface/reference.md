@@ -25,7 +25,7 @@ Use `copernicusmarine-delivery COMMAND --help` to print the help of a command.
 `PYTHON_LOG_DEBUG`
 : Set it to `1`, `true` or `yes` to print debug logs.
 
-## Exit status
+## Exit statuses
 
 `0`
 : Success.
@@ -33,7 +33,9 @@ Use `copernicusmarine-delivery COMMAND --help` to print the help of a command.
 `1`
 : The command failed. The error is logged.
 
-## upload
+## Commands
+
+### upload
 
 Upload local files to a dataset. It submits a delivery with one upload operation.
 
@@ -77,7 +79,7 @@ Example:
 copernicusmarine-delivery upload --product-id my-product --dataset-id my-dataset --anchor local --source my/local/folder/file.nc
 ```
 
-## delete
+### delete
 
 Request the deletion of files from a dataset. It submits a delivery with one delete operation.
 
@@ -106,7 +108,7 @@ Example:
 copernicusmarine-delivery delete --product-id my-product --dataset-id my-dataset --source some/folders/file.nc
 ```
 
-## delivery
+### delivery
 
 Submit a delivery with several operations, defined in a YAML file. The operations are run sequentially, in order.
 
@@ -132,7 +134,7 @@ Example:
 copernicusmarine-delivery delivery --product-id my-product --dataset-id my-dataset --file delivery_file.yaml
 ```
 
-## status
+### status
 
 Print the summary of a delivery fetched from the ingestion system.
 
@@ -157,7 +159,7 @@ Example:
 copernicusmarine-delivery status --delivery-id some-delivery-id --show-all
 ```
 
-## list-deliveries
+### list-deliveries
 
 List the deliveries of your Pushing Entity, most recent first.
 

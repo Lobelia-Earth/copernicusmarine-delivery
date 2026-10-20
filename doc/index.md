@@ -25,5 +25,6 @@ installation
 command-line-interface/index
 python-interface/index
 error-handling
+best-practices
 roadmap
 ```
