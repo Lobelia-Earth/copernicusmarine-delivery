@@ -34,7 +34,7 @@ def _keycloak_error_message(response: requests.Response) -> str:
         reason = None
     return (
         f"Could not get a token from {response.url} "
-        f"(HTTP {response.status_code}): {reason or response.reason}. "
+        f"(HTTP {response.status_code}): {reason or 'no details provided'}. "
         "Please check your COPERNICUSMARINE_SERVICE_USERNAME and "
         "COPERNICUSMARINE_SERVICE_PASSWORD."
     )
@@ -80,7 +80,7 @@ def fetch_keycloak_token(config: GetConfigResponse) -> str:
             "scope": config.oidc_config.scope,
         }
     token_response = http_client.post(token_endpoint, data=data)
-    if not token_response.ok:
+    if token_response.status_code >= 400:
         raise AuthenticationError(_keycloak_error_message(token_response))
     token_response_json = token_response.json()
     _token_cache.update(
