@@ -119,9 +119,9 @@ The snippet in Python would look like this:
 from copernicusmarine_delivery import Delivery, Upload, Delete, delivery_status
 
 delivery = Delivery(
-  [
-    Delete(["test.nc"]),
-    Upload(["my/local/files/file_01.nc", "my/local/files/file_02.nc"])
+  operations=[
+    Delete(files=["test.nc"]),
+    Upload(files=["my/local/files/file_01.nc", "my/local/files/file_02.nc"])
   ]
 )
 

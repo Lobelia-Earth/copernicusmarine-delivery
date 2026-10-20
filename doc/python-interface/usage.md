@@ -11,10 +11,10 @@ product_id = "some-product-id"
 dataset_id = "some-dataset-id"
 
 # --- Delete ---
-delete = Delete(["some/file.nc", "some/other/file.nc"])
+delete = Delete(files=["some/file.nc", "some/other/file.nc"])
 
 # --- Upload ---
-upload = Upload(["some/file.nc", "some/other/file.nc"])
+upload = Upload(files=["some/file.nc", "some/other/file.nc"])
 
 # --- Add files to upload or delete ---
 delete.add("another/file.nc")
@@ -34,12 +34,12 @@ product_id = "some-product-id"
 dataset_id = "some-dataset-id"
 
 # Operations are executed in order
-delivery = Delivery([
-    Delete(["some/file.nc"]),
-    Upload(["some/file.nc"]),
+delivery = Delivery(operations=[
+    Delete(files=["some/file.nc"]),
+    Upload(files=["some/file.nc"]),
 ])
-delivery.add(Delete(["some/other/file.nc"]))
-delivery.add(Upload(["some/other/file.nc"]))
+delivery.add(Delete(files=["some/other/file.nc"]))
+delivery.add(Upload(files=["some/other/file.nc"]))
 
 # --- submit ---
 delivery.submit(product_id, dataset_id)
@@ -53,7 +53,58 @@ from copernicusmarine_delivery import delivery_status
 delivery = delivery_status(delivery_id)
 ```
 
-You can also list all your deliveries:
+## Dry run
+
+Use `dry_run=True` to validate a delivery before submitting it. The product, the dataset and the files are checked, but nothing is uploaded and no delivery is submitted. Since no delivery is submitted, you cannot check its status afterwards.
+
+```python
+response = delivery.submit(product_id, dataset_id, dry_run=True)
+```
+
+`dry_run` is also available when submitting a single `Upload` or `Delete`.
+
+## Explore the response
+
+`submit` returns a response with one entry per operation, in the same order as the delivery:
+
+```python
+response = delivery.submit(product_id, dataset_id)
+
+print(response.fatal_error)  # None if nothing stopped the delivery
+for operation_response in response.operations_responses:
+    print(type(operation_response).__name__)
+```
+
+- An upload response has `files_uploaded` and `files_failed`.
+- A delete response has `files_to_delete`.
+
+See the [API reference](api-reference.md) for all the fields.
+
+## Wait for a delivery
+
+A delivery is processed after it is submitted. To wait until it finishes, check its status regularly:
+
+```python
+import time
+
+from copernicusmarine_delivery import delivery_status
+
+while True:
+    status = delivery_status(response.delivery_id)
+    if status.status.value in ("completed", "failed"):
+        break
+    time.sleep(10)
+
+print(status.status.value, status.error_message)
+```
+
+## Example notebook
+
+To try all of this step by step, download the {download}`example notebook <../_notebooks/submit_delivery.ipynb>`. It asks for your credentials when you run it, so they are not saved in the notebook.
+
+## List deliveries
+
+List all your deliveries:
 
 ```python
 from copernicusmarine_delivery import list_deliveries
