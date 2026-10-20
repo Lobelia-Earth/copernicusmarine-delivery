@@ -10,6 +10,8 @@ This package will raise an error in the following cases:
 Optionally, you can set the `raise_on_upload_error` flag to `True` when submitting a delivery. In that case, if any of the uploads fail, the package will raise an error and no delivery will be submitted.
 By default, the package will not raise an error if an upload fails. Instead, it will remove the failed uploads from the delivery. The failed uploads will be logged and can be found in the response.
 
+For the most common errors and how to solve them, see [troubleshooting](troubleshooting.md).
+
 ```{note}
 The error handling right now might be inconsistent across the package. Please report any inconsistency.
 ```
