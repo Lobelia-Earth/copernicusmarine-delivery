@@ -6,7 +6,7 @@ For help with a specific error message, see [troubleshooting](troubleshooting.md
 
 ### How do I get an account and credentials?
 
-You need a Copernicus Marine account configured as your Pushing Entity. See [credentials](credentials.md#account) to get one, and [passing the credentials](credentials.md#passing-the-credentials) to set it up.
+You need a Copernicus Marine account configured as your Pushing Entity. See [the page about credentials](credentials.md) for more information on how to get credentials and set them up.
 
 ## Deliveries
 
