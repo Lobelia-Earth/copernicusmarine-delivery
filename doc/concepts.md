@@ -18,6 +18,21 @@ Deliveries are defined at the datasetID level, i.e. if you need to submit operat
 When using the "upload" and "delete" functions directly, you submit a delivery of one operation.
 ```
 
+### Delivery status
+
+A delivery has one of these four statuses:
+
+- **pending**: the delivery has been received by the ingestion system and is waiting to be validated.
+- **validated**: the ingestion system has validated the delivery. It checks, among other things, that the product and dataset IDs are valid, that the delivery is within the [limits](best-practices.md#delivery-limits), that the uploaded files are in the ingestion system with the expected checksum, and that the files to delete exist in the MDS. The files have not reached the MDS yet.
+- **completed**: the files have reached their destination in the MDS.
+- **failed**: something went wrong along the way, for example the validation did not pass.
+
+`completed` and `failed` are the final statuses. A delivery goes from `pending` to `validated` to `completed`, or to `failed` at any point.
+
+```{note}
+If only some of the operations of a delivery fail, the delivery is still `completed`. The status then comes with an error message, and the error of each file can be seen with `--show-all` in the [status command](command-line-interface/usage.md#delivery-status-command). In Python, the error message is the `error_message` of the object returned by `delivery_status`.
+```
+
 ## Folder structure and path
 
 Let's define the different paths you can encounter:

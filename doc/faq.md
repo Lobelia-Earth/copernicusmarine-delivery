@@ -26,7 +26,7 @@ No. A delivery is for a single dataset, so submit one delivery per dataset. See 
 
 ### How do I know if my delivery is going well?
 
-Check its status with the delivery ID you got when submitting it. See the [status command](command-line-interface/usage.md#delivery-status-command) for the CLI or [delivery status](python-interface/api-reference.md#delivery-status) for the Python interface.
+Check its status with the delivery ID you got when submitting it. A delivery is `pending`, `validated`, `completed` or `failed`. See [delivery status](concepts.md#delivery-status) for what each one means. For how to check it, see the [status command](command-line-interface/usage.md#delivery-status-command) for the CLI or [delivery status](python-interface/api-reference.md#delivery-status) for the Python interface.
 
 ### I lost my delivery ID. How can I find it?
 
