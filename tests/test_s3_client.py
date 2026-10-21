@@ -6,9 +6,10 @@ import httpx
 import pytest
 from obstore.store import S3Store
 
+from copernicusmarine_delivery import ErrorFile
 from copernicusmarine_delivery.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
 from copernicusmarine_delivery.core_functions.core_functions import get_config
-from copernicusmarine_delivery.core_functions.domain import ErrorFile, S3File
+from copernicusmarine_delivery.core_functions.domain import S3File
 from copernicusmarine_delivery.core_functions.exceptions import NoSuchBucketException
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
 from copernicusmarine_delivery.s3_client import (

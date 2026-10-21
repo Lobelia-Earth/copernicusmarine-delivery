@@ -64,7 +64,7 @@ These errors are raised before anything is uploaded.
   No successful uploads error: All uploads failed. Errored files: [...]
   ```
 
-  Every file of the operation failed to upload, so there is nothing to deliver. The reason of each file is printed in the logs just above. See [error handling](error-handling.md).
+  Every file of the operation failed to upload, so there is nothing to deliver. The reason of each file is printed in the logs just above.
 
 - **Delivery rejected when submitted**
 

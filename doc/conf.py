@@ -24,7 +24,24 @@ extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx_copybutton",
+    "sphinx_click",
+    "sphinxcontrib.autodoc_pydantic",
 ]
+
+# Show `Path` instead of `pathlib.Path` in types.
+python_use_unqualified_type_names = True
+
+# Pydantic models: a table of fields (with types and defaults) instead of the
+# constructor signature, and none of the pydantic internals.
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_show_validator_summary = False
+autodoc_pydantic_model_show_validator_members = False
+autodoc_pydantic_model_show_field_summary = False
+autodoc_pydantic_model_hide_paramlist = True
+autodoc_pydantic_model_members_order = "bysource"
+autodoc_pydantic_field_list_validators = False
+autodoc_pydantic_field_show_constraints = False
 
 myst_enable_extensions = [
     "colon_fence",
@@ -66,3 +83,13 @@ html_sidebars = {
         "sidebar/github.html",
     ]
 }
+
+# -- Hidden CLI options ------------------------------------------------------
+# sphinx-click skips hidden options but still documents their environment
+# variable (e.g. the operators-only `--pushing-entity-id`). Drop it from the docs.
+from copernicusmarine_delivery.command_line_interface import cli  # noqa: E402
+
+for _command in cli.commands.values():
+    for _param in _command.params:
+        if getattr(_param, "hidden", False):
+            _param.envvar = None

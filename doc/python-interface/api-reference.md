@@ -5,14 +5,23 @@ All the objects below are importable from `copernicusmarine_delivery`.
 ## Operations
 
 ```{eval-rst}
-.. autoclass:: copernicusmarine_delivery.Upload
-   :members: add, submit
+.. autopydantic_model:: copernicusmarine_delivery.Upload
+   :inherited-members: BaseModel
 
-.. autoclass:: copernicusmarine_delivery.Delete
-   :members: add, submit
+   .. automethod:: add
+   .. automethod:: submit
 
-.. autoclass:: copernicusmarine_delivery.Delivery
-   :members: add, submit
+.. autopydantic_model:: copernicusmarine_delivery.Delete
+   :inherited-members: BaseModel
+
+   .. automethod:: add
+   .. automethod:: submit
+
+.. autopydantic_model:: copernicusmarine_delivery.Delivery
+   :inherited-members: BaseModel
+
+   .. automethod:: add
+   .. automethod:: submit
 ```
 
 ## Delivery status
@@ -26,19 +35,21 @@ All the objects below are importable from `copernicusmarine_delivery`.
 ## Models
 
 ```{eval-rst}
-.. autoclass:: copernicusmarine_delivery.core_functions.domain.ResponseUpload
-   :members: delivery_id, fatal_error, files_uploaded, files_failed
+.. autopydantic_model:: copernicusmarine_delivery.ResponseUpload
+   :inherited-members: BaseModel
 
-.. autoclass:: copernicusmarine_delivery.core_functions.domain.ResponseDelete
-   :members: delivery_id, fatal_error, files_to_delete
+.. autopydantic_model:: copernicusmarine_delivery.ResponseDelete
+   :inherited-members: BaseModel
 
-.. autoclass:: copernicusmarine_delivery.core_functions.domain.ResponseDelivery
-   :members: delivery_id, fatal_error, operations_responses
+.. autopydantic_model:: copernicusmarine_delivery.ResponseDelivery
+   :inherited-members: BaseModel
 ```
 
 ## Exceptions
 
 ```{eval-rst}
+.. autoexception:: copernicusmarine_delivery.AuthenticationError
+
 .. autoexception:: copernicusmarine_delivery.InvalidDeliveryIdsError
 
 .. autoexception:: copernicusmarine_delivery.InvalidFilesError

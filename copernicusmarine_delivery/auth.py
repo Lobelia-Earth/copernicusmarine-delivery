@@ -23,7 +23,9 @@ _token_cache: dict = {}
 OIDC_DISCOVERY_URL = "https://{oidc_provider_url}/.well-known/openid-configuration"
 
 
-class AuthenticationError(Exception): ...
+class AuthenticationError(Exception):
+    """Authentication Error is raised if the token response from the Keycloak service
+    returns >= 400"""
 
 
 def _keycloak_error_message(response: requests.Response) -> str:
