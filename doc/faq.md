@@ -34,4 +34,4 @@ List your recent deliveries. See the [list deliveries command](command-line-inte
 
 ### What happens if some of the files fail to upload?
 
-By default, the failed files are removed from the delivery and logged, and the rest is delivered. See [error handling](error-handling.md).
+By default, the failed files are removed from the delivery and logged, and the rest is delivered. See [the troubleshooting page](troubleshooting.md).
