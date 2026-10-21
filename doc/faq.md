@@ -20,7 +20,7 @@ Split it into several deliveries. See the [recommendations](best-practices.md#re
 
 ### Can one delivery contain several datasets?
 
-No. A delivery is for a single dataset, so submit one delivery per dataset. See [delivery](concepts.md#delivery).
+No. A delivery is for a single dataset, so submit one delivery per dataset. See [this page for more information about the concept of delivery](concepts.md#delivery).
 
 ## Status
 
