@@ -3,6 +3,7 @@ import re
 from click.testing import CliRunner
 from freezegun import freeze_time
 
+from copernicusmarine_delivery import delivery_status
 from copernicusmarine_delivery.command_line_interface import cli
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -11,7 +12,6 @@ from copernicusmarine_delivery.core_functions.constants import (
 )
 from copernicusmarine_delivery.core_functions.core_functions import upload
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
-from copernicusmarine_delivery.python_interface import delivery_status
 
 MOCK_FILES = [
     "tests/resources/dataset1/file1.txt",

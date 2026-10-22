@@ -5,7 +5,13 @@ import pytest
 from click.testing import CliRunner
 from freezegun import freeze_time
 
-from copernicusmarine_delivery import InvalidFilesError
+from copernicusmarine_delivery import (
+    Delete,
+    Delivery,
+    InvalidFilesError,
+    ResponseUpload,
+    Upload,
+)
 from copernicusmarine_delivery.command_line_interface import cli
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -15,9 +21,7 @@ from copernicusmarine_delivery.core_functions.constants import (
 from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as delivery_function,
 )
-from copernicusmarine_delivery.core_functions.domain import ResponseUpload
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
-from copernicusmarine_delivery.python_interface import Delete, Delivery, Upload
 from copernicusmarine_delivery.s3_client import S3Client
 
 MOCK_FILES = [

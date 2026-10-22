@@ -4,6 +4,7 @@ import httpx
 from click.testing import CliRunner
 from freezegun import freeze_time
 
+from copernicusmarine_delivery import list_deliveries
 from copernicusmarine_delivery.command_line_interface import cli
 from copernicusmarine_delivery.core_functions import delivery as delivery_module
 from copernicusmarine_delivery.core_functions.constants import (
@@ -14,7 +15,6 @@ from copernicusmarine_delivery.core_functions.constants import (
 from copernicusmarine_delivery.core_functions.core_functions import upload
 from copernicusmarine_delivery.core_functions.delivery import get_deliveries
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
-from copernicusmarine_delivery.python_interface import list_deliveries
 
 MOCK_FILES = [
     "tests/resources/dataset1/file1.txt",

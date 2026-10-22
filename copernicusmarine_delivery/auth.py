@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import time
+from typing import TYPE_CHECKING
 
 from copernicusmarine_delivery.core_functions.domain import (
     GetConfigResponse,
@@ -12,9 +15,31 @@ from copernicusmarine_delivery.environment_variables import (
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
 
+if TYPE_CHECKING:
+    import requests
+
 _token_cache: dict = {}
 
 OIDC_DISCOVERY_URL = "https://{oidc_provider_url}/.well-known/openid-configuration"
+
+
+class AuthenticationError(Exception):
+    """Authentication Error is raised if the token response from the Keycloak service
+    returns >= 400"""
+
+
+def _keycloak_error_message(response: requests.Response) -> str:
+    """Keycloak explains the failure in the body, e.g. `Invalid user credentials`."""
+    try:
+        reason = response.json().get("error_description")
+    except ValueError:
+        reason = None
+    return (
+        f"Could not get a token from {response.url} "
+        f"(HTTP {response.status_code}): {reason or 'no details provided'}. "
+        "Please check your COPERNICUSMARINE_SERVICE_USERNAME and "
+        "COPERNICUSMARINE_SERVICE_PASSWORD."
+    )
 
 
 def fetch_keycloak_token(config: GetConfigResponse) -> str:
@@ -57,7 +82,8 @@ def fetch_keycloak_token(config: GetConfigResponse) -> str:
             "scope": config.oidc_config.scope,
         }
     token_response = http_client.post(token_endpoint, data=data)
-    token_response.raise_for_status()
+    if token_response.status_code >= 400:
+        raise AuthenticationError(_keycloak_error_message(token_response))
     token_response_json = token_response.json()
     _token_cache.update(
         access_token=token_response_json["access_token"],

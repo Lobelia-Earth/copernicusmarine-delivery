@@ -40,15 +40,13 @@ class PushingEntity(BaseModel):
 
 
 class InvalidDeliveryIdsError(Exception):
+    """Raised when one or more IDs in the delivery are not expected."""
+
     def __init__(self, message: str):
         super().__init__(message)
 
 
 class PushingEntities(BaseModel):
-    """
-    TODO: create an endpoint on OPDV side to get this information.
-    """
-
     pushing_entities: list[PushingEntity] = Field(..., alias="pushing-entities")
 
     @classmethod
@@ -196,11 +194,10 @@ class Delivery(BaseModel):
     creation_timestamp: str | None = None
 
     #: status of the delivery in the OPDV system.
-    #: todo: The delivery has not been picked up yet by the OPDV system.
-    #: in_progress: The delivery is being processed by the OPDV system.
-    #: done: The delivery has been processed successfully by the OPDV system.
-    #: partial_error: The delivery has been partially processed by the OPDV system. Some files or operations may have failed.
-    #: error: The delivery failed to be processed by the OPDV system.
+    #: pending: The delivery has not been validated yet by the OPDV system.
+    #: validated: The delivery has been validated by the OPDV system. The files have not reached the MDS yet.
+    #: completed: The files have reached their destination in the MDS.
+    #: failed: Something went wrong along the way, for example the validation did not pass.
     status: DeliveryStatus = Field(default=DeliveryStatus.pending)
     #: last updated status timestamp in ISO 8601 format (UTC)
     status_timestamp: str | None = None

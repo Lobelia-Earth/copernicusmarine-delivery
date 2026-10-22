@@ -36,6 +36,7 @@ from delivery_common.domain import Delivery as DeliveryModel
 class Upload(_Upload):
     """
     Upload ``files`` to the given dataset and product.
+
     :param files: Relative or absolute path to local files. See `Files paths and anchors` in the documentation.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `files` attribute. Defaults to 5.
     :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
@@ -66,7 +67,7 @@ class Upload(_Upload):
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
         :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
 
-        :return: ResponseUpload object containing the result of the upload.
+        :return: :py:obj:`~copernicusmarine_delivery.ResponseUpload` object containing the result of the upload.
         """
 
         if not self.files:
@@ -90,6 +91,7 @@ class Upload(_Upload):
 class Delete(_Delete):
     """
     Delete ``files`` from the given dataset and product.
+
     :param files: Files' Key suffix in S3 without `product_id/dataset_id` in the folder structure. See `File paths and anchors` in the documentation for more details.
     :param dry_run: Validate the delete without performing any actual operation in S3.
     """
@@ -107,7 +109,7 @@ class Delete(_Delete):
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
 
-        :return: ResponseDelete object containing the result of the delete.
+        :return: :py:obj:`~copernicusmarine_delivery.ResponseDelete` object containing the result of the delete.
 
         """  # noqa
         if not self.files:
@@ -140,6 +142,10 @@ class Delivery(BaseModel):
     operations: list[Upload | Delete] = Field(default_factory=list)
 
     def add(self, operation: Upload | Delete) -> None:
+        """Add an operation to the delivery. Operations are performed in the order they are added.
+
+        :param operation: An :class:`Upload` or :class:`Delete` operation.
+        """
         self.operations.append(operation)
 
     def submit(
@@ -165,7 +171,7 @@ class Delivery(BaseModel):
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
         :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
 
-        :return: ResponseDelivery object containing the result of the delivery.
+        :return: :py:obj:`~copernicusmarine_delivery.ResponseDelivery` object containing the result of the delivery.
         """  # noqa
 
         if not self.operations:

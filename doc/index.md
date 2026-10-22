@@ -22,8 +22,10 @@ quick-start
 concepts
 credentials
 installation
-command-line-interface
-python-interface
-error-handling
+command-line-interface/index
+python-interface/index
+troubleshooting
+faq
+best-practices
 roadmap
 ```

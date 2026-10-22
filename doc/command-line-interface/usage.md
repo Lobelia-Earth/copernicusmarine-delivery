@@ -1,4 +1,4 @@
-# CLI
+# CLI usage
 
 ```{note}
 If you prefer a shorter command name, `copernicusmarine-delivery` has a convenient alias: `cm-de`.
@@ -101,7 +101,7 @@ copernicusmarine-delivery delete --source some/file.nc --source some/other/file.
 You can also use `--dry-run` and `--save-delivery-json` as with the upload command.
 
 ```{warning}
-The path for the files should be the path without productID and datasetID. See the concept of [folder structure and path](concepts.md#folder-structure-and-path).
+The path for the files should be the path without productID and datasetID. See the concept of [folder structure and path](../concepts.md#folder-structure-and-path).
 ```
 
 ## Delivery status command
