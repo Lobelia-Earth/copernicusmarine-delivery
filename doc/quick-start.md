@@ -129,7 +129,9 @@ echo "hello 2" > my/local/files/file_02.nc
 ```
 
 
-The snippet in Python would look like this:
+### Python snippet
+
+The same delivery done in Python would look like this:
 
 ```python
 from copernicusmarine_delivery import Delivery, Upload, Delete, delivery_status
