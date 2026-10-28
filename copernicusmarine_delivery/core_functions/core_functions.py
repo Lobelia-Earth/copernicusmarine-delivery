@@ -2,22 +2,10 @@ import os
 from pathlib import Path
 from typing import Sequence
 
-from copernicusmarine_delivery.auth import (
-    fetch_keycloak_token,
-    get_config,
-    get_pushing_entity_config,
-)
-from copernicusmarine_delivery.core_functions.constants import (
-    NEW_DATA_BUCKET_PATH,
-)
-from copernicusmarine_delivery.core_functions.delivery import (
-    create_and_upload_delivery,
-    create_delivery_id,
-)
-from copernicusmarine_delivery.core_functions.delivery_validator import (
-    validate_delete_files,
-    validate_upload_files,
-)
+from copernicusmarine_delivery.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
+from copernicusmarine_delivery.core_functions.constants import NEW_DATA_BUCKET_PATH
+from copernicusmarine_delivery.core_functions.delivery import create_and_upload_delivery, create_delivery_id
+from copernicusmarine_delivery.core_functions.delivery_validator import validate_delete_files, validate_upload_files
 from copernicusmarine_delivery.core_functions.domain import (
     Delete,
     FileToUpload,
@@ -29,15 +17,9 @@ from copernicusmarine_delivery.core_functions.domain import (
     ToUploadOperation,
     Upload,
 )
-from copernicusmarine_delivery.core_functions.utils import (
-    human_readable_size,
-    local_path_to_key_suffix,
-)
+from copernicusmarine_delivery.core_functions.utils import human_readable_size, local_path_to_key_suffix
 from copernicusmarine_delivery.logger import logger
-from copernicusmarine_delivery.s3_client import (
-    S3Client,
-    get_s3_ingestion_client,
-)
+from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
 from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
@@ -141,6 +123,7 @@ def upload(
             product_id=product_id,
             dataset_id=dataset_id,
             pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
             result_upload=put_files_result,
         ),
         delivery,
@@ -184,6 +167,7 @@ def delete(
             product_id=product_id,
             dataset_id=dataset_id,
             pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
             files_to_delete=delete_operation.files,
         ),
         delivery,
@@ -243,7 +227,16 @@ def delivery(
         match operation:
             case DeleteOperation():
                 all_operations.append(operation)
-                all_responses.append(ResponseDelete.create(delivery_id=delivery_id, files_to_delete=operation.files))
+                all_responses.append(
+                    ResponseDelete.create(
+                        delivery_id=delivery_id,
+                        product_id=product_id,
+                        dataset_id=dataset_id,
+                        pushing_entity_id=pushing_entity_id,
+                        dry_run=dry_run,
+                        files_to_delete=operation.files,
+                    )
+                )
             case ToUploadOperation():
                 put_files_result, upload_operation = _put_files_to_ingestion_system(
                     s3_client,
@@ -261,6 +254,10 @@ def delivery(
                 all_responses.append(
                     ResponseUpload.create(
                         delivery_id=delivery_id,
+                        product_id=product_id,
+                        dataset_id=dataset_id,
+                        pushing_entity_id=pushing_entity_id,
+                        dry_run=dry_run,
                         result_upload=put_files_result,
                     )
                 )
@@ -275,7 +272,14 @@ def delivery(
         delivery_id=delivery_id,
     )
     return (
-        ResponseDelivery.create(delivery_id=delivery_id, operations_responses=all_responses),
+        ResponseDelivery.create(
+            delivery_id=delivery_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
+            operations_responses=all_responses,
+        ),
         delivery,
     )
 

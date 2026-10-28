@@ -15,11 +15,19 @@
   '''
   {
     "delivery_id": "20120114T120001-product1-5012",
+    "product_id": "product1",
+    "dataset_id": "dataset1",
+    "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "fatal_error": null,
+    "dry_run": false,
     "operations_responses": [
       {
         "delivery_id": "20120114T120001-product1-5012",
+        "product_id": "product1",
+        "dataset_id": "dataset1",
+        "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
         "fatal_error": null,
+        "dry_run": false,
         "files_to_delete": [
           {
             "key_suffix": "tests/resources/dataset1/file1.txt",
@@ -33,7 +41,11 @@
       },
       {
         "delivery_id": "20120114T120001-product1-5012",
+        "product_id": "product1",
+        "dataset_id": "dataset1",
+        "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
         "fatal_error": null,
+        "dry_run": false,
         "files_uploaded": [
           [
             "tests/resources/dataset1/file1.txt",

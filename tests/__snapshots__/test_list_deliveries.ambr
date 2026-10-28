@@ -13,6 +13,7 @@
   	errored uploads: 0
   	total deletes: 0
   	errored deletes: 0
+  
   [DELIVERY] 20120114T120001-product1-7873 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset2
@@ -23,6 +24,7 @@
   	errored uploads: 0
   	total deletes: 0
   	errored deletes: 0
+  
   [DELIVERY] 20120114T120001-product1-4611 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
