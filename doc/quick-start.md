@@ -93,6 +93,21 @@ delivery:
 
 This delivery will delete the file uploaded in the previous step and add 2 new files, preserving their subfolder structure.
 
+The file has one entry per operation, run in the order written: `delete` takes the S3 MDS path of files already in MDS, `upload` takes local paths. See [the delivery file format](concepts.md#delivery-file-yaml) for all fields.
+
+### Using an anchor
+
+If your local folders do not match the MDS structure, add an `anchor` to the upload: the folder name after which the structure is kept. For instance, with local files in `/data/exports/my_dataset/2024/file_01.nc`:
+
+```yaml
+  - operation: upload
+    anchor: my_dataset
+    files:
+      - /data/exports/my_dataset/2024/file_01.nc
+```
+
+The file is published as `<MY_PRODUCT>/<MY_DATASET_WITH_TAG>/2024/file_01.nc`: everything up to and including `my_dataset` is dropped. See [using the anchor](concepts.md#using-the-anchor) for the rules.
+
 Make sure the new files exist. Otherwise, create them as follows:
 
 ```bash
