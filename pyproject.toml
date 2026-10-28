@@ -32,7 +32,7 @@ platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.dependencies]
 python = ">=3.11,<3.15"
-brotli-python = ">=1.2.1"  # conda-forge package, transient dependency of urllib3. Pin to safe version to be safe
+brotli-python = ">=1.2.1"  # conda-forge package, transient dependency of urllib3. Pin to safe version
 
 [tool.pixi.pypi-dependencies]
 copernicusmarine_delivery = { path = ".", editable = true }
