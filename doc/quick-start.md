@@ -95,6 +95,18 @@ This delivery will delete the file uploaded in the previous step and add 2 new f
 
 The file has one entry per operation, run in the order written: `delete` takes the S3 MDS path of files already in MDS, `upload` takes local paths. See [the delivery file format](concepts.md#delivery-file-yaml) for all fields.
 
+### Submit the delivery
+
+```bash
+copernicusmarine-delivery delivery --product-id <MY_PRODUCT> --dataset-id <MY_DATASET_WITH_TAG> --file delivery-test.yml
+```
+
+Finally, check the status of this delivery:
+
+```bash
+copernicusmarine-delivery status --delivery-id <DELIVERY-ID>
+```
+
 ### Using an anchor
 
 If your local folders do not match the MDS structure, add an `anchor` to the upload: the folder name after which the structure is kept. For instance, with local files in `/data/exports/my_dataset/2024/file_01.nc`:
@@ -116,17 +128,6 @@ echo "hello 1" > my/local/files/file_01.nc
 echo "hello 2" > my/local/files/file_02.nc
 ```
 
-Submit the delivery:
-
-```bash
-copernicusmarine-delivery delivery --product-id <MY_PRODUCT> --dataset-id <MY_DATASET_WITH_TAG> --file delivery-test.yml
-```
-
-Finally, check the status of this delivery:
-
-```bash
-copernicusmarine-delivery status --delivery-id <DELIVERY-ID>
-```
 
 The snippet in Python would look like this:
 
@@ -134,13 +135,15 @@ The snippet in Python would look like this:
 from copernicusmarine_delivery import Delivery, Upload, Delete, delivery_status
 
 delivery = Delivery(
-  operations=[
-    Delete(files=["test.nc"]),
-    Upload(files=["my/local/files/file_01.nc", "my/local/files/file_02.nc"])
-  ]
+    operations=[
+        Delete(files=["test.nc"]),
+        Upload(files=["my/local/files/file_01.nc", "my/local/files/file_02.nc"]),
+    ]
 )
 
-response = delivery.submit(product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>")
+response = delivery.submit(
+    product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>"
+)
 
 if not response.fatal_error:
     print(f"Delivery successful with delivery ID: {response.delivery_id}")
