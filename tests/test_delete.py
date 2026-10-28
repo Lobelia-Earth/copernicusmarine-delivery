@@ -79,32 +79,34 @@ def test_delete_cli_save_delivery_json(
     snapshot,
     skip_delivery_ids_validation,
     ingestion_service,
+    tmp_path,
+    monkeypatch,
 ):
+    monkeypatch.chdir(tmp_path)
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli,
-            [
-                "delete",
-                "--source",
-                MOCK_FILES[0],
-                "--source",
-                MOCK_FILES[1],
-                "--dataset-id",
-                DATASET_ID,
-                "--product-id",
-                PRODUCT_ID,
-                "--save-delivery-json",
-            ],
-        )
-        assert result.exit_code == 0
-        assert result.output.strip() == snapshot
+    result = runner.invoke(
+        cli,
+        [
+            "delete",
+            "--source",
+            MOCK_FILES[0],
+            "--source",
+            MOCK_FILES[1],
+            "--dataset-id",
+            DATASET_ID,
+            "--product-id",
+            PRODUCT_ID,
+            "--save-delivery-json",
+        ],
+    )
+    assert result.exit_code == 0
+    assert result.output.strip() == snapshot
 
-        json_files = glob.glob("*.json")
-        assert len(json_files) == 1
-        with open(json_files[0]) as f:
-            delivery = json.load(f)
-        assert delivery == snapshot
+    json_files = glob.glob("*.json")
+    assert len(json_files) == 1
+    with open(json_files[0]) as f:
+        delivery = json.load(f)
+    assert delivery == snapshot
 
 
 def test_delete_cli_no_source_exits():

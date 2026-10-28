@@ -5,7 +5,7 @@ description = "Python tool for data producers from the Copernicus Marine service
 readme = "README.md"
 license = "EUPL-1.2"
 authors = [{ name = "Lobelia", email = "support@lobelia.earth" }]
-requires-python = ">=3.11,<3.15"
+requires-python = ">=3.11"
 dependencies = [
     "click>=8.4.0,<9",
     "obstore>=0.10.0,<1",
@@ -31,7 +31,6 @@ channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.dependencies]
-python = ">=3.11,<3.15"
 brotli-python = ">=1.2.1"  # conda-forge package, transient dependency of urllib3. Pin to safe version to be safe
 
 [tool.pixi.pypi-dependencies]
