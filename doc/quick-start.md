@@ -95,6 +95,14 @@ This delivery will delete the file uploaded in the previous step and add 2 new f
 
 The file has one entry per operation, run in the order written: `delete` takes the S3 MDS path of files already in MDS, `upload` takes local paths. See [the delivery file format](concepts.md#delivery-file-yaml) for all fields.
 
+Make sure the new files exist. Otherwise, create them as follows:
+
+```bash
+mkdir -p my/local/files/
+echo "hello 1" > my/local/files/file_01.nc
+echo "hello 2" > my/local/files/file_02.nc
+```
+
 ### Submit the delivery
 
 ```bash
@@ -119,14 +127,6 @@ If your local folders do not match the MDS structure, add an `anchor` to the upl
 ```
 
 The file is published as `<MY_PRODUCT>/<MY_DATASET_WITH_TAG>/2024/file_01.nc`: everything up to and including `my_dataset` is dropped. See [using the anchor](concepts.md#using-the-anchor) for the rules.
-
-Make sure the new files exist. Otherwise, create them as follows:
-
-```bash
-mkdir -p my/local/files/
-echo "hello 1" > my/local/files/file_01.nc
-echo "hello 2" > my/local/files/file_02.nc
-```
 
 
 ### Python snippet
