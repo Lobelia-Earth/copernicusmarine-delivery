@@ -5,13 +5,14 @@ description = "Python tool for data producers from the Copernicus Marine service
 readme = "README.md"
 license = "EUPL-1.2"
 authors = [{ name = "Lobelia", email = "support@lobelia.earth" }]
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 dependencies = [
     "click>=8.4.0,<9",
     "obstore>=0.10.0,<1",
     "pydantic>=2.13.4,<3",
     "pyyaml>=6.0.3,<7",
-    "tqdm>=4,<5", "requests",
+    "tqdm>=4,<5",
+    "requests",
 ]
 
 [project.scripts]
@@ -28,6 +29,10 @@ packages = ["copernicusmarine_delivery", "delivery_common"]
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
+
+[tool.pixi.dependencies]
+python = ">=3.11,<3.15"
+brotli-python = ">=1.2.1"  # conda-forge package, transient dependency of urllib3. Pin to safe version
 
 [tool.pixi.pypi-dependencies]
 copernicusmarine_delivery = { path = ".", editable = true }
