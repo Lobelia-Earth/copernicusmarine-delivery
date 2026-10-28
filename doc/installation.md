@@ -24,5 +24,6 @@ Or in your Python environment:
 
 ```python
 import copernicusmarine_delivery
+
 print(copernicusmarine_delivery.__version__)
 ```

@@ -34,10 +34,12 @@ product_id = "some-product-id"
 dataset_id = "some-dataset-id"
 
 # Operations are executed in order
-delivery = Delivery(operations=[
-    Delete(files=["some/file.nc"]),
-    Upload(files=["some/file.nc"]),
-])
+delivery = Delivery(
+    operations=[
+        Delete(files=["some/file.nc"]),
+        Upload(files=["some/file.nc"]),
+    ]
+)
 delivery.add(Delete(files=["some/other/file.nc"]))
 delivery.add(Upload(files=["some/other/file.nc"]))
 
@@ -118,11 +120,7 @@ It lists all your deliveries, sorted by delivery ID in descending order (most re
 from copernicusmarine_delivery import list_deliveries
 
 deliveries = list_deliveries()
-dataset_deliveries = [
-  d.delivery_id
-  for d in deliveries
-  if d.dataset_id == dataset_id
-  ]
+dataset_deliveries = [d.delivery_id for d in deliveries if d.dataset_id == dataset_id]
 ```
 
 By default, only the deliveries created within the last month are returned. Use the `timeframe` argument to change this window, counting back from the current time:

@@ -59,17 +59,104 @@ It is **highly recommended** to use either relative local paths that match the f
 Whatever the input, all output paths from the toolbox will be S3 MDS suffixes for the OPDV to ingest.
 
 ```{note}
-The fact that OPDV takes S3 MDS suffixes as input is an internal detail. However, what the toolbox accepts as input can be changed. We want to add a way to pass a local path and an S3 MDS structure at some point. If you have any suggestions about this, don't hesitate to share.
+The fact that OPDV takes S3 MDS suffixes as input is an internal detail.
+However, what the toolbox accepts as input can be changed.
+We want to add a way to pass a local path and an S3 MDS structure at some point.
+If you have any suggestions about this, don't hesitate to share.
 ```
 
 ### Using The Anchor
 
-The `anchor` is used to define the starting point of the folder structure that will be preserved when uploading files to the S3 MDS. Any part of the local path before the anchor is ignored when creating the S3 MDS suffix. It is a way to link the local folder structure to the S3 MDS structure.
-
-Examples:
+The local path of a file is not always the path you want in the MDS. The `anchor` tells the tool **which folder of the local path is the "root" of your dataset**. Everything up to and including the anchor is dropped; everything after it is kept as the S3 MDS suffix.
 
 ```text
-local path: my/local/folder/filename.nc
-anchor: local
-s3 mds suffix: folder/filename.nc # where it will be located in the S3 MDS
+local path:     /data/my_project/run_42/dataset1/2024/01/file.nc
+anchor:         dataset1
+                └────────── dropped ───────────┘└──── kept ────┘
+S3 MDS suffix:  2024/01/file.nc
+S3 MDS key:     productID/datasetID/2024/01/file.nc
+```
+
+Think of the anchor as a marker you stick in the path: "my dataset starts right after this folder".
+
+Rules:
+
+- The anchor is a **folder name**, not a partial path or a pattern. It must match a full folder name of the path (`local` matches `my/local/folder`, but not `my/localhost/folder`).
+- It must be present in the path of **every file of the operation**. Otherwise, the delivery is rejected with `Expected anchor (...) was not found in local path`.
+- If the folder name appears more than once in a path, the **first** occurrence is used.
+- The anchor is set **per upload operation**: different operations of the same delivery can use different anchors.
+- The anchor is only used by **upload**. For delete, you pass the S3 MDS suffix directly.
+- Without anchor, the full relative path is kept. Absolute paths are rejected.
+
+More examples:
+
+```text
+# relative path, no anchor: the whole path is kept
+local path:     dataset1/2024/file.nc
+s3 mds suffix:  dataset1/2024/file.nc
+
+# relative path, anchor
+local path:     my/local/folder/filename.nc
+anchor:         local
+s3 mds suffix:  folder/filename.nc
+
+# absolute path, anchor: the part before the anchor (the machine-specific part) is gone
+local path:     /home/me/exports/dataset1/file.nc
+anchor:         dataset1
+s3 mds suffix:  file.nc
+
+# the same anchor can serve files in different subfolders
+local paths:    /data/dataset1/2024/a.nc  and  /data/dataset1/2025/b.nc
+anchor:         dataset1
+s3 mds suffixes: 2024/a.nc  and  2025/b.nc
+```
+
+### Delivery file (YAML)
+
+The `delivery` command takes a YAML file describing the operations to run, in order.
+
+Schema:
+
+```yaml
+delivery:                      # required. List of operations, run in order
+  - operation: operation       # required. "upload" | "delete"
+    files: [<string>, ...]     # required. Local paths (upload) or S3 MDS suffixes (delete)
+    anchor: <string>           # optional. upload only. Folder name in the local paths
+```
+
+Example:
+
+```yaml
+delivery:
+  - operation: delete
+    files:
+      - 2024/01/old.nc
+  - operation: upload
+    anchor: dataset1
+    files:
+      - /data/dataset1/2024/01/file.nc
+```
+
+| Field | Required | Applies to | Description |
+| --- | --- | --- | --- |
+| `delivery` | yes | | List of operations. They run in the order they are written. |
+| `operation` | yes | | `upload` or `delete`. |
+| `files` | yes | both | For `upload`, local file paths (relative or absolute). For `delete`, [S3 MDS suffixes](#folder-structure-and-path). |
+| `anchor` | no | `upload` | Folder name that marks where the S3 MDS suffix starts. See [using the anchor](#using-the-anchor). |
+
+The product and the dataset are not part of the file: they are passed with `--product-id` and `--dataset-id`, which is why a delivery file is always for one dataset.
+
+The YAML file is only needed for the command line. With the Python interface you don't write any file: the delivery is built in memory by the `Delivery` object, from the `Upload` and `Delete` operations you pass to it. `Upload` has the `anchor` argument, and the operations run in list order.
+
+The same delivery in Python:
+
+```python
+from copernicusmarine_delivery import Delivery, Upload, Delete
+
+Delivery(
+    operations=[
+        Delete(files=["2024/01/old.nc"]),
+        Upload(files=["/data/dataset1/2024/01/file.nc"], anchor="dataset1"),
+    ]
+)
 ```
