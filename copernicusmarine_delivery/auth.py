@@ -46,26 +46,18 @@ def fetch_keycloak_token(config: GetConfigResponse) -> str:
     """Gets the Keycloak token necessary to operate with OPDV using username nd password.
     Small cache built to reuse token whenever possible"""
     now = time.time()
-    if (
-        _token_cache.get("access_token")
-        and now < _token_cache["access_expires_at"] - 30
-    ):
+    if _token_cache.get("access_token") and now < _token_cache["access_expires_at"] - 30:
         logger.debug("Keycloak Token -> Reusing from cache")
         return _token_cache["access_token"]
 
     discovery_response = http_client.get(
-        OIDC_DISCOVERY_URL.format(
-            oidc_provider_url=config.oidc_config.oidc_provider_url
-        )
+        OIDC_DISCOVERY_URL.format(oidc_provider_url=config.oidc_config.oidc_provider_url)
     )
     discovery_response.raise_for_status()
 
     token_endpoint = discovery_response.json()["token_endpoint"]
 
-    if (
-        _token_cache.get("refresh_token")
-        and now < _token_cache["refresh_expires_at"] - 30
-    ):
+    if _token_cache.get("refresh_token") and now < _token_cache["refresh_expires_at"] - 30:
         logger.debug("Keycloak Token -> Fetching from refresh token")
         data = {
             "grant_type": "refresh_token",
@@ -100,15 +92,11 @@ def get_config() -> GetConfigResponse:
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(
-    token: str, on_behalf_of: str | None
-) -> GetPushingEntityConfigResponse:
+def get_pushing_entity_config(token: str, on_behalf_of: str | None) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
         f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config",
         params={"on_behalf_of": on_behalf_of} if on_behalf_of else None,
         headers={"Authorization": f"Bearer {token}"},
     )
     pushing_entity_config_response.raise_for_status()
-    return GetPushingEntityConfigResponse.model_validate_json(
-        pushing_entity_config_response.content
-    )
+    return GetPushingEntityConfigResponse.model_validate_json(pushing_entity_config_response.content)

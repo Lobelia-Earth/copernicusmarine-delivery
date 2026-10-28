@@ -57,6 +57,12 @@ class PutFilesResult(BaseModel):
 class BaseResponse(BaseModel):
     #: Delivery ID.
     delivery_id: str | None = None
+    #: Product ID.
+    product_id: str | None = None
+    #: Dataset ID.
+    dataset_id: str | None = None
+    #: Pushing entity ID.
+    pushing_entity_id: str | None = None
     #: Any error that may prematurely stop the delivery.
     fatal_error: str | None = None
 
@@ -79,10 +85,16 @@ class ResponseUpload(BaseResponse):
     def create(
         cls,
         delivery_id: str,
+        product_id: str,
+        dataset_id: str,
+        pushing_entity_id: str,
         result_upload: PutFilesResult,
     ) -> "ResponseUpload":
         return cls(
             delivery_id=delivery_id,
+            product_id=product_id,
+            pushing_entity_id=pushing_entity_id,
+            dataset_id=dataset_id,
             files_uploaded=[
                 (file.local_path, get_s3_key_suffix(file.ingestion_system_s3_path))
                 for file in result_upload.successful_files
@@ -102,10 +114,18 @@ class ResponseDelete(BaseResponse):
 
     @classmethod
     def create(
-        cls, delivery_id: str, files_to_delete: list[DeleteFile]
+        cls,
+        delivery_id: str,
+        product_id: str,
+        dataset_id: str,
+        pushing_entity_id: str,
+        files_to_delete: list[DeleteFile],
     ) -> "ResponseDelete":
         return cls(
             delivery_id=delivery_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            pushing_entity_id=pushing_entity_id,
             files_to_delete=files_to_delete,
         )
 
@@ -114,14 +134,15 @@ class ResponseDelivery(BaseResponse):
     """Metadata returned when using :func:`~copernicusmarine_delivery.delivery`"""
 
     #: List of responses for each operation in the delivery.
-    operations_responses: list[ResponseUpload | ResponseDelete] = Field(
-        default_factory=list
-    )
+    operations_responses: list[ResponseUpload | ResponseDelete] = Field(default_factory=list)
 
     @classmethod
     def create(
         cls,
         delivery_id: str,
+        product_id: str,
+        dataset_id: str,
+        pushing_entity_id: str,
         operations_responses: list[ResponseUpload | ResponseDelete],
     ) -> "ResponseDelivery":
         return cls(
@@ -168,9 +189,7 @@ class NoSuccessfulUploadsError(Exception):
     def __init__(self, error_files: list[ErrorFile]):
         for file in error_files:
             logger.error(f"Invalid file: {file}")
-        super().__init__(
-            f"All uploads failed. Errored files: {[file.local_path for file in error_files]}"
-        )
+        super().__init__(f"All uploads failed. Errored files: {[file.local_path for file in error_files]}")
 
 
 class NoIngestionBucketError(Exception):
@@ -180,8 +199,7 @@ class NoIngestionBucketError(Exception):
 
     def __init__(self, pushing_entity_id: str):
         super().__init__(
-            f"No ingestion bucket found for pushing entity: {pushing_entity_id} "
-            f"Please contact User Support."
+            f"No ingestion bucket found for pushing entity: {pushing_entity_id} Please contact User Support."
         )
 
 
@@ -194,9 +212,7 @@ class InvalidFilesError(Exception):
     def __init__(self, invalid_files: list[InvalidFile]):
         for file in invalid_files:
             logger.error(f"Invalid file: {file}")
-        super().__init__(
-            f"Found {len(invalid_files)} invalid files. See logs for details."
-        )
+        super().__init__(f"Found {len(invalid_files)} invalid files. See logs for details.")
 
 
 class OIDCConfig(BaseModel):

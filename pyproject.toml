@@ -91,6 +91,9 @@ version = { cmd = "python -c \"import tomllib; print(tomllib.load(open('pyprojec
 select = ["F401", "I"]
 fixable = ["F401", "I"]
 
+[tool.ruff]
+line-length = 120
+
 [dependency-groups]
 dev = ["httpx>=0.28.1,<0.29"]
 docs = ["jupyterlab>=4.6.4,<5", "ipykernel>=7.4.0,<8", "nbstripout>=0.9.1,<0.10", "autodoc-pydantic>=2.2.0,<3", "sphinx-click>=6.2.0,<7"]

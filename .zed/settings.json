@@ -1,0 +1,23 @@
+{
+  "preferred_line_length": 120,
+  "languages": {
+    "Python": {
+      "preferred_line_length": 120,
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "external": {
+            "command": "pixi",
+            "arguments": ["run", "-e", "dev", "ruff", "check", "--fix", "--select", "I,F401", "-"]
+          }
+        },
+        {
+          "external": {
+            "command": "pixi",
+            "arguments": ["run", "-e", "dev", "ruff", "format", "-"]
+          }
+        }
+      ]
+    }
+  }
+}

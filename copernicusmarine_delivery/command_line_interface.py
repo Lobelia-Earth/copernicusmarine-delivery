@@ -53,9 +53,7 @@ def _title_case_to_lower_case(identifier: str) -> str:
 
 
 def _camel_case_to_sentence(identifier: str) -> str:
-    matches = finditer(
-        ".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier
-    )
+    matches = finditer(".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier)
     capital_words = list(map(lambda match: match.group(0), matches))
     first_word = capital_words[:1]
     other_words = capital_words[1:]
@@ -89,9 +87,7 @@ def log_exception_and_exit(function: Callable) -> Any:
             return function(*args, **kwargs)
         except Exception as exception:
             try:
-                custom_exception_message = exception.__getattribute__(
-                    "custom_exception_message"
-                )
+                custom_exception_message = exception.__getattribute__("custom_exception_message")
                 logger.error(custom_exception_message)
             except AttributeError:
                 _log_exception(logger.error, exception)
@@ -292,7 +288,7 @@ def upload(
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
 
-    print_delivery_summary(delivery, [response], dry_run=dry_run)
+    print_delivery_summary(delivery, responses=[response], dry_run=dry_run)
 
 
 @cli.command()
@@ -351,9 +347,7 @@ def saving_delivery_file(delivery: Delivery) -> None:
         )
 
 
-def print_delivery_summary(
-    delivery: Delivery, responses: list[ResponseUpload | ResponseDelete], dry_run: bool
-) -> None:
+def print_delivery_summary(delivery: Delivery, responses: list[ResponseUpload | ResponseDelete], dry_run: bool) -> None:
     prefix = "[DRY RUN] " if dry_run else ""
     verb = "would be" if dry_run else "have been"
     if dry_run:
@@ -376,29 +370,19 @@ def print_delivery_summary(
     click.echo(f"\tpushing_entity_id: {delivery.pushing_entity_id}")
     click.echo(f"\tproduct_id: {delivery.product_id}")
     click.echo(f"\tdataset_id: {delivery.dataset_id}")
-    deletes_message = (
-        f"{deletes} file{'s' if deletes != 1 else ''} to delete"
-        if saw_delete_operation
-        else ""
-    )
+    deletes_message = f"{deletes} file{'s' if deletes != 1 else ''} to delete" if saw_delete_operation else ""
     if saw_upload_operation:
         uploads_message = (
-            f"{uploads} file{'s' if uploads != 1 else ''} to upload"
-            if dry_run
-            else f"{uploads} files uploaded"
+            f"{uploads} file{'s' if uploads != 1 else ''} to upload" if dry_run else f"{uploads} files uploaded"
         )
         if saw_delete_operation:
             deletes_message = ", " + deletes_message
     else:
         uploads_message = ""
     failed_uploads_message = (
-        f", {failed_uploads} file{'s' if failed_uploads != 1 else ''} failed to upload"
-        if failed_uploads
-        else ""
+        f", {failed_uploads} file{'s' if failed_uploads != 1 else ''} failed to upload" if failed_uploads else ""
     )
-    click.echo(
-        f"\n\tTotal: {uploads_message}{failed_uploads_message}{deletes_message}.\n"
-    )
+    click.echo(f"\n\tTotal: {uploads_message}{failed_uploads_message}{deletes_message}.\n")
 
 
 def print_operation_summary(
@@ -436,9 +420,7 @@ def status(
     delivery_id or a path to a delivery json file.
     """
     if not delivery_id and not delivery_json:
-        raise click.UsageError(
-            message=("Specify either delivery_id or a path to a delivery json file.")
-        )
+        raise click.UsageError(message=("Specify either delivery_id or a path to a delivery json file."))
     config = get_config()
     if delivery_json:
         try:
@@ -460,9 +442,7 @@ def status(
 
 
 def print_delivery(delivery: Delivery, show_all: bool) -> None:
-    click.echo(
-        f"[DELIVERY] {delivery.delivery_id} for pushing entity {delivery.pushing_entity_id}"
-    )
+    click.echo(f"[DELIVERY] {delivery.delivery_id} for pushing entity {delivery.pushing_entity_id}")
     click.echo(f"\tproduct_id: {delivery.product_id}")
     click.echo(f"\tdataset_id: {delivery.dataset_id}")
     click.echo(f"\tstatus: {delivery.status.value}")
@@ -516,9 +496,7 @@ def get_file_summary(file: DeliveryCommonFile) -> str:
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
 @log_exception_and_exit
-def list_deliveries(
-    timeframe: TimeframeLiteral, pushing_entity_id: str | None = None
-) -> None:
+def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
