@@ -348,7 +348,7 @@ def _put_files_to_ingestion_system(
 
     total_size = operation.total_size()
     logger.info(
-        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files"
+        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files "
         f"for a total size of {human_readable_size(total_size)}."
     )
 

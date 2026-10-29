@@ -1,4 +1,3 @@
-# Toolbox-detected error: 2 files do not exist locally. Validation fails before anything is uploaded (InvalidFilesError).
 delivery:
 - operation: upload
   files:
