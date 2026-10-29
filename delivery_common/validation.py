@@ -8,11 +8,7 @@ def validate_delivery_ids(
     pushing_entity: PushingEntity,
 ) -> None:
     valid_product = next(
-        (
-            product
-            for product in pushing_entity.products
-            if product.product_id == product_id
-        ),
+        (product for product in pushing_entity.products if product.product_id == product_id),
         None,
     )
     if not valid_product:
