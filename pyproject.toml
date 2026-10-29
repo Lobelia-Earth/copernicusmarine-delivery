@@ -93,6 +93,7 @@ fixable = ["F401", "I"]
 
 [dependency-groups]
 dev = ["httpx>=0.28.1,<0.29"]
+demo = ["jupyterlab>=4.6.4,<5", "ipykernel>=7.4.0,<8"]
 docs = ["jupyterlab>=4.6.4,<5", "ipykernel>=7.4.0,<8", "nbstripout>=0.9.1,<0.10", "autodoc-pydantic>=2.2.0,<3", "sphinx-click>=6.2.0,<7"]
 
 [tool.pixi.environments]
@@ -100,6 +101,7 @@ default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 dev-py311 = { features = ["dev", "py311"] }
 docs = { features = ["docs"], solve-group = "default" }
+demo = { features = ["demo"], solve-group = "default" }
 publish = { features = ["publish"], solve-group = "default" }
 
 [tool.pytest]
