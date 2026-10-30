@@ -59,8 +59,8 @@ clean-local = "python tests/resources/setup.py --clean"
 
 [tool.pixi.feature.dev.activation.env]
 ALLOW_HTTP = "true"
-COPERNICUSMARINE_SERVICE_USERNAME = "test"
-COPERNICUSMARINE_SERVICE_PASSWORD = "test"
+# COPERNICUSMARINE_SERVICE_USERNAME = "test"
+# COPERNICUSMARINE_SERVICE_PASSWORD = "test"
 INGESTION_SERVICE_URL = "http://localhost:8005"
 PYTHON_LOG_DEBUG = "true"
 
@@ -93,13 +93,15 @@ fixable = ["F401", "I"]
 
 [dependency-groups]
 dev = ["httpx>=0.28.1,<0.29"]
-docs = ["jupyterlab>=4.6.4,<5", "ipykernel>=7.4.0,<8", "nbstripout>=0.9.1,<0.10", "autodoc-pydantic>=2.2.0,<3", "sphinx-click>=6.2.0,<7"]
+demo = ["jupyterlab>=4.6.4,<5", "ipykernel>=7.4.0,<8"]
+docs = ["jupyterlab>=4.6.4,<5", "ipykernel>=7.4.0,<8", "autodoc-pydantic>=2.2.0,<3", "sphinx-click>=6.2.0,<7"]
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 dev-py311 = { features = ["dev", "py311"] }
 docs = { features = ["docs"], solve-group = "default" }
+demo = { features = ["demo"], solve-group = "default" }
 publish = { features = ["publish"], solve-group = "default" }
 
 [tool.pytest]
