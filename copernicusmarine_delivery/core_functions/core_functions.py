@@ -2,22 +2,10 @@ import os
 from pathlib import Path
 from typing import Sequence
 
-from copernicusmarine_delivery.auth import (
-    fetch_keycloak_token,
-    get_config,
-    get_pushing_entity_config,
-)
-from copernicusmarine_delivery.core_functions.constants import (
-    NEW_DATA_BUCKET_PATH,
-)
-from copernicusmarine_delivery.core_functions.delivery import (
-    create_and_upload_delivery,
-    create_delivery_id,
-)
-from copernicusmarine_delivery.core_functions.delivery_validator import (
-    validate_delete_files,
-    validate_upload_files,
-)
+from copernicusmarine_delivery.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
+from copernicusmarine_delivery.core_functions.constants import NEW_DATA_BUCKET_PATH
+from copernicusmarine_delivery.core_functions.delivery import create_and_upload_delivery, create_delivery_id
+from copernicusmarine_delivery.core_functions.delivery_validator import validate_delete_files, validate_upload_files
 from copernicusmarine_delivery.core_functions.domain import (
     Delete,
     FileToUpload,
@@ -29,15 +17,9 @@ from copernicusmarine_delivery.core_functions.domain import (
     ToUploadOperation,
     Upload,
 )
-from copernicusmarine_delivery.core_functions.utils import (
-    human_readable_size,
-    local_path_to_key_suffix,
-)
+from copernicusmarine_delivery.core_functions.utils import human_readable_size, local_path_to_key_suffix
 from copernicusmarine_delivery.logger import logger
-from copernicusmarine_delivery.s3_client import (
-    S3Client,
-    get_s3_ingestion_client,
-)
+from copernicusmarine_delivery.s3_client import S3Client, get_s3_ingestion_client
 from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
@@ -86,9 +68,7 @@ def upload(
     3. Create Delivery with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
     """
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(
-        fetch_keycloak_token(config), on_behalf_of
-    )
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -96,9 +76,7 @@ def upload(
         f"\n\tFiles: {[Path(file).name for file in files]}"
     )
 
-    validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
-    )
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     to_upload_operation = create_and_validate_to_upload_operation(
         files,
@@ -142,6 +120,10 @@ def upload(
     return (
         ResponseUpload.create(
             delivery_id=delivery.delivery_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
             result_upload=put_files_result,
         ),
         delivery,
@@ -159,9 +141,7 @@ def delete(
     Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(
-        fetch_keycloak_token(config), on_behalf_of
-    )
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -169,9 +149,7 @@ def delete(
         f"\n\tFiles: {files}"
     )
 
-    validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
-    )
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     delete_operation = create_and_validate_delete_operation(files)
 
@@ -185,7 +163,12 @@ def delete(
     )
     return (
         ResponseDelete.create(
-            delivery_id=delivery.delivery_id, files_to_delete=delete_operation.files
+            delivery_id=delivery.delivery_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
+            files_to_delete=delete_operation.files,
         ),
         delivery,
     )
@@ -212,14 +195,10 @@ def delivery(
     on_behalf_of: str | None,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
-    pushing_entity_config = get_pushing_entity_config(
-        fetch_keycloak_token(config), on_behalf_of
-    )
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
-    validate_delivery_ids(
-        pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity
-    )
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     delivery_id = create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
@@ -250,7 +229,12 @@ def delivery(
                 all_operations.append(operation)
                 all_responses.append(
                     ResponseDelete.create(
-                        delivery_id=delivery_id, files_to_delete=operation.files
+                        delivery_id=delivery_id,
+                        product_id=product_id,
+                        dataset_id=dataset_id,
+                        pushing_entity_id=pushing_entity_id,
+                        dry_run=dry_run,
+                        files_to_delete=operation.files,
                     )
                 )
             case ToUploadOperation():
@@ -270,6 +254,10 @@ def delivery(
                 all_responses.append(
                     ResponseUpload.create(
                         delivery_id=delivery_id,
+                        product_id=product_id,
+                        dataset_id=dataset_id,
+                        pushing_entity_id=pushing_entity_id,
+                        dry_run=dry_run,
                         result_upload=put_files_result,
                     )
                 )
@@ -285,7 +273,12 @@ def delivery(
     )
     return (
         ResponseDelivery.create(
-            delivery_id=delivery_id, operations_responses=all_responses
+            delivery_id=delivery_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
+            operations_responses=all_responses,
         ),
         delivery,
     )
@@ -342,9 +335,7 @@ def _put_files_to_ingestion_system(
         for errored_file in put_files_result.errored_files:
             logger.error(f"Skipping errored file: {errored_file}.")
 
-    operation = build_upload_operation_from_put_results(
-        to_upload_operation, put_files_result, dataset_id
-    )
+    operation = build_upload_operation_from_put_results(to_upload_operation, put_files_result, dataset_id)
 
     total_size = operation.total_size()
     logger.info(
@@ -369,22 +360,16 @@ def build_upload_operation_from_put_results(
     The S3 Path in the ingestion bucket is a temporary one (files will be removed from there once uploaded to MDS).
     Such S3 Path then would not add much relevant information to the user.
     """
-    successful_files_dict = {
-        str(file.local_path): file for file in put_files_result.successful_files
-    }
+    successful_files_dict = {str(file.local_path): file for file in put_files_result.successful_files}
     upload_files = []
     for file_to_upload in to_upload_operation.files:
         successful_s3_file = successful_files_dict.get(file_to_upload.local_path)
         if successful_s3_file is None:
-            logger.debug(
-                f"Removing file {file_to_upload.local_path} from upload operation."
-            )
+            logger.debug(f"Removing file {file_to_upload.local_path} from upload operation.")
             continue
         upload_files.append(
             UploadFile(
-                key_suffix=local_path_to_key_suffix(
-                    successful_s3_file.ingestion_system_s3_path, anchor=dataset_id
-                ),
+                key_suffix=local_path_to_key_suffix(successful_s3_file.ingestion_system_s3_path, anchor=dataset_id),
                 file_size_mb=file_to_upload.file_size_mb,
                 checksum=successful_s3_file.e_tag,
                 upload_start_time=successful_s3_file.upload_start_time,

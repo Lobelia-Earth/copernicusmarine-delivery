@@ -53,3 +53,21 @@
   }
   '''
 # ---
+# name: test_delivery_status_python_interface.1
+  '''
+  [DELIVERY] 20120114T120001-product1-4582 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  	status: pending
+  	created at: None
+  	total uploads: 2
+  	total volume (MB): 0
+  	errored uploads: 0
+  	total deletes: 0
+  	errored deletes: 0
+  	[UPLOAD OPERATION]
+  		file: file1.txt
+  		file: file2.txt
+  
+  '''
+# ---

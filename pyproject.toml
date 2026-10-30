@@ -47,8 +47,8 @@ requests = ">=2.34.2,<3"
 ty = ">=0.0.44,<0.0.45"
 
 [tool.pixi.feature.dev.tasks]
-format = "ruff format .; ruff check --fix ."
-format-check = "ruff format --check .; ruff check ."
+format = "ruff format --line-length 120; ruff check --fix --select I,F401 --line-length 120"
+format-check = "ruff format --check --line-length 120; ruff check --select I,F401 --line-length 120"
 type-check = "ty check ."
 test-local = "pytest --snapshot-update"
 test = "pytest"
@@ -90,6 +90,9 @@ version = { cmd = "python -c \"import tomllib; print(tomllib.load(open('pyprojec
 [tool.ruff.lint]
 select = ["F401", "I"]
 fixable = ["F401", "I"]
+
+[tool.ruff]
+line-length = 120
 
 [dependency-groups]
 dev = ["httpx>=0.28.1,<0.29"]

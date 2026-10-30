@@ -143,9 +143,7 @@ delivery = Delivery(
     ]
 )
 
-response = delivery.submit(
-    product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>"
-)
+response = delivery.submit(product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>")
 
 if not response.fatal_error:
     print(f"Delivery successful with delivery ID: {response.delivery_id}")

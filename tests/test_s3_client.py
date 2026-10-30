@@ -51,9 +51,7 @@ def test_upload_file_success(service: S3Client, s3_client, ingestion_bucket: str
 
 
 @pytest.mark.slow
-def test_upload_file_nonexistent_returns_error(
-    service: S3Client, ingestion_bucket: str
-):
+def test_upload_file_nonexistent_returns_error(service: S3Client, ingestion_bucket: str):
     result = service.upload_file(
         key="data/test/missing.nc",
         file=Path("nonexistent/file.nc"),
@@ -87,9 +85,7 @@ def test_upload_multiple_files(
 
 
 @pytest.mark.slow
-def test_upload_multiple_files_partial_failure(
-    service: S3Client, ingestion_bucket: str
-):
+def test_upload_multiple_files_partial_failure(service: S3Client, ingestion_bucket: str):
     mapping = {
         RESOURCES / "file1.txt": "data/test/file1.txt",
         Path("nonexistent/file.nc"): "data/test/missing.nc",
@@ -106,9 +102,7 @@ def test_upload_multiple_files_partial_failure(
     assert result.successful_files[0].ingestion_system_s3_path == "data/test/file1.txt"
 
 
-def _make_credentials_handler(
-    mock_keycloak, ministack_endpoint: str, expiry_seconds: float
-):
+def _make_credentials_handler(mock_keycloak, ministack_endpoint: str, expiry_seconds: float):
     """Builds a mock transport handler that counts calls to `/credentials`
     and issues credentials expiring `expiry_seconds` from now. Returns
     (handler, call_counter) where call_counter is a single-item list used as
@@ -142,10 +136,7 @@ def _make_credentials_handler(
                     "access_key_id": "test",
                     "secret_access_key": "test",
                     "session_token": "test",
-                    "expiration": (
-                        datetime.now(tz=timezone.utc)
-                        + timedelta(seconds=expiry_seconds)
-                    ).isoformat(),
+                    "expiration": (datetime.now(tz=timezone.utc) + timedelta(seconds=expiry_seconds)).isoformat(),
                 },
             )
 
@@ -202,12 +193,8 @@ def test_credential_provider_respects_min_ttl_boundary(
 
     A 600 seconds expiry should not re-fetch, but a 60 seconds should re-fetch.
     """
-    handler, call_counter = _make_credentials_handler(
-        mock_keycloak, ministack_endpoint, expiry_seconds=expiry_seconds
-    )
-    service = _build_service_with_mock_transport(
-        handler, monkeypatch, ministack_endpoint, ingestion_bucket
-    )
+    handler, call_counter = _make_credentials_handler(mock_keycloak, ministack_endpoint, expiry_seconds=expiry_seconds)
+    service = _build_service_with_mock_transport(handler, monkeypatch, ministack_endpoint, ingestion_bucket)
 
     _upload_dummy_file(service, "data/test/cache1.txt")
     calls_after_first_upload = call_counter[0]
@@ -260,9 +247,7 @@ def test_credential_provider_refresh_threshold_overrides_default(
     """This proves we can modify obstore's internal `refresh_threshold`.
     In such a way, a credential that is to expire in 60 seconds,
     with a new threshold of 10 (as opposed to 300) will now be used."""
-    handler, call_counter = _make_credentials_handler(
-        mock_keycloak, ministack_endpoint, expiry_seconds=60
-    )
+    handler, call_counter = _make_credentials_handler(mock_keycloak, ministack_endpoint, expiry_seconds=60)
     service = _build_service_with_refresh_threshold(
         handler,
         monkeypatch,
@@ -275,9 +260,7 @@ def test_credential_provider_refresh_threshold_overrides_default(
     calls_after_first_upload = call_counter[0]
     assert calls_after_first_upload == 1
 
-    time.sleep(
-        0.5
-    )  # clears fetch_backoff; 59.5s remaining is still > our 10s threshold
+    time.sleep(0.5)  # clears fetch_backoff; 59.5s remaining is still > our 10s threshold
 
     _upload_dummy_file(service, "data/test/threshold2.txt")
     assert call_counter[0] == calls_after_first_upload

@@ -45,12 +45,8 @@ def test_list_deliveries_python_interface(
     ingestion_service,
 ):
     # Create several deliveries for the same pushing entity.
-    _upload(
-        [MOCK_FILES[0]], dataset_id="dataset1", product_id="product1", anchor="dataset1"
-    )
-    _upload(
-        [MOCK_FILES[1]], dataset_id="dataset2", product_id="product1", anchor="dataset1"
-    )
+    _upload([MOCK_FILES[0]], dataset_id="dataset1", product_id="product1", anchor="dataset1")
+    _upload([MOCK_FILES[1]], dataset_id="dataset2", product_id="product1", anchor="dataset1")
     _upload(MOCK_FILES, dataset_id="dataset1", product_id="product1", anchor="dataset1")
 
     deliveries = list_deliveries(on_behalf_of=None)
@@ -113,9 +109,7 @@ def test_get_deliveries_sends_timeframe_as_created_after_param(monkeypatch):
 
     mock_client = httpx.Client(transport=httpx.MockTransport(handler))
     monkeypatch.setattr(delivery_module, "http_client", mock_client)
-    monkeypatch.setattr(
-        delivery_module, "fetch_keycloak_token", lambda config: "test-token"
-    )
+    monkeypatch.setattr(delivery_module, "fetch_keycloak_token", lambda config: "test-token")
 
     get_deliveries(config=None, timeframe="w", on_behalf_of=None)  # type: ignore
 

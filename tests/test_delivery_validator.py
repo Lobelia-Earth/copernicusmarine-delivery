@@ -32,16 +32,12 @@ _PUSHING_ENTITIES_YAML = yaml.dump(
     }
 ).encode()
 
-_PUSHING_ENTITY = PushingEntities.from_stream(_PUSHING_ENTITIES_YAML).pushing_entities[
-    0
-]
+_PUSHING_ENTITY = PushingEntities.from_stream(_PUSHING_ENTITIES_YAML).pushing_entities[0]
 
 
 @pytest.fixture(autouse=True)
 def mock_get_file_stream(monkeypatch):
-    monkeypatch.setattr(
-        S3Client, "get_file_stream", lambda self, **kwargs: _PUSHING_ENTITIES_YAML
-    )
+    monkeypatch.setattr(S3Client, "get_file_stream", lambda self, **kwargs: _PUSHING_ENTITIES_YAML)
 
 
 def test_valid_delivery_ids():
@@ -84,9 +80,7 @@ MORE_DUPLICATED_FILES = ["file2.txt"] + [f"file1.txt" for i in range(10)]
 def test_duplicate_files_upload(file_list, caplog):
     with caplog.at_level("ERROR"):
         with pytest.raises(InvalidFilesError):
-            validate_upload_files(
-                file_list, "dataset1", "product1", anchor="does not matter here"
-            )
+            validate_upload_files(file_list, "dataset1", "product1", anchor="does not matter here")
         assert caplog.text.count("Duplicate file path") == 1
 
 
@@ -137,8 +131,7 @@ def test_no_anchor_and_dataset_id_in_path_is_rejected(caplog):
                 anchor=None,
             )
         assert (
-            "No anchor specified and product_id (product1) or dataset_id (dataset1) found in local path"
-            in caplog.text
+            "No anchor specified and product_id (product1) or dataset_id (dataset1) found in local path" in caplog.text
         )
 
 

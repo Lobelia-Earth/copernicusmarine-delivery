@@ -89,7 +89,9 @@
 # ---
 # name: test_upload_python_interface
   dict({
+    'dataset_id': 'dataset1',
     'delivery_id': '20120114T120001-product1-8359',
+    'dry_run': False,
     'files_failed': list([
     ]),
     'files_invalid': list([
@@ -104,6 +106,8 @@
         'product1/dataset1/file2.txt',
       ),
     ]),
+    'product_id': 'product1',
+    'pushing_entity_id': 'GLO-MERCATOR-TOULOUSE-FR',
   })
 # ---
 # name: test_upload_python_interface.1
