@@ -252,6 +252,13 @@ class Delivery(BaseModel):
         to_print += f"\terrored uploads: {failed_uploads}\n"
         to_print += f"\ttotal deletes: {total_deletes}\n"
         to_print += f"\terrored deletes: {failed_deletes}\n"
+        if failed_uploads or failed_deletes:
+            to_print += (
+                f"\n\tWARNING: {failed_uploads + failed_deletes} operation(s) errored, "
+                f"the delivery status '{self.status.value}' does not mean every file succeeded.\n"
+            )
+            if not show_all:
+                to_print += "\tUse --show-all to see which files errored.\n"
         if show_all:
             to_print += detailed_operations_message
 

@@ -54,6 +54,13 @@ class PutFilesResult(BaseModel):
     errored_files: list[ErrorFile] = Field(default_factory=list)
 
 
+class GetSummaryResponse(BaseModel):
+    message: str
+    uploads: int
+    failed_uploads: int
+    deletes: int
+
+
 class BaseResponse(BaseModel):
     #: Delivery ID.
     delivery_id: str | None = None
@@ -68,7 +75,7 @@ class BaseResponse(BaseModel):
     #: Dry run flag, if True, no actual operation was performed in S3.
     dry_run: bool | None = None
 
-    def _get_summary(self) -> tuple[str, int, int, int]:
+    def _get_summary(self) -> GetSummaryResponse:
         """
         Return the summary message and the upload/failed/delete counts.
 
@@ -87,31 +94,40 @@ class BaseResponse(BaseModel):
         if self.dry_run:
             to_print += f"\n{prefix}The following operations {verb} submitted:\n"
 
-        message, uploads, failed_uploads, deletes = self._get_summary()
-        saw_upload_operation = bool(uploads or failed_uploads)
+        summary = self._get_summary()
+        saw_upload_operation = bool(summary.uploads or summary.failed_uploads)
         if self.dry_run:
-            to_print += message
+            to_print += summary.message
 
         to_print += f"\n{prefix}Delivery summary:\n\n"
         to_print += f"\tdelivery_id: {self.delivery_id}\n"
         to_print += f"\tpushing_entity_id: {self.pushing_entity_id}\n"
         to_print += f"\tproduct_id: {self.product_id}\n"
         to_print += f"\tdataset_id: {self.dataset_id}\n"
-        deletes_message = f"{deletes} file{'s' if deletes != 1 else ''} to delete" if deletes else ""
+        deletes_message = (
+            f"{summary.deletes} file{'s' if summary.deletes != 1 else ''} to delete" if summary.deletes else ""
+        )
         if saw_upload_operation:
             uploads_message = (
-                f"{uploads} file{'s' if uploads != 1 else ''} to upload"
+                f"{summary.uploads} file{'s' if summary.uploads != 1 else ''} to upload"
                 if self.dry_run
-                else f"{uploads} files uploaded"
+                else f"{summary.uploads} files uploaded"
             )
             if deletes_message:
                 deletes_message = ", " + deletes_message
         else:
             uploads_message = ""
         failed_uploads_message = (
-            f", {failed_uploads} file{'s' if failed_uploads != 1 else ''} failed to upload" if failed_uploads else ""
+            f", {summary.failed_uploads} file{'s' if summary.failed_uploads != 1 else ''} failed to upload"
+            if summary.failed_uploads
+            else ""
         )
         to_print += f"\n\tTotal: {uploads_message}{failed_uploads_message}{deletes_message}.\n"
+        if summary.failed_uploads:
+            to_print += (
+                f"\n{prefix}WARNING: {summary.failed_uploads} file{'s' if summary.failed_uploads != 1 else ''} "
+                "failed to upload. The delivery completed with errors, check the logs for details.\n"
+            )
         return to_print
 
 
@@ -152,11 +168,16 @@ class ResponseUpload(BaseResponse):
             files_failed=result_upload.errored_files,
         )
 
-    def _get_summary(self) -> tuple[str, int, int, int]:
+    def _get_summary(self) -> GetSummaryResponse:
         message = ""
         for local_file_path, s3_key_suffix in self.files_uploaded:
             message += f"\t[UPLOAD] {local_file_path} -> {s3_key_suffix}\n"
-        return message, len(self.files_uploaded), len(self.files_failed), 0
+        return GetSummaryResponse(
+            message=message,
+            uploads=len(self.files_uploaded),
+            failed_uploads=len(self.files_failed),
+            deletes=0,
+        )
 
 
 class ResponseDelete(BaseResponse):
@@ -187,11 +208,11 @@ class ResponseDelete(BaseResponse):
             files_to_delete=files_to_delete,
         )
 
-    def _get_summary(self) -> tuple[str, int, int, int]:
+    def _get_summary(self) -> GetSummaryResponse:
         message = ""
         for file in self.files_to_delete:
             message += f"\t[DELETE] {file.key_suffix}\n"
-        return message, 0, 0, len(self.files_to_delete)
+        return GetSummaryResponse(message=message, uploads=0, failed_uploads=0, deletes=len(self.files_to_delete))
 
 
 class ResponseDelivery(BaseResponse):
@@ -219,15 +240,15 @@ class ResponseDelivery(BaseResponse):
             operations_responses=operations_responses,
         )
 
-    def _get_summary(self) -> tuple[str, int, int, int]:
+    def _get_summary(self) -> GetSummaryResponse:
         message, uploads, failed_uploads, deletes = "", 0, 0, 0
         for response in self.operations_responses:
             response_summary = response._get_summary()
-            message += response_summary[0]
-            uploads += response_summary[1]
-            failed_uploads += response_summary[2]
-            deletes += response_summary[3]
-        return message, uploads, failed_uploads, deletes
+            message += response_summary.message
+            uploads += response_summary.uploads
+            failed_uploads += response_summary.failed_uploads
+            deletes += response_summary.deletes
+        return GetSummaryResponse(message=message, uploads=uploads, failed_uploads=failed_uploads, deletes=deletes)
 
 
 class _BaseOperation(BaseModel):
