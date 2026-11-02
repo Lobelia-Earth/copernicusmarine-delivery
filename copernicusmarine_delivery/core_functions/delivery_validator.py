@@ -123,27 +123,28 @@ def validate_upload_files(files: list[str], dataset_id: str, product_id: str, an
 
 
 def validate_delivery_sizes(api_limits: APILimits, to_upload_operations: list[ToUploadOperation]) -> None:
-    number_of_files_in_delivery = len([file for operation in to_upload_operations for file in operation.files])
+    number_of_files_in_delivery = 0
+    delivery_size_in_gb = 0.0
+    files_above_file_limit = []
+    api_max_size_mb = api_limits.max_file_size_gb * 1024
+
+    for operation in to_upload_operations:
+        for file in operation.files:
+            number_of_files_in_delivery += 1
+            delivery_size_in_gb += file.file_size_mb / 1024
+            if file.file_size_mb > api_max_size_mb:
+                files_above_file_limit.append(file)
+
     if number_of_files_in_delivery > api_limits.max_number_of_files_per_delivery:
         raise InvalidDeliverySizeError(
             limit_raised="Maximum number of files exceeded",
             details=f"The number of files in delivery ({number_of_files_in_delivery}) exceeded the limit ({api_limits.max_number_of_files_per_delivery})",
         )
-    delivery_size_in_gb = (
-        sum(file.file_size_mb for operation in to_upload_operations for file in operation.files) / 1024
-    )
     if delivery_size_in_gb > api_limits.max_delivery_size_gb:
         raise InvalidDeliverySizeError(
             limit_raised="Maximum delivery size exceeded",
             details=f"The delivery size ({delivery_size_in_gb} GB) exceeded the limit ({api_limits.max_delivery_size_gb} GB)",
         )
-    limit_file_size_in_mb = api_limits.max_file_size_gb * 1024
-    files_above_file_limit = [
-        file
-        for operation in to_upload_operations
-        for file in operation.files
-        if file.file_size_mb > limit_file_size_in_mb
-    ]
     if files_above_file_limit:
         raise InvalidDeliverySizeError(
             limit_raised="Maximum file size exceeded",
