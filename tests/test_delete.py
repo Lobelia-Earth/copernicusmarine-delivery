@@ -133,7 +133,4 @@ def test_delete_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
             product_id="Made-Up-Product-Id",
             dry_run=False,
         )
-    assert (
-        f"Made-Up-Product-Id is not a valid Product ID for {PUSHING_ENTITY_ID}"
-        in str(exc_info.value)
-    )
+    assert f"Made-Up-Product-Id is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(exc_info.value)

@@ -189,18 +189,14 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
     upload_response = response.operations_responses[0]
     assert isinstance(upload_response, ResponseUpload)
     uploaded_suffixes = {suffix for _, suffix in upload_response.files_uploaded}
-    assert uploaded_suffixes == {
-        f"product1/dataset1/{suffix}" for suffix in expected_suffixes
-    }
+    assert uploaded_suffixes == {f"product1/dataset1/{suffix}" for suffix in expected_suffixes}
 
     for suffix in expected_suffixes:
         key = f"data/{delivery.delivery_id}/product1/dataset1/{suffix}"
         s3_client.head_object(Bucket=glo_mercator_bucket, Key=key)
 
 
-def test_upload_one_file_cannot_be_uploaded_with_raise(
-    monkeypatch, glo_mercator_bucket, ingestion_service
-):
+def test_upload_one_file_cannot_be_uploaded_with_raise(monkeypatch, glo_mercator_bucket, ingestion_service):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")
@@ -208,9 +204,7 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(
 
     upload = Upload(files=MOCK_FILES, anchor="dataset1")
     delivery = Delivery(operations=[upload])
-    monkeypatch.setattr(
-        S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry
-    )
+    monkeypatch.setattr(S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry)
     with pytest.raises(Exception) as exc_info:
         delivery.submit(
             dataset_id=DATASET_ID,

@@ -123,9 +123,7 @@ def glo_mercator_bucket(s3_client) -> Generator[str, None, None]:
 
 
 @pytest.fixture
-def service(
-    ingestion_bucket: str, ministack_endpoint: str, ingestion_service
-) -> S3Client:
+def service(ingestion_bucket: str, ministack_endpoint: str, ingestion_service) -> S3Client:
     return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
         bucket_name=_BUCKET_NAME,
@@ -209,18 +207,14 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             delivery_id = body["delivery_id"]
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(
-                pe["bucket"]
-                for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
-                if pe["name"] == pushing_entity_id
+                pe["bucket"] for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == pushing_entity_id
             )
             # Ensure bucket exists (idempotent in localstack)
             try:
                 s3_client.create_bucket(Bucket=bucket)
             except s3_client.exceptions.BucketAlreadyOwnedByYou:
                 pass
-            key = _MANIFESTS_PATH.format(
-                pushing_entity_id=pushing_entity_id, delivery_id=delivery_id
-            )
+            key = _MANIFESTS_PATH.format(pushing_entity_id=pushing_entity_id, delivery_id=delivery_id)
             s3_client.put_object(
                 Bucket=bucket,
                 Key=key,
@@ -233,9 +227,7 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                 return invalid_token_response
             pushing_entity_id = _TOKEN_PUSHING_ENTITY_ID
             bucket = next(
-                pe["bucket"]
-                for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
-                if pe["name"] == pushing_entity_id
+                pe["bucket"] for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == pushing_entity_id
             )
             prefix = _MANIFESTS_PATH_PREFIX.format(pushing_entity_id=pushing_entity_id)
             deliveries = []
@@ -263,17 +255,13 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             pushing_entity = next(
-                pe
-                for pe in _PUSHING_ENTITIES_DICT["pushing-entities"]
-                if pe["name"] == _TOKEN_PUSHING_ENTITY_ID
+                pe for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == _TOKEN_PUSHING_ENTITY_ID
             )
             return httpx.Response(
                 200,
                 json={
                     "pushing_entity": pushing_entity,
-                    "s3_endpoint_url": os.environ.get(
-                        "S3_ENDPOINT_URL", "http://localhost:4566"
-                    ),
+                    "s3_endpoint_url": os.environ.get("S3_ENDPOINT_URL", "http://localhost:4566"),
                 },
             )
 
@@ -286,21 +274,15 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                     "access_key_id": "test",
                     "secret_access_key": "test",
                     "session_token": "test",
-                    "expiration": str(
-                        datetime.now(tz=timezone.utc) + timedelta(minutes=30)
-                    ),
+                    "expiration": str(datetime.now(tz=timezone.utc) + timedelta(minutes=30)),
                 },
             )
 
         return httpx.Response(404)
 
     mock_client = httpx.Client(transport=httpx.MockTransport(_handler))
-    monkeypatch.setattr(
-        "copernicusmarine_delivery.http_client.http_client", mock_client
-    )
-    monkeypatch.setattr(
-        "copernicusmarine_delivery.core_functions.delivery.http_client", mock_client
-    )
+    monkeypatch.setattr("copernicusmarine_delivery.http_client.http_client", mock_client)
+    monkeypatch.setattr("copernicusmarine_delivery.core_functions.delivery.http_client", mock_client)
     monkeypatch.setattr("copernicusmarine_delivery.auth.http_client", mock_client)
     monkeypatch.setattr("copernicusmarine_delivery.s3_client.http_client", mock_client)
 

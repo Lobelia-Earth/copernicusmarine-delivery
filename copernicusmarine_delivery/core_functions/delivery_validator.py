@@ -43,8 +43,7 @@ def duplicate_files(files: list[T]) -> list[T]:
 
 def validate_delete_files(files: list[str]) -> None:
     invalid_files = [
-        InvalidFile(local_path=Path(file_), reason="Duplicate file path.")
-        for file_ in duplicate_files(files)
+        InvalidFile(local_path=Path(file_), reason="Duplicate file path.") for file_ in duplicate_files(files)
     ]
     if invalid_files:
         raise InvalidFilesError(
@@ -52,16 +51,12 @@ def validate_delete_files(files: list[str]) -> None:
         )
 
 
-def validate_upload_files(
-    files: list[str], dataset_id: str, product_id: str, anchor: str | None
-) -> None:
+def validate_upload_files(files: list[str], dataset_id: str, product_id: str, anchor: str | None) -> None:
     invalid_files = []
     for file_str in files:
         file = Path(file_str)
         if not file_exists(file):
-            invalid_files.append(
-                InvalidFile(local_path=file, reason="File path does not exist.")
-            )
+            invalid_files.append(InvalidFile(local_path=file, reason="File path does not exist."))
             continue
         if not file_not_empty(file):
             invalid_files.append(InvalidFile(local_path=file, reason="File is empty."))
@@ -114,8 +109,7 @@ def validate_upload_files(
             )
             continue
     invalid_files += [
-        InvalidFile(local_path=Path(file), reason="Duplicate file path.")
-        for file in duplicate_files(files)
+        InvalidFile(local_path=Path(file), reason="Duplicate file path.") for file in duplicate_files(files)
     ]
     if invalid_files:
         raise InvalidFilesError(

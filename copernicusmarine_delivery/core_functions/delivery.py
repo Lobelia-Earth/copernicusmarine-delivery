@@ -64,9 +64,7 @@ def create_and_upload_delivery(
         delivery_id=delivery_id,
     )
     if not dry_run:
-        logger.debug(
-            f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery"
-        )
+        logger.debug(f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery")
         response = http_client.post(
             f"{INGESTION_SERVICE_URL}/delivery",
             json=delivery.model_dump(by_alias=True),
@@ -113,7 +111,6 @@ def _timeframe_to_created_after(timeframe: TimeframeLiteral) -> str | None:
         created_after = now - TIMEFRAME_MAPPING[timeframe]
     else:
         raise ValueError(
-            f"Unsupported timeframe: {timeframe}. "
-            f"Available options are: {list(TIMEFRAME_MAPPING.keys()) + ['all']}"
+            f"Unsupported timeframe: {timeframe}. Available options are: {list(TIMEFRAME_MAPPING.keys()) + ['all']}"
         )
     return datetime_to_iso_format(created_after)

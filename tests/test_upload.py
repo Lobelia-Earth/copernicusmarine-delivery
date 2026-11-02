@@ -151,9 +151,7 @@ def test_upload_cli_no_source_exits():
 
 
 def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
-    monkeypatch.setattr(
-        S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML
-    )
+    monkeypatch.setattr(S3Client, "get_file_stream", lambda self, **kwargs: _UNKNOWN_ENTITY_YAML)
     with pytest.raises(InvalidDeliveryIdsError) as exc_info:
         upload(
             files=MOCK_FILES,
@@ -166,23 +164,17 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
         )
-    assert f"product1 is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(
-        exc_info.value
-    )
+    assert f"product1 is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(exc_info.value)
 
 
 @freeze_time("2012-01-14 12:00:01")
-def test_upload_one_file_cannot_be_uploaded(
-    monkeypatch, snapshot, glo_mercator_bucket, ingestion_service
-):
+def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_bucket, ingestion_service):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")
         return {"e_tag": "mock-etag", "VersionId": "mock-version-id"}
 
-    monkeypatch.setattr(
-        S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry
-    )
+    monkeypatch.setattr(S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry)
 
     response, delivery = upload(
         files=MOCK_FILES,
@@ -205,18 +197,14 @@ def test_upload_one_file_cannot_be_uploaded(
     assert delivery.model_dump_json(indent=2) == snapshot
 
 
-def test_upload_one_file_cannot_be_uploaded_with_raise(
-    monkeypatch, glo_mercator_bucket, ingestion_service
-):
+def test_upload_one_file_cannot_be_uploaded_with_raise(monkeypatch, glo_mercator_bucket, ingestion_service):
     def mock__put_with_os_error_retry(self, key, file, chunk_size, use_multipart=True):
         if "file1.txt" in key:
             raise Exception("Simulated upload failure for file1.txt")
         return {"e_tag": "mock-etag", "VersionId": "mock-version-id"}
 
     upload = Upload(files=MOCK_FILES)
-    monkeypatch.setattr(
-        S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry
-    )
+    monkeypatch.setattr(S3Client, "_put_with_os_error_retry", mock__put_with_os_error_retry)
     with pytest.raises(Exception) as exc_info:
         upload.submit(
             dataset_id=DATASET_ID,

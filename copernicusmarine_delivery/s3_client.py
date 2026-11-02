@@ -179,13 +179,9 @@ class S3Client:
             next(iter(list_obstore(store=self._store, chunk_size=1)), None)
         except Exception as e:
             if "NoSuchBucket" in str(e):
-                raise NoSuchBucketException(
-                    f"Bucket does not exist: {self._bucket_name}"
-                )
+                raise NoSuchBucketException(f"Bucket does not exist: {self._bucket_name}")
             elif "ConnectionRefused" in str(e):
-                raise ConnectionRefusedException(
-                    f"Can't connect to bucket: {self._bucket_name}"
-                )
+                raise ConnectionRefusedException(f"Can't connect to bucket: {self._bucket_name}")
             raise e
 
     @property
@@ -226,8 +222,7 @@ class S3Client:
                 if attempt == _OS_ERROR_RETRIES:
                     raise
                 logger.warning(
-                    f"Socket error uploading {file.name} "
-                    f"(attempt {attempt}/{_OS_ERROR_RETRIES}): {e}. Retrying."
+                    f"Socket error uploading {file.name} (attempt {attempt}/{_OS_ERROR_RETRIES}): {e}. Retrying."
                 )
                 time.sleep(_OS_ERROR_BACKOFF_SECONDS * attempt)
 
@@ -250,9 +245,7 @@ class S3Client:
                 upload_start_time = now_in_utc_isoformat()
                 put_result = self._put_with_os_error_retry(key, file, chunk_size)
                 upload_end_time = now_in_utc_isoformat()
-                logger.debug(
-                    f"Successfully uploaded file {file.name} from {upload_start_time} to {upload_end_time}"
-                )
+                logger.debug(f"Successfully uploaded file {file.name} from {upload_start_time} to {upload_end_time}")
                 e_tag = put_result["e_tag"].strip('"')
             return S3File(
                 local_path=file,
@@ -264,14 +257,9 @@ class S3Client:
 
         except Exception as e:
             if raise_on_error:
-                logger.error(
-                    f"Something went wrong uploading: {file.name}. "
-                    f"There won't be any delivery."
-                )
+                logger.error(f"Something went wrong uploading: {file.name}. There won't be any delivery.")
                 raise e
-            logger.warning(
-                f"Something went wrong uploading: {file.name}. Skipping this file."
-            )
+            logger.warning(f"Something went wrong uploading: {file.name}. Skipping this file.")
             return ErrorFile(
                 local_path=file,
                 reason=_extract_error_message(e),
@@ -289,9 +277,7 @@ class S3Client:
         success_results = []
         error_results = []
 
-        logger.info(
-            f"{'[DRY RUN]: ' if dry_run else ''}Starting to upload {len(s3_key_local_file_mapping)} files ..."
-        )
+        logger.info(f"{'[DRY RUN]: ' if dry_run else ''}Starting to upload {len(s3_key_local_file_mapping)} files ...")
         with ThreadPoolExecutor(max_workers=max_concurrent_uploads) as executor:
             futures = {
                 executor.submit(
@@ -315,9 +301,7 @@ class S3Client:
                 else:
                     error_results.append(result)
 
-        return PutFilesResult(
-            successful_files=success_results, errored_files=error_results
-        )
+        return PutFilesResult(successful_files=success_results, errored_files=error_results)
 
     def get_file_stream(self, path_to_file: str) -> bytes:
         response = get(

@@ -17,15 +17,9 @@ def local_path_to_key_suffix(local_path: str, anchor: str | None = None) -> str:
     return stripped_path
 
 
-def get_ingestion_bucket_name(
-    pushing_entity_id: str, pushing_entities: PushingEntities
-) -> str:
+def get_ingestion_bucket_name(pushing_entity_id: str, pushing_entities: PushingEntities) -> str:
     bucket = next(
-        (
-            pu.bucket
-            for pu in pushing_entities.pushing_entities
-            if pu.name == pushing_entity_id
-        ),
+        (pu.bucket for pu in pushing_entities.pushing_entities if pu.name == pushing_entity_id),
         None,
     )
     if bucket is None:

@@ -119,7 +119,7 @@ Schema:
 
 ```yaml
 delivery:                      # required. List of operations, run in order
-  - operation: operation       # required. "upload" | "delete"
+  - operation: <operation>     # required. "upload" | "delete"
     files: [<string>, ...]     # required. Local paths (upload) or S3 MDS suffixes (delete)
     anchor: <string>           # optional. upload only. Folder name in the local paths
 ```

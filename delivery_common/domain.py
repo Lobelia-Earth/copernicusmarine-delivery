@@ -71,14 +71,10 @@ FORBIDDEN_KEY_SUFFIX_PATTERNS = ("../", "//", ":/")
 
 def raise_on_wrong_key_suffix(key_suffix: str) -> None:
     if os.path.isabs(key_suffix):
-        raise ValueError(
-            f"Invalid key_suffix '{key_suffix}': it must be a relative path."
-        )
+        raise ValueError(f"Invalid key_suffix '{key_suffix}': it must be a relative path.")
     for pattern in FORBIDDEN_KEY_SUFFIX_PATTERNS:
         if pattern in key_suffix:
-            raise ValueError(
-                f"Invalid key_suffix '{key_suffix}': it must not contain '{pattern}'."
-            )
+            raise ValueError(f"Invalid key_suffix '{key_suffix}': it must not contain '{pattern}'.")
 
 
 class DeliveryStatus(str, Enum):
@@ -110,6 +106,12 @@ class DeliveryFile(BaseModel):
     #: Optional error message if the file failed.
     error_message: str | None = None
 
+    def get_summary(self) -> str:
+        summary = f"\t\tfile: {self.key_suffix}"
+        if self.error_message:
+            summary += f", ERROR {self.error_message}"
+        return f"{summary}\n"
+
 
 class UploadFile(DeliveryFile):
     file_size_mb: int
@@ -133,11 +135,21 @@ class _BaseOperation(BaseModel, Generic[FileT]):
 
     def get_errored_file_names(self) -> list[tuple[str, str]]:
         """Returns a list of all file key_suffixes that have an error message."""
-        return [
-            (file.key_suffix, file.error_message)
-            for file in self.files
-            if file.error_message
-        ]
+        return [(file.key_suffix, file.error_message) for file in self.files if file.error_message]
+
+    def get_summary(self) -> tuple[str, int, int, int, int, int]:
+        """
+        Return the summary message and the failed_uploads, failed_deletes, total_uploads, total_volumes, total_deletes counts.
+
+        :return: A tuple containing the summary message, failed_uploads, failed_deletes, total_uploads, total_volumes, total_deletes.
+            message: str - The summary message.
+            failed_uploads: int - The number of failed uploads.
+            failed_deletes: int - The number of failed deletes.
+            total_uploads: The number of total uploads.
+            total_volumes: Total volumes of upload files
+            total_deletes: int - The number of deletes.
+        """
+        raise NotImplementedError()
 
 
 class UploadOperation(_BaseOperation[UploadFile]):
@@ -148,10 +160,22 @@ class UploadOperation(_BaseOperation[UploadFile]):
         """Returns the total size of all files in MB."""
         return sum(file.file_size_mb or 0 for file in self.files)
 
+    def get_summary(self) -> tuple[str, int, int, int, int, int]:
+        detailed_operation_message = "\t[UPLOAD OPERATION]\n"
+        for file in self.files:
+            detailed_operation_message += file.get_summary()
+        return detailed_operation_message, len(self.get_errored_file_names()), 0, len(self.files), self.total_size(), 0
+
 
 class DeleteOperation(_BaseOperation[DeleteFile]):
     operation: OperationNames = Field(default=OperationNames.delete)
     files: list[DeleteFile] = Field(default_factory=list)
+
+    def get_summary(self) -> tuple[str, int, int, int, int, int]:
+        detailed_operation_message = "\t[DELETE OPERATION]\n"
+        for file in self.files:
+            detailed_operation_message += file.get_summary()
+        return detailed_operation_message, 0, len(self.get_errored_file_names()), 0, 0, len(self.files)
 
 
 def operation_discriminator(value: Any) -> str:
@@ -205,6 +229,43 @@ class Delivery(BaseModel):
     #: Please check the individual files for more details.
     #: For further help, please contact the User Support team.
     error_message: str | None = None
+
+    def get_summary(self, show_all: bool) -> str:
+        to_print: str = ""
+        to_print += f"[DELIVERY] {self.delivery_id} for pushing entity {self.pushing_entity_id}\n"
+        to_print += f"\tproduct_id: {self.product_id}\n"
+        to_print += f"\tdataset_id: {self.dataset_id}\n"
+        to_print += f"\tstatus: {self.status.value}\n"
+        to_print += f"\tcreated at: {self.creation_timestamp}\n"
+        failed_uploads = failed_deletes = total_uploads = total_volumes = total_deletes = 0
+        detailed_operations_message = ""
+        for operation in self.operations:
+            operation_summary = operation.get_summary()
+            detailed_operations_message += operation_summary[0]
+            failed_uploads += operation_summary[1]
+            failed_deletes += operation_summary[2]
+            total_uploads += operation_summary[3]
+            total_volumes += operation_summary[4]
+            total_deletes += operation_summary[5]
+        to_print += f"\ttotal uploads: {total_uploads}\n"
+        to_print += f"\ttotal volume (MB): {total_volumes}\n"
+        to_print += f"\terrored uploads: {failed_uploads}\n"
+        to_print += f"\ttotal deletes: {total_deletes}\n"
+        to_print += f"\terrored deletes: {failed_deletes}\n"
+        if failed_uploads or failed_deletes:
+            to_print += (
+                f"\n\tWARNING: {failed_uploads + failed_deletes} operation(s) errored, "
+                f"the delivery status '{self.status.value}' does not mean every file succeeded.\n"
+            )
+            if not show_all:
+                to_print += "\tUse --show-all to see which files errored.\n"
+        if show_all:
+            to_print += detailed_operations_message
+
+        return to_print
+
+    def __str__(self) -> str:
+        return self.get_summary(show_all=False)
 
 
 class ErrorResponseFile(BaseModel):

@@ -82,8 +82,7 @@ class Upload(_Upload):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id")
-            or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
 
@@ -119,8 +118,7 @@ class Delete(_Delete):
             dataset_id=dataset_id,
             files=self.files,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id")
-            or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
 
@@ -185,8 +183,7 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id")
-            or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
         )
         return response
 
@@ -212,9 +209,7 @@ def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> Delive
     return delivery[0]
 
 
-def list_deliveries(
-    timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None
-) -> list[DeliveryModel]:
+def list_deliveries(timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
@@ -223,7 +218,5 @@ def list_deliveries(
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
     config = get_config()
-    deliveries = get_deliveries(
-        config=config, timeframe=timeframe, on_behalf_of=on_behalf_of
-    )
+    deliveries = get_deliveries(config=config, timeframe=timeframe, on_behalf_of=on_behalf_of)
     return deliveries

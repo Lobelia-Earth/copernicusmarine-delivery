@@ -44,6 +44,7 @@ def test_delivery_status_python_interface(
         delivery_id=delivery.delivery_id,
     )
     assert result.model_dump_json(indent=2) == snapshot
+    assert result.get_summary(show_all=True) == snapshot
 
 
 @freeze_time("2012-01-14 12:00:01")
