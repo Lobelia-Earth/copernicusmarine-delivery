@@ -52,6 +52,8 @@ All the objects below are importable from `copernicusmarine_delivery`.
 
 .. autoexception:: copernicusmarine_delivery.InvalidDeliveryIdsError
 
+.. autoexception:: copernicusmarine_delivery.InvalidDeliverySizeError
+
 .. autoexception:: copernicusmarine_delivery.InvalidFilesError
 
 .. autoexception:: copernicusmarine_delivery.NoSuccessfulUploadsError

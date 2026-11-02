@@ -31,5 +31,5 @@ for _name in (
 ):
     logging.getLogger(_name).setLevel(logging.WARNING)
 
-logger = logging.getLogger("marine-producer-toolbox")
+logger = logging.getLogger("copernicusmarine-delivery")
 logger.addHandler(logHandler)

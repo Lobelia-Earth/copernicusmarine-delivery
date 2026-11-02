@@ -26,7 +26,7 @@ class FileToUpload(BaseModel):
     """Pre-upload file: checksum not known yet, only available once the upload completes.
     file_path is a local path, not S3 related yet."""
 
-    file_size_mb: int
+    file_size_mb: float
     local_path: str
 
 
@@ -315,6 +315,16 @@ class InvalidFilesError(Exception):
         super().__init__(f"Found {len(invalid_files)} invalid files. See logs for details.")
 
 
+class InvalidDeliverySizeError(Exception):
+    """
+    Raised when either the number of files, or a file size or the total delivery size
+    exceed the limits.
+    """
+
+    def __init__(self, limit_raised: str, details: str):
+        super().__init__(f"Invalid delivery limit exceeded: {limit_raised}. Reason: {details}")
+
+
 class OIDCConfig(BaseModel):
     oidc_provider_url: str
     oidc_client_id: str
@@ -322,10 +332,17 @@ class OIDCConfig(BaseModel):
     grant_type: str = "password"
 
 
+class APILimits(BaseModel):
+    max_number_of_files_per_delivery: int
+    max_delivery_size_gb: float
+    max_file_size_gb: float
+
+
 # model_config to allow extra fields to allow us to potentially add them without
 # breaking the toolbox in the future.
 class GetConfigResponse(BaseModel):
     oidc_config: OIDCConfig
+    api_limits: APILimits
 
     model_config = ConfigDict(extra="allow")
 

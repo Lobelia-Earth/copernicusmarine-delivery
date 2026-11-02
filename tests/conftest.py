@@ -247,7 +247,11 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
                         "grant_type": "all-granted",
                         "scope": "sky",
                     },
-                    "pushing_entities": _PUSHING_ENTITIES_DICT,
+                    "api_limits": {
+                        "max_number_of_files_per_delivery": 150,
+                        "max_delivery_size_gb": 200,
+                        "max_file_size_gb": 40,
+                    },
                 },
             )
 
