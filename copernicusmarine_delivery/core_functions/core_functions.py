@@ -228,9 +228,6 @@ def delivery(
                 )
                 pending_operations.append(to_upload_operation)
 
-    # Added here since the size is only added upon creation of the ToUploadOperation AND
-    # we need ALL upload operations to check the delivery size.
-    config.api_limits.max_file_size_gb = 0.00002
     validate_delivery_sizes(config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)])
 
     all_operations: list[Operation] = []
@@ -382,7 +379,6 @@ def build_upload_operation_from_put_results(
         upload_files.append(
             UploadFile(
                 key_suffix=local_path_to_key_suffix(successful_s3_file.ingestion_system_s3_path, anchor=dataset_id),
-                # The delivery manifest stores whole MB, the float is only for the limits check.
                 file_size_mb=int(file_to_upload.file_size_mb),
                 checksum=successful_s3_file.e_tag,
                 upload_start_time=successful_s3_file.upload_start_time,
