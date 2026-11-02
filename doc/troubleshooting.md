@@ -58,6 +58,22 @@ These errors are raised before anything is uploaded.
 
   See [folder structure and path](concepts.md#folder-structure-and-path) for how the paths are turned into the S3 MDS suffix.
 
+- **Invalid delivery size**
+
+  ```text
+  Invalid delivery size error: Invalid delivery limit exceeded: Maximum number of files exceeded. Reason: The number of files in delivery (200) exceeded the limit (150)
+  ```
+
+  The delivery is over one of the [delivery limits](best-practices.md#delivery-limits). Nothing is uploaded. The reason can be:
+
+  | Reason | What to do |
+  | --- | --- |
+  | `Maximum number of files exceeded` | Split the files into several deliveries. |
+  | `Maximum delivery size exceeded` | Split the files into several deliveries. |
+  | `Maximum file size exceeded` | The files over the limit are listed with their size in MB. They cannot be delivered as they are. If you cannot make them smaller, contact the MDS Service Desk. |
+
+  See [what happens if a limit is exceeded](best-practices.md#what-happens-if-a-limit-is-exceeded) and the recommended maximums.
+
 - **All uploads failed**
 
   ```text
@@ -68,4 +84,4 @@ These errors are raised before anything is uploaded.
 
 - **Delivery rejected when submitted**
 
-  The delivery exceeds the limits of the ingestion system (`Manifest validation failed: ...`). See [what happens if a limit is exceeded](best-practices.md#what-happens-if-a-limit-is-exceeded).
+  The ingestion system rejects the delivery for exceeding its limits (`Manifest validation failed: ...`). Normally the [invalid delivery size](#validation-errors) error above is raised first, before anything is uploaded. See [what happens if a limit is exceeded](best-practices.md#what-happens-if-a-limit-is-exceeded).

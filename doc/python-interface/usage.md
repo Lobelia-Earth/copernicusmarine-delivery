@@ -57,7 +57,7 @@ delivery = delivery_status(delivery_id)
 
 ## Dry run
 
-Use `dry_run=True` to validate a delivery before submitting it. The product, the dataset and the files are checked, but nothing is uploaded and no delivery is submitted. Since no delivery is submitted, you cannot check its status afterwards.
+Use `dry_run=True` to validate a delivery before submitting it. The product, the dataset, the files and the [delivery limits](../best-practices.md#delivery-limits) are checked, but nothing is uploaded and no delivery is submitted. Since no delivery is submitted, you cannot check its status afterwards.
 
 ```python
 response = delivery.submit(product_id, dataset_id, dry_run=True)

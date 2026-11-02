@@ -5,7 +5,11 @@ from typing import Sequence
 from copernicusmarine_delivery.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
 from copernicusmarine_delivery.core_functions.constants import NEW_DATA_BUCKET_PATH
 from copernicusmarine_delivery.core_functions.delivery import create_and_upload_delivery, create_delivery_id
-from copernicusmarine_delivery.core_functions.delivery_validator import validate_delete_files, validate_upload_files
+from copernicusmarine_delivery.core_functions.delivery_validator import (
+    validate_delete_files,
+    validate_delivery_sizes,
+    validate_upload_files,
+)
 from copernicusmarine_delivery.core_functions.domain import (
     Delete,
     FileToUpload,
@@ -84,6 +88,8 @@ def upload(
         product_id,
         anchor,
     )
+
+    validate_delivery_sizes(config.api_limits, [to_upload_operation])
 
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
@@ -221,6 +227,9 @@ def delivery(
                     operation.files, dataset_id, product_id, operation.anchor
                 )
                 pending_operations.append(to_upload_operation)
+
+    validate_delivery_sizes(config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)])
+
     all_operations: list[Operation] = []
     all_responses: list[ResponseUpload | ResponseDelete] = []
     for operation in pending_operations:
@@ -295,7 +304,7 @@ def create_and_validate_to_upload_operation(
         files=[
             FileToUpload(
                 local_path=file,
-                file_size_mb=os.path.getsize(file) // (1024 * 1024),
+                file_size_mb=os.path.getsize(file) / (1024 * 1024),
             )
             for file in files
         ],
@@ -339,7 +348,7 @@ def _put_files_to_ingestion_system(
 
     total_size = operation.total_size()
     logger.info(
-        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files"
+        f"{'[DRY RUN]: ' if dry_run else ''}Finished uploading {len(put_files_result.successful_files)} files "
         f"for a total size of {human_readable_size(total_size)}."
     )
 
@@ -370,7 +379,7 @@ def build_upload_operation_from_put_results(
         upload_files.append(
             UploadFile(
                 key_suffix=local_path_to_key_suffix(successful_s3_file.ingestion_system_s3_path, anchor=dataset_id),
-                file_size_mb=file_to_upload.file_size_mb,
+                file_size_mb=int(file_to_upload.file_size_mb),
                 checksum=successful_s3_file.e_tag,
                 upload_start_time=successful_s3_file.upload_start_time,
                 upload_end_time=successful_s3_file.upload_end_time,
