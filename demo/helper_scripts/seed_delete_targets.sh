@@ -9,10 +9,10 @@ SRC=delivery_multiple_operations
 S5="s5cmd --profile mds-dta-read-write --endpoint-url https://s3.waw3-1.cloudferro.com/"
 
 for f in \
-  2026/05/glo12_rg_6h-i_20260528-18h_3D-uovo_nwct_R20260603.nc \
-  2026/05/glo12_rg_6h-i_20260529-00h_3D-uovo_nwct_R20260603.nc \
-  2026/06/glo12_rg_6h-i_20260602-06h_3D-uovo_nwct_R20260603.nc \
-  2026/06/glo12_rg_6h-i_20260602-12h_3D-uovo_nwct_R20260603.nc; do
+  2026/05/glo12_rg_6h-i_20260528-00h_3D-uovo_nwct_R20260603.nc \
+  2026/05/glo12_rg_6h-i_20260527-06h_3D-uovo_nwct_R20260603.nc \
+  2026/05/glo12_rg_6h-i_20260527-12h_3D-uovo_nwct_R20260603.nc \
+  2026/05/glo12_rg_6h-i_20260527-18h_3D-uovo_nwct_R20260603.nc; do
   $S5 cp "$SRC/$f" "s3://$BUCKET/native/$PRODUCT/$DATASET/$f"
 done
 $S5 ls "s3://$BUCKET/native/$PRODUCT/$DATASET/*"
