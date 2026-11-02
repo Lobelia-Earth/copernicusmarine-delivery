@@ -18,7 +18,17 @@ Sizes are counted in 1024-based units: **1 GB = 1,073,741,824 bytes**. Some tool
 
 ### What happens if a limit is exceeded
 
-The delivery is rejected when it is submitted, with a message like:
+The limits are checked as part of the validation, before anything is uploaded. If one is exceeded, nothing is uploaded and no delivery is submitted. It is also checked with `--dry-run`. The error looks like:
+
+```text
+Invalid delivery size error: Invalid delivery limit exceeded: Maximum number of files exceeded. Reason: The number of files in delivery (200) exceeded the limit (150)
+Invalid delivery size error: Invalid delivery limit exceeded: Maximum delivery size exceeded. Reason: The delivery size (210.0 GB) exceeded the limit (200.0 GB)
+Invalid delivery size error: Invalid delivery limit exceeded: Maximum file size exceeded. Reason: One or more files exceeded the maximum file size limit (40.0 GB): {'data/big_file.nc': 46080}
+```
+
+For the file size, each file is listed with its size in MB. In Python it is raised as [`InvalidDeliverySizeError`](python-interface/api-reference.md#exceptions).
+
+The ingestion system checks the limits again when the delivery is submitted. In that case the delivery is rejected with a message like:
 
 ```text
 HTTP error: Manifest validation failed: The total number of files to upload (200) exceeds the limit: 150

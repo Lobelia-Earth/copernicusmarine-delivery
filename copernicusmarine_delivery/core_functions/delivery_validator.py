@@ -1,7 +1,12 @@
 from collections import Counter
 from pathlib import Path
 
-from copernicusmarine_delivery.core_functions.domain import InvalidFilesError
+from copernicusmarine_delivery.core_functions.domain import (
+    APILimits,
+    InvalidDeliverySizeError,
+    InvalidFilesError,
+    ToUploadOperation,
+)
 from copernicusmarine_delivery.core_functions.utils import local_path_to_key_suffix
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import (
@@ -114,4 +119,34 @@ def validate_upload_files(files: list[str], dataset_id: str, product_id: str, an
     if invalid_files:
         raise InvalidFilesError(
             invalid_files=invalid_files,
+        )
+
+
+def validate_delivery_sizes(api_limits: APILimits, to_upload_operations: list[ToUploadOperation]) -> None:
+    number_of_files_in_delivery = 0
+    delivery_size_in_gb = 0.0
+    files_above_file_limit = []
+    api_max_size_mb = api_limits.max_file_size_gb * 1024
+
+    for operation in to_upload_operations:
+        for file in operation.files:
+            number_of_files_in_delivery += 1
+            delivery_size_in_gb += file.file_size_mb / 1024
+            if file.file_size_mb > api_max_size_mb:
+                files_above_file_limit.append(file)
+
+    if number_of_files_in_delivery > api_limits.max_number_of_files_per_delivery:
+        raise InvalidDeliverySizeError(
+            limit_raised="Maximum number of files exceeded",
+            details=f"The number of files in delivery ({number_of_files_in_delivery}) exceeded the limit ({api_limits.max_number_of_files_per_delivery})",
+        )
+    if delivery_size_in_gb > api_limits.max_delivery_size_gb:
+        raise InvalidDeliverySizeError(
+            limit_raised="Maximum delivery size exceeded",
+            details=f"The delivery size ({delivery_size_in_gb} GB) exceeded the limit ({api_limits.max_delivery_size_gb} GB)",
+        )
+    if files_above_file_limit:
+        raise InvalidDeliverySizeError(
+            limit_raised="Maximum file size exceeded",
+            details=f"One or more files exceeded the maximum file size limit ({api_limits.max_file_size_gb} GB). Sizes are in MB: { ({file.local_path: file.file_size_mb for file in files_above_file_limit}) }",
         )

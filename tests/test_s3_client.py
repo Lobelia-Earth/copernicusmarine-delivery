@@ -124,7 +124,11 @@ def _make_credentials_handler(mock_keycloak, ministack_endpoint: str, expiry_sec
                         "grant_type": "all-granted",
                         "scope": "sky",
                     },
-                    "s3_config": {"endpoint_url": ministack_endpoint},
+                    "api_limits": {
+                        "max_number_of_files_per_delivery": 150,
+                        "max_delivery_size_gb": 200,
+                        "max_file_size_gb": 40,
+                    },
                 },
             )
 

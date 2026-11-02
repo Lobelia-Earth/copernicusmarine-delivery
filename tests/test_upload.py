@@ -216,3 +216,36 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(monkeypatch, glo_mercator
             chunk_concurrency=CHUNK_CONCURRENCY,
         )
     assert "Simulated upload failure for file1.txt" in str(exc_info.value)
+
+
+def test_upload_cli_delivery_limits_exceeded(monkeypatch, caplog, skip_delivery_ids_validation, ingestion_service):
+    from copernicusmarine_delivery.core_functions import core_functions
+
+    real_get_config = core_functions.get_config
+
+    def _low_limits_config():
+        config = real_get_config()
+        config.api_limits.max_number_of_files_per_delivery = 1
+        return config
+
+    monkeypatch.setattr(core_functions, "get_config", _low_limits_config)
+
+    with caplog.at_level("ERROR"):
+        result = CliRunner().invoke(
+            cli,
+            [
+                "upload",
+                "--source",
+                MOCK_FILES[0],
+                "--source",
+                MOCK_FILES[1],
+                "--dataset-id",
+                "dataset1",
+                "--product-id",
+                "product1",
+                "--anchor",
+                "dataset1",
+            ],
+        )
+    assert result.exit_code == 1
+    assert "Maximum number of files exceeded" in caplog.text

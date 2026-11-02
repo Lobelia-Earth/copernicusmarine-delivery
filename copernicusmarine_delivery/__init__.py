@@ -4,6 +4,7 @@ from copernicusmarine_delivery.auth import AuthenticationError
 from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral
 from copernicusmarine_delivery.core_functions.domain import (
     ErrorFile,
+    InvalidDeliverySizeError,
     InvalidFilesError,
     NoIngestionBucketError,
     NoSuccessfulUploadsError,
@@ -47,6 +48,7 @@ __all__ = [
     # Exceptions
     "AuthenticationError",
     "InvalidDeliveryIdsError",
+    "InvalidDeliverySizeError",
     "InvalidFilesError",
     "NoIngestionBucketError",
     "NoSuccessfulUploadsError",
