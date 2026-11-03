@@ -1,0 +1,6 @@
+delivery:
+- operation: upload
+  files:
+  - 2026/06/glo12_rg_6h-i_20260603-00h_3D-uovo_nwct_R20260604.nc
+  - 2026/06/glo12_rg_6h-i_20260603-06h_3D-uovo_nwct_R20260604.nc
+  - 2026/06/glo12_rg_6h-i_20260603-12h_3D-uovo_nwct_PUBERROR.nc
