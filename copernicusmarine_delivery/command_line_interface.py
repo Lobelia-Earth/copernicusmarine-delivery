@@ -87,8 +87,8 @@ def log_exception_and_exit(function: Callable) -> Any:
 
 
 _shared_options = [
-    click.option("--dataset-id", type=str, help="ID of the dataset.", required=True),
-    click.option("--product-id", type=str, help="ID of the product.", required=True),
+    click.option("-i", "--dataset-id", type=str, help="ID of the dataset.", required=True),
+    click.option("-p", "--product-id", type=str, help="ID of the product.", required=True),
     click.option(
         "--save-delivery-json",
         is_flag=True,
@@ -102,7 +102,7 @@ _shared_options = [
 ]
 
 pushing_entity_id_option = click.option(
-    "--pushing-entity-id",
+    "-e", "--pushing-entity-id",
     envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
     default=None,
     hidden=True,
@@ -338,7 +338,7 @@ def saving_delivery_file(delivery: Delivery) -> None:
 
 
 @cli.command()
-@click.option("--delivery-id", help="ID of the delivery to check status for.")
+@click.option("-d", "--delivery-id", help="ID of the delivery to check status for.")
 @click.option(
     "--delivery-json",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
