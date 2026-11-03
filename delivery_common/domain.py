@@ -80,8 +80,9 @@ def raise_on_wrong_key_suffix(key_suffix: str) -> None:
 class DeliveryStatus(str, Enum):
     pending = "pending"
     validated = "validated"
-    completed = "completed"
     failed = "failed"
+    published = "published"
+    partially_failed = "partially-failed"
 
 
 class OperationNames(str, Enum):
@@ -220,7 +221,8 @@ class Delivery(BaseModel):
     #: status of the delivery in the OPDV system.
     #: pending: The delivery has not been validated yet by the OPDV system.
     #: validated: The delivery has been validated by the OPDV system. The files have not reached the MDS yet.
-    #: completed: The files have reached their destination in the MDS.
+    #: published: All the files have reached their destination in the MDS.
+    #: partially-failed: Only some of the operations succeeded. Check the error messages for details.
     #: failed: Something went wrong along the way, for example the validation did not pass.
     status: DeliveryStatus = Field(default=DeliveryStatus.pending)
     #: last updated status timestamp in ISO 8601 format (UTC)
@@ -253,10 +255,7 @@ class Delivery(BaseModel):
         to_print += f"\ttotal deletes: {total_deletes}\n"
         to_print += f"\terrored deletes: {failed_deletes}\n"
         if failed_uploads or failed_deletes:
-            to_print += (
-                f"\n\tWARNING: {failed_uploads + failed_deletes} operation(s) errored, "
-                f"the delivery status '{self.status.value}' does not mean every file succeeded.\n"
-            )
+            to_print += f"\n\tWARNING: {failed_uploads + failed_deletes} operation(s) errored or partially errored.\n"
             if not show_all:
                 to_print += "\tUse --show-all to see which files errored.\n"
         if show_all:

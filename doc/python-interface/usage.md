@@ -93,7 +93,7 @@ from copernicusmarine_delivery import delivery_status
 
 while True:
     status = delivery_status(response.delivery_id)
-    if status.status.value in ("completed", "failed"):
+    if status.status.value in ("published", "partially-failed", "failed"):
         break
     time.sleep(10)
 
