@@ -34,6 +34,10 @@ A delivery has one of these five statuses:
 For a `partially-failed` or `failed` delivery, the status comes with an error message. The error of each file can be seen with `--show-all` in the [status command](command-line-interface/usage.md#delivery-status-command). In Python, the error message is the `error_message` of the object returned by `delivery_status`.
 ```
 
+```{note}
+In Python, `delivery_status` and `list_deliveries` return [`DeliveryModel`](#copernicusmarine_delivery.DeliveryModel) objects. Their `status` field is a [`DeliveryStatus`](#copernicusmarine_delivery.DeliveryStatus). This can be helpful if "waiting" for status to change in order to perform another action.
+```
+
 ## Folder structure and path
 
 Let's define the different paths you can encounter:

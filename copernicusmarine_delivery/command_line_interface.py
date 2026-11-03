@@ -102,7 +102,8 @@ _shared_options = [
 ]
 
 pushing_entity_id_option = click.option(
-    "-e", "--pushing-entity-id",
+    "-e",
+    "--pushing-entity-id",
     envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
     default=None,
     hidden=True,
