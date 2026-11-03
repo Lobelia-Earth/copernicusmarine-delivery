@@ -11,8 +11,9 @@ source .env         # mds_test_2 credentials, ALLOW_HTTP, ENVIRONMENT=dta
 unset PYTHON_LOG_DEBUG   # demo runs with INFO logs, not DEBUG
 
 # clean + seed the bucket (delete targets must exist)
-demo/helper_scripts/clean_native.sh
-cd demo && ./helper_scripts/seed_delete_targets.sh
+cd demo
+./helper_scripts/clean_native.sh
+./helper_scripts/seed_delete_targets.sh
 
 # yaml file paths are relative to the CWD
 cd delivery_multiple_operations
@@ -31,6 +32,16 @@ cm-de delivery --dry-run \
   --product-id GLOBAL_ANALYSISFORECAST_PHY_001_024 \
   --dataset-id cmems_mod_glo_phy-cur_anfc_0.083deg_PT6H-i_202406 \
   --file delivery_multiple_operations.yaml
+```
+
+```bash
+cm-de upload \
+  --product-id GLOBAL_ANALYSISFORECAST_PHY_001_024 \
+  --dataset-id cmems_mod_glo_phy-cur_anfc_0.083deg_PT6H-i_202406 \
+  --source 2026/05/glo12_rg_6h-i_20260527-06h_3D-uovo_nwct_R20260603.nc \
+  --source 2026/05/glo12_rg_6h-i_20260527-12h_3D-uovo_nwct_R20260603.nc \
+  --source 2026/05/glo12_rg_6h-i_20260527-18h_3D-uovo_nwct_R20260603.nc \
+  --source 2026/05/glo12_rg_6h-i_20260528-00h_3D-uovo_nwct_R20260603.nc
 ```
 
 ```bash

@@ -126,7 +126,7 @@ class BaseResponse(BaseModel):
         if summary.failed_uploads:
             to_print += (
                 f"\n{prefix}WARNING: {summary.failed_uploads} file{'s' if summary.failed_uploads != 1 else ''} "
-                "failed to upload. The delivery completed with errors, check the logs for details.\n"
+                "failed to upload. The delivery completed with errors, check the logs for details.\n\n"
             )
         return to_print
 
@@ -310,9 +310,12 @@ class InvalidFilesError(Exception):
     """
 
     def __init__(self, invalid_files: list[InvalidFile]):
+        self.invalid_files = invalid_files
+
         for file in invalid_files:
             logger.error(f"Invalid file: {file}")
         super().__init__(f"Found {len(invalid_files)} invalid files. See logs for details.")
+
 
 
 class InvalidDeliverySizeError(Exception):
