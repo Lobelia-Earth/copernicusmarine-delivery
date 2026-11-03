@@ -82,7 +82,7 @@ class DeliveryStatus(str, Enum):
     validated = "validated"
     failed = "failed"
     published = "published"
-    partially_published = "partially-failed"
+    partially_failed = "partially-failed"
 
 
 class OperationNames(str, Enum):
