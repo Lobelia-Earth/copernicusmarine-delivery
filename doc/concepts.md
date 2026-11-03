@@ -25,13 +25,13 @@ A delivery has one of these five statuses:
 - **pending**: the delivery has been received by the ingestion system and is waiting to be validated.
 - **validated**: the ingestion system has validated the delivery. It checks, among other things, that the product and dataset IDs are valid, that the delivery is within the [limits](best-practices.md#delivery-limits), that the uploaded files are in the ingestion system with the expected checksum, and that the files to delete exist in the MDS. The files have not reached the MDS yet.
 - **published**: all the files have reached their destination in the MDS.
-- **partially-published**: only some of the operations of the delivery succeeded. The error message of the delivery and the error of each file tell what failed.
+- **partially-failed**: only some of the operations of the delivery succeeded. The error message of the delivery and the error of each file tell what failed.
 - **failed**: something went wrong along the way, for example the validation did not pass.
 
-`published`, `partially-published` and `failed` are the final statuses. A delivery goes from `pending` to `validated` to `published` or `partially-published`, or to `failed` at any point.
+`published`, `partially-failed` and `failed` are the final statuses. A delivery goes from `pending` to `validated` to `published` or `partially-failed`, or to `failed` at any point.
 
 ```{note}
-For a `partially-published` or `failed` delivery, the status comes with an error message. The error of each file can be seen with `--show-all` in the [status command](command-line-interface/usage.md#delivery-status-command). In Python, the error message is the `error_message` of the object returned by `delivery_status`.
+For a `partially-failed` or `failed` delivery, the status comes with an error message. The error of each file can be seen with `--show-all` in the [status command](command-line-interface/usage.md#delivery-status-command). In Python, the error message is the `error_message` of the object returned by `delivery_status`.
 ```
 
 ## Folder structure and path
