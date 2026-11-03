@@ -80,8 +80,9 @@ def raise_on_wrong_key_suffix(key_suffix: str) -> None:
 class DeliveryStatus(str, Enum):
     pending = "pending"
     validated = "validated"
-    completed = "completed"
     failed = "failed"
+    published = "published"
+    partially_published = "partially-published"
 
 
 class OperationNames(str, Enum):
@@ -220,7 +221,8 @@ class Delivery(BaseModel):
     #: status of the delivery in the OPDV system.
     #: pending: The delivery has not been validated yet by the OPDV system.
     #: validated: The delivery has been validated by the OPDV system. The files have not reached the MDS yet.
-    #: completed: The files have reached their destination in the MDS.
+    #: published: All the files have reached their destination in the MDS.
+    #: partially-published: Only some of the operations succeeded. Check the error messages for details.
     #: failed: Something went wrong along the way, for example the validation did not pass.
     status: DeliveryStatus = Field(default=DeliveryStatus.pending)
     #: last updated status timestamp in ISO 8601 format (UTC)
