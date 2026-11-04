@@ -90,6 +90,15 @@ class OperationNames(str, Enum):
     delete = "delete"
 
 
+class GetSummaryResponse(BaseModel):
+    message: str
+    failed_uploads: int
+    failed_deletes: int
+    total_uploads: int
+    total_volumes: int
+    total_deletes: int
+
+
 class DeliveryFile(BaseModel):
     #: File path. Only the part specific to the dataset and defined by the pushing entity.
     #: Example: "subfolder/file.nc" or "file.nc"
@@ -138,7 +147,7 @@ class _BaseOperation(BaseModel, Generic[FileT]):
         """Returns a list of all file key_suffixes that have an error message."""
         return [(file.key_suffix, file.error_message) for file in self.files if file.error_message]
 
-    def get_summary(self) -> tuple[str, int, int, int, int, int]:
+    def get_summary(self) -> GetSummaryResponse:
         """
         Return the summary message and the failed_uploads, failed_deletes, total_uploads, total_volumes, total_deletes counts.
 
@@ -161,22 +170,36 @@ class UploadOperation(_BaseOperation[UploadFile]):
         """Returns the total size of all files in MB."""
         return sum(file.file_size_mb or 0 for file in self.files)
 
-    def get_summary(self) -> tuple[str, int, int, int, int, int]:
+    def get_summary(self) -> GetSummaryResponse:
         detailed_operation_message = "\t[UPLOAD OPERATION]\n"
         for file in self.files:
             detailed_operation_message += file.get_summary()
-        return detailed_operation_message, len(self.get_errored_file_names()), 0, len(self.files), self.total_size(), 0
+        return GetSummaryResponse(
+            message=detailed_operation_message,
+            failed_uploads=len(self.get_errored_file_names()),
+            failed_deletes=0,
+            total_uploads=len(self.files),
+            total_volumes=self.total_size(),
+            total_deletes=0,
+        )
 
 
 class DeleteOperation(_BaseOperation[DeleteFile]):
     operation: OperationNames = Field(default=OperationNames.delete)
     files: list[DeleteFile] = Field(default_factory=list)
 
-    def get_summary(self) -> tuple[str, int, int, int, int, int]:
+    def get_summary(self) -> GetSummaryResponse:
         detailed_operation_message = "\t[DELETE OPERATION]\n"
         for file in self.files:
             detailed_operation_message += file.get_summary()
-        return detailed_operation_message, 0, len(self.get_errored_file_names()), 0, 0, len(self.files)
+        return GetSummaryResponse(
+            message=detailed_operation_message,
+            failed_uploads=0,
+            failed_deletes=len(self.get_errored_file_names()),
+            total_uploads=0,
+            total_volumes=0,
+            total_deletes=len(self.files),
+        )
 
 
 def operation_discriminator(value: Any) -> str:
@@ -241,21 +264,27 @@ class Delivery(BaseModel):
         to_print += f"\tcreated at: {self.creation_timestamp}\n"
         failed_uploads = failed_deletes = total_uploads = total_volumes = total_deletes = 0
         detailed_operations_message = ""
+        failed_or_partially_failed_operations = 0
         for operation in self.operations:
             operation_summary = operation.get_summary()
-            detailed_operations_message += operation_summary[0]
-            failed_uploads += operation_summary[1]
-            failed_deletes += operation_summary[2]
-            total_uploads += operation_summary[3]
-            total_volumes += operation_summary[4]
-            total_deletes += operation_summary[5]
+            detailed_operations_message += operation_summary.message
+            failed_uploads += operation_summary.failed_uploads
+            failed_deletes += operation_summary.failed_deletes
+            total_uploads += operation_summary.total_uploads
+            total_volumes += operation_summary.total_volumes
+            total_deletes += operation_summary.total_deletes
+            if failed_uploads or failed_deletes:
+                failed_or_partially_failed_operations += 1
         to_print += f"\ttotal uploads: {total_uploads}\n"
         to_print += f"\ttotal volume (MB): {total_volumes}\n"
         to_print += f"\terrored uploads: {failed_uploads}\n"
         to_print += f"\ttotal deletes: {total_deletes}\n"
         to_print += f"\terrored deletes: {failed_deletes}\n"
-        if failed_uploads or failed_deletes:
-            to_print += f"\n\tWARNING: {failed_uploads + failed_deletes} operation(s) errored or partially errored.\n"
+        if failed_or_partially_failed_operations:
+            to_print += (
+                f"\n\tWARNING: {failed_deletes + failed_deletes} file(s) failed."
+                f"\n\t\t{failed_or_partially_failed_operations} operation(s) errored or partially errored.\n"
+            )
             if not show_all:
                 to_print += "\tUse --show-all to see which files errored.\n"
         if show_all:
