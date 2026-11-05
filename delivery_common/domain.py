@@ -273,7 +273,7 @@ class Delivery(BaseModel):
             total_uploads += operation_summary.total_uploads
             total_volumes += operation_summary.total_volumes
             total_deletes += operation_summary.total_deletes
-            if failed_uploads or failed_deletes:
+            if operation_summary.failed_uploads or operation_summary.failed_deletes:
                 failed_or_partially_failed_operations += 1
         to_print += f"\ttotal uploads: {total_uploads}\n"
         to_print += f"\ttotal volume (MB): {total_volumes}\n"
@@ -282,8 +282,8 @@ class Delivery(BaseModel):
         to_print += f"\terrored deletes: {failed_deletes}\n"
         if failed_or_partially_failed_operations:
             to_print += (
-                f"\n\tWARNING: {failed_deletes + failed_deletes} file(s) failed."
-                f"\n\t\t{failed_or_partially_failed_operations} operation(s) errored or partially errored.\n"
+                f"\n\tWARNING: {failed_deletes + failed_uploads} file(s) failed."
+                f" {failed_or_partially_failed_operations} operation(s) errored or partially errored.\n\n"
             )
             if not show_all:
                 to_print += "\tUse --show-all to see which files errored.\n"
