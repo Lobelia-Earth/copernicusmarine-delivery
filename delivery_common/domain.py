@@ -255,6 +255,9 @@ class Delivery(BaseModel):
     #: For further help, please contact the User Support team.
     error_message: str | None = None
 
+    def is_succesful(self) -> bool:
+        return self.status not in (DeliveryStatus.failed, DeliveryStatus.partially_failed)
+
     def get_summary(self, show_all: bool) -> str:
         to_print: str = ""
         to_print += f"[DELIVERY] {self.delivery_id} for pushing entity {self.pushing_entity_id}\n"

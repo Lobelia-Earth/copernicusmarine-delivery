@@ -29,7 +29,7 @@ Use `copernicusmarine-delivery COMMAND --help` to print the help of a command.
 : Success.
 
 `1`
-: The command failed. The error is logged.
+: The command failed. The error is logged. This also happens when the validation fails, when some files fail to upload, or when the `status` command reports a delivery as `failed` or `partially-failed`. The error is always printed to the standard error. With `--output json`, it is also printed to the standard output as a JSON object with the error in the `fatal_error` field. When some files fail to upload, or when `status` reports a failed delivery, the normal output is printed.
 
 ## Commands
 
