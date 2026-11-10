@@ -88,7 +88,7 @@ These errors are raised before anything is uploaded.
 
 ## Slow uploads
 
-The defaults work for most deliveries, but the best values depend on the shape of your delivery (many small files or a few big ones) and on your environment (network, CPU). There are three settings you can tune:
+The default settings work for most deliveries, but the best values depend on the shape of your delivery (many small files or a few big ones) and on your environment (network, CPU). There are three settings you can tune:
 
 | CLI option / Python argument | Default | What it does |
 | --- | --- | --- |
