@@ -75,7 +75,7 @@ response.raise_for_status()
 print(response.json())
 ```
 
-You shuld see something along these lines:
+You should see something along these lines:
 
 ```
 {'oidc_config': [...], 'api_limits': {'max_number_of_files_per_delivery': 10000, 'max_delivery_size_gb': 200.0, 'max_file_size_gb': 40.0}}
@@ -111,3 +111,5 @@ and
 ```bash
 curl -I https://s3.lcj1-1.cloudferro.com
 ```
+
+If any of these commands does not execute successfully please contact the MDS Service Desk as they are necessary for the toolbox usage.
