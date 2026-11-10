@@ -4,9 +4,9 @@
 
 The ingestion system enforces the following limits **per delivery**:
 
-- **Maximum number of files to upload: 10.000.** It counts the files of all the upload operations of the delivery. Deletes are not counted.
-- **Maximum size of the delivery: 200 GB.** It is the sum of the size of all the files to upload.
-- **Maximum size of a single file: 40 GB.** Larger files cannot be processed.
+- **Maximum number of files to upload: {{ max_files }}.** It counts the files of all the upload operations of the delivery. Deletes are not counted.
+- **Maximum size of the delivery: {{ max_delivery_size_gb }} GB.** It is the sum of the size of all the files to upload.
+- **Maximum size of a single file: {{ max_file_size_gb }} GB.** Larger files cannot be processed.
 
 ```{note}
 These are the current values. They might change, so if you need to deliver more, please contact the MDS Service Desk.
@@ -43,9 +43,9 @@ Do not go over the following values. They leave some margin below the limits:
 
 | | Limit | Recommended maximum |
 | --- | --- | --- |
-| Files to upload per delivery | 10.000 | **10.000** |
-| Size of a delivery | 200 GB | **190 GB** (204,010,946,560 bytes) |
-| Size of a single file | 40 GB | **40 GB** (42,949,672,960 bytes) |
+| Files to upload per delivery | {{ max_files }} | **10.000** |
+| Size of a delivery | {{ max_delivery_size_gb }} GB | **{{ recommended_delivery_size_gb }} GB** ({{ recommended_delivery_size_bytes }} bytes) |
+| Size of a single file | {{ max_file_size_gb }} GB | **40 GB** (42,949,672,960 bytes) |
 
 Other recommendations:
 
