@@ -85,3 +85,20 @@ These errors are raised before anything is uploaded.
 - **Delivery rejected when submitted**
 
   The ingestion system rejects the delivery for exceeding its limits (`Manifest validation failed: ...`). Normally the [invalid delivery size](#validation-errors) error above is raised first, before anything is uploaded. See [what happens if a limit is exceeded](best-practices.md#what-happens-if-a-limit-is-exceeded).
+
+## Slow uploads
+
+The defaults work for most deliveries, but the best values depend on the shape of your delivery (many small files or a few big ones) and on your environment (network, CPU). There are three settings you can tune:
+
+| CLI option / Python argument | Default | What it does |
+| --- | --- | --- |
+| `--max-concurrent-uploads` / `max_concurrent_uploads` | 5 | Number of files uploaded at the same time. |
+| `--chunk-size-mb` / `chunk_size_mb` | 16 | Size (in MB) of the parts in which a file is split to upload it. Files smaller than this are not split. |
+| `--chunk-concurrency` / `chunk_concurrency` | 6 | When a file is split, number of its parts uploaded at the same time. |
+
+Tuning these values may help boost the performance in specific use cases. For example:
+
+- **Many small files:** increase `max_concurrent_uploads`. See [best practices](best-practices.md#recommendations).
+- **A few big files:** increase `chunk_concurrency`, or adjust `chunk_size_mb`.
+
+Higher values use more connections and memory, so increase them gradually and as long as your environment allows it.

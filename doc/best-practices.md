@@ -64,6 +64,7 @@ Other recommendations:
 
 - **Keep operations that depend on each other in the same delivery.** The operations of a delivery run in order, but separate deliveries are processed in parallel. For example, a delete followed by an upload of the same file must be in the same delivery. Remember that a delivery is for a single dataset.
 - **Join small files into bigger ones**, if your data format allows it. Files smaller than about 1.4 GB (190 GB / 135 files) reach the maximum number of files before the maximum size, so you can send less data per delivery. Bigger files reach the maximum size first.
+- **Adjust the upload concurrency to the shape of your delivery.** By default, 5 files are uploaded in parallel. If your delivery has many small files (for example, more than 5.000), the upload time is dominated by the per-file overhead, not by the transfer. In that case, you can increase `--max-concurrent-uploads` (`max_concurrent_uploads` in Python) to something like 10 or 15 to speed it up, as long as your environment allows it. Very high values can exhaust the network resources of your machine (for example, with errors like `Can't assign requested address`).
 - **Large files take longer.** To protect the disk of the ingestion system, the bigger the files of an upload operation, the fewer of them are processed at the same time. It depends on the median size of the files of the operation (not the biggest one):
 
   ```text
