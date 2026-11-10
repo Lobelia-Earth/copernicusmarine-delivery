@@ -31,7 +31,7 @@ from copernicusmarine_delivery.core_functions.domain import (
     ResponseUpload,
 )
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
-from copernicusmarine_delivery.logger import logger
+from copernicusmarine_delivery.logger import LOG_LEVELS, logger
 from delivery_common.domain import Delivery
 
 
@@ -76,6 +76,7 @@ def _exception_message(exception: Exception) -> str:
 def log_exception_and_exit(function: Callable) -> Any:
     @wraps(function)
     def wrapper(*args, **kwargs):
+        logger.setLevel(kwargs.pop("log_level"))
         try:
             return function(*args, **kwargs)
         except Exception as exception:
@@ -122,6 +123,15 @@ pushing_entity_id_option = click.option(
     default=None,
     hidden=True,
     help="ADMIN only: act on behalf of this pushing entity.",
+)
+
+log_level_option = click.option(
+    "--log-level",
+    type=click.Choice(LOG_LEVELS, case_sensitive=False),
+    envvar="COPERNICUSMARINE_SERVICE_LOG_LEVEL",
+    default="INFO",
+    show_default=True,
+    help="Level of the logs printed to the standard error.",
 )
 
 _upload_shared_options = [
@@ -190,6 +200,7 @@ def cli(max_content_width=200) -> None:
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def delivery(
     file: Path,
@@ -262,6 +273,7 @@ def delivery(
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def upload(
     source: list[str],
@@ -325,6 +337,7 @@ def upload(
 )
 @shared_options
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def delete(
     source: list[str],
@@ -406,6 +419,7 @@ def saving_delivery_file(delivery: Delivery) -> None:
     help="Output format.",
 )
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
@@ -453,6 +467,7 @@ def status(
     default="mo",
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
+@log_level_option
 @log_exception_and_exit
 def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None) -> None:
     """

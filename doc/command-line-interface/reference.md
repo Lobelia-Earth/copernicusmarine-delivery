@@ -20,8 +20,8 @@ Use `copernicusmarine-delivery COMMAND --help` to print the help of a command.
 `COPERNICUSMARINE_SERVICE_PASSWORD`
 : Password of your Pushing Entity account. Required.
 
-`PYTHON_LOG_DEBUG`
-: Set it to `1`, `true` or `yes` to print debug logs.
+`COPERNICUSMARINE_SERVICE_LOG_LEVEL`
+: Level of the logs: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Optional. In the CLI, it is the default of `--log-level`, which is `INFO` if neither is set. In the Python interface, the default is `WARNING`. To print only errors, set it to `ERROR`. To print no logs, set it to `CRITICAL`.
 
 ## Exit statuses
 
