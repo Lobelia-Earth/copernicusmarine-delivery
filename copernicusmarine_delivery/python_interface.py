@@ -54,6 +54,7 @@ class Upload(_Upload):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        disable_progress_bar: bool = False,
         **kwargs,
     ) -> ResponseUpload:
         """
@@ -83,6 +84,7 @@ class Upload(_Upload):
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
             on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            disable_progress_bar=disable_progress_bar,
         )
         return response
 
@@ -156,6 +158,7 @@ class Delivery(BaseModel):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        disable_progress_bar: bool = False,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -184,6 +187,7 @@ class Delivery(BaseModel):
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
             on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            disable_progress_bar=disable_progress_bar,
         )
         return response
 

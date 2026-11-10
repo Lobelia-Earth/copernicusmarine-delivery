@@ -162,6 +162,13 @@ _upload_shared_options = [
         show_default=True,
         help="Number of parts uploaded in parallel per file (multipart upload).",
     ),
+    click.option(
+        "--disable-progress-bar",
+        is_flag=True,
+        default=False,
+        show_default=True,
+        help="Set this argument if you want to disable the progress bar",
+    ),
 ]
 
 
@@ -215,6 +222,7 @@ def delivery(
     dry_run: bool = False,
     show_less: bool = False,
     output: str = "text",
+    disable_progress_bar: bool = False,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
     with open(file) as f:
@@ -230,6 +238,7 @@ def delivery(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
+        disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -289,6 +298,7 @@ def upload(
     dry_run: bool = False,
     show_less: bool = False,
     output: str = "text",
+    disable_progress_bar: bool = False,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -314,6 +324,7 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
         on_behalf_of=pushing_entity_id,
+        disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
