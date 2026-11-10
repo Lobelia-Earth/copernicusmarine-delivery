@@ -43,6 +43,13 @@ All the objects below are importable from `copernicusmarine_delivery`.
 
 .. autopydantic_model:: copernicusmarine_delivery.ResponseDelivery
    :inherited-members: BaseModel
+
+.. autopydantic_model:: copernicusmarine_delivery.DeliveryModel
+   :inherited-members: BaseModel
+
+.. autoclass:: copernicusmarine_delivery.DeliveryStatus
+   :members:
+   :undoc-members:
 ```
 
 ## Exceptions
