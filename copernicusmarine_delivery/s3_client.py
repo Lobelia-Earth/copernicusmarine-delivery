@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from obstore import delete, get, put
 from obstore import list as list_obstore
 from obstore.store import S3Store
+from tqdm.contrib.concurrent import thread_map
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
 from copernicusmarine_delivery.core_functions.domain import (
@@ -241,11 +241,9 @@ class S3Client:
                 upload_start_time = now_in_utc_isoformat()
                 upload_end_time = now_in_utc_isoformat()
             else:
-                logger.debug(f"Starting upload for {file.name}")
                 upload_start_time = now_in_utc_isoformat()
                 put_result = self._put_with_os_error_retry(key, file, chunk_size)
                 upload_end_time = now_in_utc_isoformat()
-                logger.debug(f"Successfully uploaded file {file.name} from {upload_start_time} to {upload_end_time}")
                 e_tag = put_result["e_tag"].strip('"')
             return S3File(
                 local_path=file,
@@ -272,36 +270,28 @@ class S3Client:
         chunk_size: int,
         max_concurrent_uploads: int,
         dry_run: bool,
+        disable_progress_bar: bool,
     ) -> PutFilesResult:
-        total = len(s3_key_local_file_mapping)
-        success_results = []
-        error_results = []
-
         logger.info(f"{'[DRY RUN]: ' if dry_run else ''}Starting to upload {len(s3_key_local_file_mapping)} files ...")
-        with ThreadPoolExecutor(max_workers=max_concurrent_uploads) as executor:
-            futures = {
-                executor.submit(
-                    self.upload_file,
-                    key=key,
-                    file=path,
-                    raise_on_error=raise_on_error,
-                    chunk_size=chunk_size,
-                    dry_run=dry_run,
-                ): (path, key)
-                for _, (path, key) in enumerate(s3_key_local_file_mapping.items())
-            }
-            for i, future in enumerate(as_completed(futures)):
-                result = future.result()
-                if isinstance(result, S3File):
-                    success_results.append(result)
-                    if not dry_run:
-                        logger.info(
-                            f"{'[DRY RUN]: ' if dry_run else ''}Uploaded [{i + 1}/{total}] file {result.local_path.name}"
-                        )
-                else:
-                    error_results.append(result)
-
-        return PutFilesResult(successful_files=success_results, errored_files=error_results)
+        results = thread_map(
+            lambda item: self.upload_file(
+                key=item[1],
+                file=item[0],
+                raise_on_error=raise_on_error,
+                chunk_size=chunk_size,
+                dry_run=dry_run,
+            ),
+            s3_key_local_file_mapping.items(),
+            max_workers=max_concurrent_uploads,
+            total=len(s3_key_local_file_mapping),
+            desc="Uploading",
+            unit="file",
+            disable=disable_progress_bar,
+        )
+        return PutFilesResult(
+            successful_files=[r for r in results if isinstance(r, S3File)],
+            errored_files=[r for r in results if not isinstance(r, S3File)],
+        )
 
     def get_file_stream(self, path_to_file: str) -> bytes:
         response = get(

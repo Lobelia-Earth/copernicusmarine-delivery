@@ -20,8 +20,8 @@ Use `copernicusmarine-delivery COMMAND --help` to print the help of a command.
 `COPERNICUSMARINE_SERVICE_PASSWORD`
 : Password of your Pushing Entity account. Required.
 
-`PYTHON_LOG_DEBUG`
-: Set it to `1`, `true` or `yes` to print debug logs.
+`COPERNICUSMARINE_SERVICE_LOG_LEVEL`
+: Level of the logs: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Optional. In the CLI, it is the default of `--log-level`, which is `INFO` if neither is set. In the Python interface, the default is `WARNING`. To print only errors, set it to `ERROR`. To print no logs, set it to `CRITICAL`.
 
 ## Exit statuses
 
@@ -29,7 +29,7 @@ Use `copernicusmarine-delivery COMMAND --help` to print the help of a command.
 : Success.
 
 `1`
-: The command failed. The error is logged.
+: The command failed. The error is logged. This also happens when the validation fails, when some files fail to upload, or when the `status` command reports a delivery as `failed` or `partially-failed`. The error is always printed to the standard error. With `--output json`, it is also printed to the standard output as a JSON object with the error in the `fatal_error` field. When some files fail to upload, or when `status` reports a failed delivery, the normal output is printed.
 
 ## Commands
 

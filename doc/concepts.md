@@ -129,6 +129,20 @@ delivery:                      # required. List of operations, run in order
     anchor: <string>           # optional. upload only. Folder name in the local paths
 ```
 
+Also, note that because [JSON is a subset of YAML](https://yaml.org/spec/1.2.1/#id2759572) you can also write this file in JSON format:
+
+```json
+{
+  "delivery": [
+    {
+      "operation": "upload",
+      "files": ["file_1", "file_2", "..."],
+      "anchor": "dataset_id"
+    }
+  ]
+}
+```
+
 Example:
 
 ```yaml

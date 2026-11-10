@@ -75,6 +75,9 @@ class BaseResponse(BaseModel):
     #: Dry run flag, if True, no actual operation was performed in S3.
     dry_run: bool | None = None
 
+    def is_succesful(self) -> bool:
+        return not self.fatal_error
+
     def _get_summary(self) -> GetSummaryResponse:
         """
         Return the summary message and the upload/failed/delete counts.
@@ -143,6 +146,9 @@ class ResponseUpload(BaseResponse):
     @classmethod
     def sort_lists(cls, v: list) -> list:
         return sorted(v)
+
+    def is_succesful(self) -> bool:
+        return super().is_succesful() and not self.files_failed
 
     # function to initialise the response
     @classmethod
@@ -239,6 +245,9 @@ class ResponseDelivery(BaseResponse):
             dry_run=dry_run,
             operations_responses=operations_responses,
         )
+
+    def is_succesful(self) -> bool:
+        return super().is_succesful() and all(r.is_succesful() for r in self.operations_responses)
 
     def _get_summary(self) -> GetSummaryResponse:
         message, uploads, failed_uploads, deletes = "", 0, 0, 0

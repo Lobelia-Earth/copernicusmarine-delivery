@@ -77,6 +77,7 @@ def test_upload_multiple_files(
         max_concurrent_uploads=10,
         dry_run=False,
         raise_on_error=False,
+        disable_progress_bar=False,
     )
     assert len(result.successful_files) == 2
     assert len(result.errored_files) == 0
@@ -96,6 +97,7 @@ def test_upload_multiple_files_partial_failure(service: S3Client, ingestion_buck
         max_concurrent_uploads=10,
         dry_run=False,
         raise_on_error=False,
+        disable_progress_bar=False,
     )
     assert len(result.successful_files) == 1
     assert len(result.errored_files) == 1

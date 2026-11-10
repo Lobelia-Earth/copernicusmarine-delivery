@@ -25,12 +25,13 @@ from copernicusmarine_delivery.core_functions.core_functions import (
 )
 from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries
 from copernicusmarine_delivery.core_functions.domain import (
+    BaseResponse,
     DeliveryFile,
     ResponseDelete,
     ResponseUpload,
 )
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
-from copernicusmarine_delivery.logger import logger
+from copernicusmarine_delivery.logger import LOG_LEVELS, logger
 from delivery_common.domain import Delivery
 
 
@@ -63,25 +64,27 @@ def _api_error_detail(exception: Exception) -> str | None:
     return detail if isinstance(detail, str) else json.dumps(detail)
 
 
-def _log_exception(log_function: Callable, exception: Exception):
+def _exception_message(exception: Exception) -> str:
+    custom_exception_message = getattr(exception, "custom_exception_message", None)
+    if custom_exception_message:
+        return custom_exception_message
     exception_string = _api_error_detail(exception) or str(exception).strip('"')
     details = f": {exception_string}" if exception_string else ""
-    message = _exception_to_sentence(exception) + details
-    log_function(message)
+    return _exception_to_sentence(exception) + details
 
 
 def log_exception_and_exit(function: Callable) -> Any:
     @wraps(function)
     def wrapper(*args, **kwargs):
+        logger.setLevel(kwargs.pop("log_level"))
         try:
             return function(*args, **kwargs)
         except Exception as exception:
-            try:
-                custom_exception_message = exception.__getattribute__("custom_exception_message")
-                logger.error(custom_exception_message)
-            except AttributeError:
-                _log_exception(logger.error, exception)
-            exit(1)
+            message = _exception_message(exception)
+            logger.error(message)
+            if kwargs.get("output") == "json":
+                click.echo(BaseResponse(fatal_error=message).model_dump_json(indent=2))
+            sys.exit(1)
 
     return wrapper
 
@@ -93,6 +96,18 @@ _shared_options = [
         "--save-delivery-json",
         is_flag=True,
         help="Output delivery document to a json file named with the deliveryID.",
+    ),
+    click.option(
+        "--show-less",
+        is_flag=True,
+        help="Show less output: only print the delivery ID.",
+    ),
+    click.option(
+        "--output",
+        type=click.Choice(["text", "json"]),
+        default="text",
+        show_default=True,
+        help="Output format.",
     ),
     click.option(
         "--dry-run",
@@ -108,6 +123,15 @@ pushing_entity_id_option = click.option(
     default=None,
     hidden=True,
     help="ADMIN only: act on behalf of this pushing entity.",
+)
+
+log_level_option = click.option(
+    "--log-level",
+    type=click.Choice(LOG_LEVELS, case_sensitive=False),
+    envvar="COPERNICUSMARINE_SERVICE_LOG_LEVEL",
+    default="INFO",
+    show_default=True,
+    help="Level of the logs printed to the standard error.",
 )
 
 _upload_shared_options = [
@@ -137,6 +161,13 @@ _upload_shared_options = [
         default=CHUNK_CONCURRENCY,
         show_default=True,
         help="Number of parts uploaded in parallel per file (multipart upload).",
+    ),
+    click.option(
+        "--disable-progress-bar",
+        is_flag=True,
+        default=False,
+        show_default=True,
+        help="Set this argument if you want to disable the progress bar",
     ),
 ]
 
@@ -176,6 +207,7 @@ def cli(max_content_width=200) -> None:
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def delivery(
     file: Path,
@@ -188,6 +220,9 @@ def delivery(
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
     dry_run: bool = False,
+    show_less: bool = False,
+    output: str = "text",
+    disable_progress_bar: bool = False,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete]."""
     with open(file) as f:
@@ -203,11 +238,21 @@ def delivery(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
+        disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
 
-    click.echo(message=f"{response_delivery}")
+    if output == "json":
+        click.echo(
+            json.dumps({"delivery_id": response_delivery.delivery_id})
+            if show_less
+            else response_delivery.model_dump_json(indent=2)
+        )
+    else:
+        click.echo(response_delivery.delivery_id if show_less else f"{response_delivery}")
+    if not response_delivery.is_succesful():
+        sys.exit(1)
 
 
 @cli.command()
@@ -237,6 +282,7 @@ def delivery(
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def upload(
     source: list[str],
@@ -250,6 +296,9 @@ def upload(
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
     dry_run: bool = False,
+    show_less: bool = False,
+    output: str = "text",
+    disable_progress_bar: bool = False,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -275,11 +324,19 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
         on_behalf_of=pushing_entity_id,
+        disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
 
-    click.echo(message=f"{response}")
+    if output == "json":
+        click.echo(
+            json.dumps({"delivery_id": response.delivery_id}) if show_less else response.model_dump_json(indent=2)
+        )
+    else:
+        click.echo(response.delivery_id if show_less else f"{response}")
+    if not response.is_succesful():
+        sys.exit(1)
 
 
 @cli.command()
@@ -291,6 +348,7 @@ def upload(
 )
 @shared_options
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def delete(
     source: list[str],
@@ -299,6 +357,8 @@ def delete(
     pushing_entity_id: str | None,
     save_delivery_json: bool = False,
     dry_run: bool = False,
+    show_less: bool = False,
+    output: str = "text",
 ) -> None:
     """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
@@ -324,7 +384,14 @@ def delete(
     if save_delivery_json:
         saving_delivery_file(delivery)
 
-    click.echo(message=f"{response}")
+    if output == "json":
+        click.echo(
+            json.dumps({"delivery_id": response.delivery_id}) if show_less else response.model_dump_json(indent=2)
+        )
+    else:
+        click.echo(response.delivery_id if show_less else f"{response}")
+    if not response.is_succesful():
+        sys.exit(1)
 
 
 def saving_delivery_file(delivery: Delivery) -> None:
@@ -350,13 +417,28 @@ def saving_delivery_file(delivery: Delivery) -> None:
     is_flag=True,
     help="Show all operations and file statuses. By default, only summary is shown.",
 )
+@click.option(
+    "--show-less",
+    is_flag=True,
+    help="Show less output: only print the delivery status.",
+)
+@click.option(
+    "--output",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+    help="Output format.",
+)
 @pushing_entity_id_option
+@log_level_option
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     delivery_json: Path | None = None,
     pushing_entity_id: str | None = None,
     show_all: bool = False,
+    show_less: bool = False,
+    output: str = "text",
 ) -> None:
     """Get the status of a delivery (upload and/or delete). Specify either
     delivery_id or a path to a delivery json file.
@@ -380,7 +462,12 @@ def status(
     delivery = deliveries[0] if deliveries else None
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
-    click.echo(message=delivery.get_summary(show_all=show_all))
+    if output == "json":
+        click.echo(json.dumps({"status": delivery.status.value}) if show_less else delivery.model_dump_json(indent=2))
+    else:
+        click.echo(delivery.status.value if show_less else delivery.get_summary(show_all=show_all))
+    if not delivery.is_succesful():
+        sys.exit(1)
 
 
 @cli.command()
@@ -391,6 +478,7 @@ def status(
     default="mo",
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
+@log_level_option
 @log_exception_and_exit
 def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None) -> None:
     """
