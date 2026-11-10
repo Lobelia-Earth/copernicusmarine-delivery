@@ -21,6 +21,9 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
+    publish_draft as _publish_draft,
+)
+from copernicusmarine_delivery.core_functions.core_functions import (
     upload as _upload,
 )
 from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries
@@ -101,6 +104,28 @@ _shared_options = [
     ),
 ]
 
+_draft_options = [
+    click.option(
+        "--no-publish",
+        is_flag=True,
+        help="Save the delivery as a draft instead of publishing it. Publish later with `delivery publish-draft`.",
+    ),
+    click.option(
+        "--delivery-id",
+        type=str,
+        default=None,
+        help="ID of an existing draft delivery. The operations defined are appended to it.",
+    ),
+]
+
+file_option = click.option(
+    "--file",
+    required=True,
+    help="A path to a yaml file that describes the deliver, "
+    "containing a set of operations [upload, delete] and their relative files."
+    "See the documentation for the format of the delivery file",
+)
+
 pushing_entity_id_option = click.option(
     "--pushing-entity-id",
     envvar="COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID",
@@ -140,11 +165,17 @@ _upload_shared_options = [
 ]
 
 
-def shared_options(func):
+def base_options(func):
     """Prepend in reversed order, as click applies from bottom-up"""
     for option in reversed(_shared_options):
         func = option(func)
     return func
+
+
+def shared_options(func):
+    for option in reversed(_draft_options):
+        func = option(func)
+    return base_options(func)
 
 
 def upload_shared_options(func):
@@ -164,31 +195,82 @@ def cli(max_content_width=200) -> None:
     """Pusher command line interface."""
 
 
-@cli.command()
-@click.option(
-    "--file",
-    required=True,
-    help="A path to a yaml file that describes the deliver, "
-    "containing a set of operations [upload, delete] and their relative files."
-    "See the documentation for the format of the delivery file",
-)
+@cli.group("delivery", cls=OrderCommands, invoke_without_command=True, no_args_is_help=True)
+@file_option
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@click.pass_context
 @log_exception_and_exit
-def delivery(
+def delivery_group(
+    ctx: click.Context,
+    file: Path | None,
+    dataset_id: str | None,
+    product_id: str | None,
+    pushing_entity_id: str | None,
+    raise_on_upload_error: bool,
+    save_delivery_json: bool,
+    max_concurrent_uploads: int,
+    chunk_size_mb: int,
+    chunk_concurrency: int,
+    dry_run: bool,
+    no_publish: bool,
+    delivery_id: str | None,
+) -> None:
+    """Perform a delivery with multiple operations [upload, delete].
+
+    Without a subcommand, the whole delivery is performed in one step.
+    Use the subcommands to build it in steps through a draft.
+    """
+    if ctx.invoked_subcommand is None:
+        if file is None or dataset_id is None or product_id is None:
+            raise click.UsageError("Without a subcommand, --file, --dataset-id and --product-id are required.")
+        with open(file) as f:
+            delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
+
+        response_delivery, delivery = _delivery(
+            [operation for operation in delivery_file.delivery],
+            on_behalf_of=pushing_entity_id,
+            dataset_id=dataset_id,
+            product_id=product_id,
+            raise_on_upload_error=raise_on_upload_error,
+            max_concurrent_uploads=max_concurrent_uploads,
+            chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
+            chunk_concurrency=chunk_concurrency,
+            dry_run=dry_run,
+            no_publish=no_publish,
+            delivery_id=delivery_id,
+        )
+        if save_delivery_json and delivery:
+            saving_delivery_file(delivery)
+
+        click.echo(message=f"{response_delivery}")
+
+
+# Group options are only required when no subcommand is given, checked in the callback.
+for _param in delivery_group.params:
+    _param.required = False
+
+
+@delivery_group.command("create-draft")
+@file_option
+@base_options
+@upload_shared_options
+@pushing_entity_id_option
+@log_exception_and_exit
+def create_draft(
     file: Path,
     dataset_id: str,
     product_id: str,
-    pushing_entity_id: str | None = None,
-    raise_on_upload_error: bool = False,
-    save_delivery_json: bool = False,
-    max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
-    chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
-    chunk_concurrency: int = CHUNK_CONCURRENCY,
-    dry_run: bool = False,
+    pushing_entity_id: str | None,
+    raise_on_upload_error: bool,
+    save_delivery_json: bool,
+    max_concurrent_uploads: int,
+    chunk_size_mb: int,
+    chunk_concurrency: int,
+    dry_run: bool,
 ) -> None:
-    """Perform a delivery with multiple operations [upload, delete]."""
+    """Create a draft delivery from a file. Its delivery ID is printed."""
     with open(file) as f:
         delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
@@ -202,11 +284,81 @@ def delivery(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
+        no_publish=True,
+        delivery_id=None,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
 
     click.echo(message=f"{response_delivery}")
+
+
+@delivery_group.command("extend-draft")
+@file_option
+@click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to extend.")
+@base_options
+@upload_shared_options
+@pushing_entity_id_option
+@log_exception_and_exit
+def extend_draft(
+    file: Path,
+    delivery_id: str,
+    dataset_id: str,
+    product_id: str,
+    pushing_entity_id: str | None,
+    raise_on_upload_error: bool,
+    save_delivery_json: bool,
+    max_concurrent_uploads: int,
+    chunk_size_mb: int,
+    chunk_concurrency: int,
+    dry_run: bool,
+) -> None:
+    """Append the operations of a file to an existing draft delivery."""
+    with open(file) as f:
+        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
+
+    response_delivery, delivery = _delivery(
+        [operation for operation in delivery_file.delivery],
+        on_behalf_of=pushing_entity_id,
+        dataset_id=dataset_id,
+        product_id=product_id,
+        raise_on_upload_error=raise_on_upload_error,
+        max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
+        chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
+        no_publish=True,
+        delivery_id=delivery_id,
+    )
+    if save_delivery_json and delivery:
+        saving_delivery_file(delivery)
+
+    click.echo(message=f"{response_delivery}")
+
+
+@delivery_group.command("publish-draft")
+@click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to publish.")
+@click.option("--dataset-id", type=str, required=True, help="ID of the dataset.")
+@click.option("--product-id", type=str, required=True, help="ID of the product.")
+@click.option("--dry-run", is_flag=True, help="Validate without publishing.")
+@pushing_entity_id_option
+@log_exception_and_exit
+def publish_draft(
+    delivery_id: str,
+    dataset_id: str,
+    product_id: str,
+    pushing_entity_id: str | None,
+    dry_run: bool = False,
+) -> None:
+    """Publish a draft delivery, previously saved with --no-publish, as is."""
+    delivery = _publish_draft(
+        product_id=product_id,
+        dataset_id=dataset_id,
+        delivery_id=delivery_id,
+        dry_run=dry_run,
+        on_behalf_of=pushing_entity_id,
+    )
+    click.echo(message=delivery.get_summary(show_all=False))
 
 
 @cli.command()
@@ -249,6 +401,8 @@ def upload(
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
     dry_run: bool = False,
+    no_publish: bool = False,
+    delivery_id: str | None = None,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -274,6 +428,8 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
         on_behalf_of=pushing_entity_id,
+        no_publish=no_publish,
+        delivery_id=delivery_id,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -298,6 +454,8 @@ def delete(
     pushing_entity_id: str | None,
     save_delivery_json: bool = False,
     dry_run: bool = False,
+    no_publish: bool = False,
+    delivery_id: str | None = None,
 ) -> None:
     """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
@@ -318,6 +476,8 @@ def delete(
         files=source,
         dry_run=dry_run,
         on_behalf_of=pushing_entity_id,
+        no_publish=no_publish,
+        delivery_id=delivery_id,
     )
 
     if save_delivery_json:

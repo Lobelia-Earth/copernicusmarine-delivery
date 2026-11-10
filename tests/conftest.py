@@ -193,6 +193,8 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     Keycloak calls (discovery + token) are mocked separately by `mock_keycloak`.
     """
 
+    drafts: dict[str, dict] = {}
+
     def _handler(request: httpx.Request) -> httpx.Response:
         keycloak_response = mock_keycloak(request)
         if keycloak_response is not None:
@@ -200,11 +202,27 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
 
         path = request.url.path
 
+        if path == "/draft-delivery" and request.method == "POST":
+            if invalid_token_response := validate_test_token_header(request):
+                return invalid_token_response
+            body = json.loads(request.content)
+            drafts[body["delivery_id"]] = body
+            return httpx.Response(201, json=body)
+
+        if path == "/draft-delivery" and request.method == "GET":
+            if invalid_token_response := validate_test_token_header(request):
+                return invalid_token_response
+            draft = drafts.get(request.url.params["delivery_id"])
+            if draft is None:
+                return httpx.Response(404, json={"detail": "draft not found"})
+            return httpx.Response(200, json=draft)
+
         if path == "/delivery" and request.method == "POST":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             body = json.loads(request.content)
             delivery_id = body["delivery_id"]
+            drafts.pop(delivery_id, None)  # publishing consumes the draft
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(
                 pe["bucket"] for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == pushing_entity_id

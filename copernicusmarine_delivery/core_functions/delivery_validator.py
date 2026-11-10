@@ -11,8 +11,10 @@ from copernicusmarine_delivery.core_functions.utils import local_path_to_key_suf
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import (
     FORBIDDEN_KEY_SUFFIX_PATTERNS,
+    Delivery,
     InvalidFile,
     T,
+    UploadOperation,
     raise_on_wrong_key_suffix,
 )
 
@@ -122,11 +124,25 @@ def validate_upload_files(files: list[str], dataset_id: str, product_id: str, an
         )
 
 
-def validate_delivery_sizes(api_limits: APILimits, to_upload_operations: list[ToUploadOperation]) -> None:
+def validate_delivery_sizes(
+    api_limits: APILimits,
+    to_upload_operations: list[ToUploadOperation],
+    draft: Delivery | None = None,
+) -> None:
+    """
+    Validate the new operations on top of the draft they will be appended to (if any).
+    The per-file limit only applies to the new files: the draft's were checked when appended.
+    """
     number_of_files_in_delivery = 0
     delivery_size_in_gb = 0.0
     files_above_file_limit = []
     api_max_size_mb = api_limits.max_file_size_gb * 1024
+
+    if draft:
+        for draft_operation in draft.operations:
+            if isinstance(draft_operation, UploadOperation):
+                number_of_files_in_delivery += len(draft_operation.files)
+                delivery_size_in_gb += draft_operation.total_size() / 1024
 
     for operation in to_upload_operations:
         for file in operation.files:

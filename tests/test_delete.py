@@ -41,6 +41,8 @@ def test_delete_python_interface(
         dataset_id=DATASET_ID,
         product_id=PRODUCT_ID,
         dry_run=False,
+        no_publish=False,
+        delivery_id=None,
     )
     assert response.model_dump_json(indent=2) == snapshot
     assert delivery is not None
@@ -132,5 +134,7 @@ def test_delete_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
             dataset_id=DATASET_ID,
             product_id="Made-Up-Product-Id",
             dry_run=False,
+            no_publish=False,
+            delivery_id=None,
         )
     assert f"Made-Up-Product-Id is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(exc_info.value)

@@ -56,6 +56,8 @@ def test_upload_python_interface(
         chunk_concurrency=CHUNK_CONCURRENCY,
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
+        no_publish=False,
+        delivery_id=None,
     )
     result = response.model_dump(exclude_none=True)
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
@@ -163,6 +165,8 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
+            no_publish=False,
+            delivery_id=None,
         )
     assert f"product1 is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(exc_info.value)
 
@@ -186,6 +190,8 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
+        no_publish=False,
+        delivery_id=None,
     )
 
     assert response.fatal_error is None

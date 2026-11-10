@@ -4,6 +4,7 @@ from typing import Literal
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
 from copernicusmarine_delivery.core_functions.domain import GetConfigResponse
+from copernicusmarine_delivery.core_functions.exceptions import DraftDeliveryMismatchError, DraftDeliveryNotFoundError
 from copernicusmarine_delivery.environment_variables import INGESTION_SERVICE_URL
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
@@ -45,6 +46,36 @@ def create_delivery_id(product_id: str) -> str:
     return f"{iso_timestamp_with_seconds}-{product_id}-{random_number}"
 
 
+def load_draft(
+    config: GetConfigResponse,
+    on_behalf_of: str | None,
+    delivery_id: str,
+    product_id: str,
+    dataset_id: str,
+) -> Delivery:
+    params = {"delivery_id": delivery_id}
+    if on_behalf_of:
+        params["on_behalf_of"] = on_behalf_of
+    response = http_client.get(
+        f"{INGESTION_SERVICE_URL}/draft-delivery",
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+        params=params,
+    )
+    if response.status_code == 404:
+        raise DraftDeliveryNotFoundError(
+            f"No draft delivery '{delivery_id}' found. It may be already published, "
+            "expired or belong to another pushing entity."
+        )
+    response.raise_for_status()
+    draft = Delivery(**response.json())
+    if (draft.product_id, draft.dataset_id) != (product_id, dataset_id):
+        raise DraftDeliveryMismatchError(
+            f"Draft '{delivery_id}' belongs to product '{draft.product_id}' and dataset '{draft.dataset_id}', "
+            f"not '{product_id}' / '{dataset_id}'."
+        )
+    return draft
+
+
 def create_and_upload_delivery(
     pushing_entity_id: str,
     product_id: str,
@@ -52,26 +83,41 @@ def create_and_upload_delivery(
     operations: list[Operation],
     dry_run: bool,
     config: GetConfigResponse,
-    delivery_id: str | None = None,
+    delivery_id: str,
+    no_publish: bool,
+    draft: Delivery | None = None,
 ) -> Delivery:
-    if not delivery_id:
-        delivery_id = create_delivery_id(product_id)
-    delivery = create_delivery(
-        pushing_entity_id=pushing_entity_id,
-        product_id=product_id,
-        dataset_id=dataset_id,
-        operations=operations,
-        delivery_id=delivery_id,
-    )
-    if not dry_run:
-        logger.debug(f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery")
-        response = http_client.post(
-            f"{INGESTION_SERVICE_URL}/delivery",
-            json=delivery.model_dump(by_alias=True),
-            headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+    """
+    Build the delivery (on top of ``draft`` if continuing one) and send it:
+    to /draft-delivery if ``no_publish``, else to /delivery (publishes it).
+    """
+    if draft:
+        delivery = draft
+        delivery.operations.extend(operations)
+    else:
+        delivery = create_delivery(
+            pushing_entity_id=pushing_entity_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            operations=operations,
+            delivery_id=delivery_id,
         )
-        response.raise_for_status()
+    if dry_run:
+        return delivery
 
+    endpoint = "draft-delivery" if no_publish else "delivery"
+    logger.debug(f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/{endpoint}")
+    response = http_client.post(
+        f"{INGESTION_SERVICE_URL}/{endpoint}",
+        json=delivery.model_dump(by_alias=True),
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+    )
+    response.raise_for_status()
+    if no_publish:
+        logger.info(
+            f"Delivery '{delivery_id}' saved as DRAFT, NOT published. Add more with "
+            f"`--delivery-id {delivery_id} --no-publish`, publish with `publish-draft --delivery-id {delivery_id}`."
+        )
     return delivery
 
 

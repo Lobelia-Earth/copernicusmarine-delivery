@@ -4,7 +4,11 @@ from typing import Sequence
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
 from copernicusmarine_delivery.core_functions.constants import NEW_DATA_BUCKET_PATH
-from copernicusmarine_delivery.core_functions.delivery import create_and_upload_delivery, create_delivery_id
+from copernicusmarine_delivery.core_functions.delivery import (
+    create_and_upload_delivery,
+    create_delivery_id,
+    load_draft,
+)
 from copernicusmarine_delivery.core_functions.delivery_validator import (
     validate_delete_files,
     validate_delivery_sizes,
@@ -64,6 +68,8 @@ def upload(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
+    no_publish: bool,
+    delivery_id: str | None = None,
     on_behalf_of: str | None = None,
 ) -> tuple[ResponseUpload, Delivery]:
     """
@@ -89,7 +95,8 @@ def upload(
         anchor,
     )
 
-    validate_delivery_sizes(config.api_limits, [to_upload_operation])
+    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id) if delivery_id else None
+    validate_delivery_sizes(config.api_limits, [to_upload_operation], draft)
 
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
@@ -99,7 +106,7 @@ def upload(
         endpoint_url=pushing_entity_config.s3_endpoint_url,
         on_behalf_of=on_behalf_of,
     )
-    delivery_id = create_delivery_id(product_id)
+    delivery_id = delivery_id or create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
         s3_client,
         delivery_id=delivery_id,
@@ -121,6 +128,8 @@ def upload(
         delivery_id=delivery_id,
         config=config,
         dry_run=dry_run,
+        no_publish=no_publish,
+        draft=draft,
     )
 
     return (
@@ -141,6 +150,8 @@ def delete(
     dataset_id: str,
     files: list[str],
     dry_run: bool,
+    no_publish: bool,
+    delivery_id: str | None = None,
     on_behalf_of: str | None = None,
 ) -> tuple[ResponseDelete, Delivery]:
     """
@@ -158,6 +169,7 @@ def delete(
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     delete_operation = create_and_validate_delete_operation(files)
+    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id) if delivery_id else None
 
     delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
@@ -166,7 +178,11 @@ def delete(
         operations=[delete_operation],
         config=config,
         dry_run=dry_run,
+        delivery_id=delivery_id or create_delivery_id(product_id),
+        no_publish=no_publish,
+        draft=draft,
     )
+
     return (
         ResponseDelete.create(
             delivery_id=delivery.delivery_id,
@@ -177,6 +193,33 @@ def delete(
             files_to_delete=delete_operation.files,
         ),
         delivery,
+    )
+
+
+def publish_draft(
+    product_id: str,
+    dataset_id: str,
+    delivery_id: str,
+    dry_run: bool,
+    on_behalf_of: str | None = None,
+) -> Delivery:
+    config = get_config()
+    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
+    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id)
+
+    return create_and_upload_delivery(
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operations=[],
+        dry_run=dry_run,
+        config=config,
+        delivery_id=delivery_id,
+        no_publish=False,
+        draft=draft,
     )
 
 
@@ -199,6 +242,8 @@ def delivery(
     chunk_concurrency: int,
     dry_run: bool,
     on_behalf_of: str | None,
+    no_publish: bool,
+    delivery_id: str | None = None,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
     pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
@@ -206,7 +251,8 @@ def delivery(
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
-    delivery_id = create_delivery_id(product_id)
+    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id) if delivery_id else None
+    delivery_id = delivery_id or create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
 
     s3_client = get_s3_ingestion_client(
@@ -228,7 +274,9 @@ def delivery(
                 )
                 pending_operations.append(to_upload_operation)
 
-    validate_delivery_sizes(config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)])
+    validate_delivery_sizes(
+        config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)], draft
+    )
 
     all_operations: list[Operation] = []
     all_responses: list[ResponseUpload | ResponseDelete] = []
@@ -272,14 +320,17 @@ def delivery(
                 )
 
     delivery = create_and_upload_delivery(
-        pushing_entity_id,
-        product_id,
-        dataset_id,
-        all_operations,
-        dry_run,
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operations=all_operations,
+        dry_run=dry_run,
         config=config,
         delivery_id=delivery_id,
+        no_publish=no_publish,
+        draft=draft,
     )
+
     return (
         ResponseDelivery.create(
             delivery_id=delivery_id,
