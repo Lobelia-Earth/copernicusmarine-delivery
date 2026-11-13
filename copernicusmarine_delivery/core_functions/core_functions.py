@@ -68,8 +68,7 @@ def upload(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-    no_publish: bool,
-    delivery_id: str | None = None,
+    publish: bool = True,
     on_behalf_of: str | None = None,
 ) -> tuple[ResponseUpload, Delivery]:
     """
@@ -95,8 +94,7 @@ def upload(
         anchor,
     )
 
-    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id) if delivery_id else None
-    validate_delivery_sizes(config.api_limits, [to_upload_operation], draft)
+    validate_delivery_sizes(config.api_limits, [to_upload_operation])
 
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
@@ -106,7 +104,7 @@ def upload(
         endpoint_url=pushing_entity_config.s3_endpoint_url,
         on_behalf_of=on_behalf_of,
     )
-    delivery_id = delivery_id or create_delivery_id(product_id)
+    delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
         s3_client,
         delivery_id=delivery_id,
@@ -128,8 +126,7 @@ def upload(
         delivery_id=delivery_id,
         config=config,
         dry_run=dry_run,
-        no_publish=no_publish,
-        draft=draft,
+        publish=publish,
     )
 
     return (
@@ -150,8 +147,7 @@ def delete(
     dataset_id: str,
     files: list[str],
     dry_run: bool,
-    no_publish: bool,
-    delivery_id: str | None = None,
+    publish: bool = True,
     on_behalf_of: str | None = None,
 ) -> tuple[ResponseDelete, Delivery]:
     """
@@ -169,7 +165,6 @@ def delete(
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     delete_operation = create_and_validate_delete_operation(files)
-    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id) if delivery_id else None
 
     delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
@@ -178,9 +173,8 @@ def delete(
         operations=[delete_operation],
         config=config,
         dry_run=dry_run,
-        delivery_id=delivery_id or create_delivery_id(product_id),
-        no_publish=no_publish,
-        draft=draft,
+        delivery_id=create_delivery_id(product_id),
+        publish=publish,
     )
 
     return (
@@ -218,7 +212,7 @@ def publish_draft(
         dry_run=dry_run,
         config=config,
         delivery_id=delivery_id,
-        no_publish=False,
+        publish=True,
         draft=draft,
     )
 
@@ -242,8 +236,8 @@ def delivery(
     chunk_concurrency: int,
     dry_run: bool,
     on_behalf_of: str | None,
-    no_publish: bool,
-    delivery_id: str | None = None,
+    publish: bool,
+    draft_delivery: Delivery | None = None,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
     pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
@@ -251,8 +245,7 @@ def delivery(
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
-    draft = load_draft(config, on_behalf_of, delivery_id, product_id, dataset_id) if delivery_id else None
-    delivery_id = delivery_id or create_delivery_id(product_id)
+    delivery_id = draft_delivery.delivery_id if draft_delivery else create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
 
     s3_client = get_s3_ingestion_client(
@@ -275,7 +268,7 @@ def delivery(
                 pending_operations.append(to_upload_operation)
 
     validate_delivery_sizes(
-        config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)], draft
+        config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)], draft_delivery
     )
 
     all_operations: list[Operation] = []
@@ -327,8 +320,8 @@ def delivery(
         dry_run=dry_run,
         config=config,
         delivery_id=delivery_id,
-        no_publish=no_publish,
-        draft=draft,
+        publish=publish,
+        draft=draft_delivery,
     )
 
     return (

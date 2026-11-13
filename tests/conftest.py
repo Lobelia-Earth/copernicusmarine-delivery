@@ -185,7 +185,9 @@ def validate_test_token_header(request) -> httpx.Response | None:
 def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     """Patches http_client with an httpx-backed mock transport that mimics the ingestion service.
 
-    - POST /delivery: accepts a delivery JSON, saves it to S3, returns 201.
+    - PUT /draft-delivery: creates or updates a draft delivery (kept in memory, not published), returns 201.
+    - POST /delivery: accepts a delivery JSON, saves it to S3 (publishes it, consuming its draft), returns 201.
+    - GET /delivery?is_draft=true: returns the draft with the given delivery_id, if any.
     - GET /delivery: returns all stored deliveries for the entity resolved from the token.
     - GET /.well-known/config: returns the oidc config needed to authenticate.
     - GET /credentials: returns temporary S3 credentials for the entity resolved from the token.
@@ -202,27 +204,26 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
 
         path = request.url.path
 
-        if path == "/draft-delivery" and request.method == "POST":
+        if path == "/draft-delivery" and request.method == "PUT":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             body = json.loads(request.content)
             drafts[body["delivery_id"]] = body
             return httpx.Response(201, json=body)
 
-        if path == "/draft-delivery" and request.method == "GET":
+        if path == "/delivery" and request.method == "GET" and request.url.params.get("is_draft") == "true":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             draft = drafts.get(request.url.params["delivery_id"])
-            if draft is None:
-                return httpx.Response(404, json={"detail": "draft not found"})
-            return httpx.Response(200, json=draft)
+            return httpx.Response(200, json={"deliveries": [draft] if draft else []})
 
         if path == "/delivery" and request.method == "POST":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             body = json.loads(request.content)
             delivery_id = body["delivery_id"]
-            drafts.pop(delivery_id, None)  # publishing consumes the draft
+            if request.url.params.get("is_draft") == "true":
+                drafts.pop(delivery_id, None)  # publishing a draft deletes it
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(
                 pe["bucket"] for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == pushing_entity_id

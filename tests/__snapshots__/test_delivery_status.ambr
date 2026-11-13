@@ -1,7 +1,7 @@
 # serializer version: 1
 # name: test_delivery_status_cli
   '''
-  [DELIVERY] 20120114T120001-product1-4811 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  [DELIVERY] 20120114T120001-product1-4582 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
@@ -19,7 +19,7 @@
 # name: test_delivery_status_python_interface
   '''
   {
-    "delivery_id": "20120114T120001-product1-4582",
+    "delivery_id": "20120114T120001-product1-2535",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
     "product_id": "product1",
     "dataset_id": "dataset1",
@@ -55,7 +55,7 @@
 # ---
 # name: test_delivery_status_python_interface.1
   '''
-  [DELIVERY] 20120114T120001-product1-4582 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  [DELIVERY] 20120114T120001-product1-2535 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending

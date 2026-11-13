@@ -34,8 +34,7 @@ def _upload(files: list[str], dataset_id: str, product_id: str, anchor: str | No
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        no_publish=False,
-        delivery_id=None,
+        publish=True,
     )
 
 

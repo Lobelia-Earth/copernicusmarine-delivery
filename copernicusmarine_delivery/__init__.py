@@ -16,10 +16,10 @@ from copernicusmarine_delivery.core_functions.domain import (
 from copernicusmarine_delivery.python_interface import (
     Delete,
     Delivery,
+    DraftDelivery,
     Upload,
     delivery_status,
     list_deliveries,
-    publish_draft,
 )
 from copernicusmarine_delivery.versioner import __version__
 from delivery_common.domain import DeleteFile, DeliveryStatus, InvalidDeliveryIdsError
@@ -33,10 +33,10 @@ __all__ = [
     # Operations
     "Delete",
     "Delivery",
+    "DraftDelivery",
     "Upload",
     "delivery_status",
     "list_deliveries",
-    "publish_draft",
     # Responses and the types they use
     "ResponseDelete",
     "ResponseDelivery",

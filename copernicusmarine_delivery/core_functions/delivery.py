@@ -50,25 +50,26 @@ def load_draft(
     config: GetConfigResponse,
     on_behalf_of: str | None,
     delivery_id: str,
-    product_id: str,
-    dataset_id: str,
+    product_id: str | None = None,
+    dataset_id: str | None = None,
 ) -> Delivery:
-    params = {"delivery_id": delivery_id}
+    params = {"delivery_id": delivery_id, "is_draft": "true"}
     if on_behalf_of:
         params["on_behalf_of"] = on_behalf_of
     response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/draft-delivery",
+        f"{INGESTION_SERVICE_URL}/delivery",
         headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
         params=params,
     )
-    if response.status_code == 404:
+    response.raise_for_status()
+    drafts = response.json()["deliveries"]
+    if not drafts:
         raise DraftDeliveryNotFoundError(
             f"No draft delivery '{delivery_id}' found. It may be already published, "
             "expired or belong to another pushing entity."
         )
-    response.raise_for_status()
-    draft = Delivery(**response.json())
-    if (draft.product_id, draft.dataset_id) != (product_id, dataset_id):
+    draft = Delivery(**drafts[0])
+    if product_id and dataset_id and (draft.product_id, draft.dataset_id) != (product_id, dataset_id):
         raise DraftDeliveryMismatchError(
             f"Draft '{delivery_id}' belongs to product '{draft.product_id}' and dataset '{draft.dataset_id}', "
             f"not '{product_id}' / '{dataset_id}'."
@@ -84,15 +85,16 @@ def create_and_upload_delivery(
     dry_run: bool,
     config: GetConfigResponse,
     delivery_id: str,
-    no_publish: bool,
+    publish: bool,
     draft: Delivery | None = None,
 ) -> Delivery:
     """
     Build the delivery (on top of ``draft`` if continuing one) and send it:
-    to /draft-delivery if ``no_publish``, else to /delivery (publishes it).
+    with PUT /draft-delivery if not ``publish`` (creates or overwrites the draft), else with POST /delivery (publishes it).
+    ``draft`` is not modified: the returned delivery is a copy with the new operations appended.
     """
     if draft:
-        delivery = draft
+        delivery = draft.model_copy(deep=True)
         delivery.operations.extend(operations)
     else:
         delivery = create_delivery(
@@ -105,15 +107,23 @@ def create_and_upload_delivery(
     if dry_run:
         return delivery
 
-    endpoint = "draft-delivery" if no_publish else "delivery"
-    logger.debug(f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/{endpoint}")
-    response = http_client.post(
-        f"{INGESTION_SERVICE_URL}/{endpoint}",
-        json=delivery.model_dump(by_alias=True),
-        headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
-    )
+    if publish:
+        logger.debug(f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery")
+        response = http_client.post(
+            f"{INGESTION_SERVICE_URL}/delivery",
+            json=delivery.model_dump(by_alias=True),
+            headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+            params={"is_draft": "true"} if draft else None,
+        )
+    else:
+        logger.debug(f"PUTting draft delivery to ingestion service at {INGESTION_SERVICE_URL}/draft-delivery")
+        response = http_client.put(
+            f"{INGESTION_SERVICE_URL}/draft-delivery",
+            json=delivery.model_dump(by_alias=True),
+            headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+        )
     response.raise_for_status()
-    if no_publish:
+    if not publish:
         logger.info(
             f"Delivery '{delivery_id}' saved as DRAFT, NOT published. Add more with "
             f"`--delivery-id {delivery_id} --no-publish`, publish with `publish-draft --delivery-id {delivery_id}`."

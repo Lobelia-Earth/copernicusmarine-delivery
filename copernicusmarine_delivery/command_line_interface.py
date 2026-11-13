@@ -26,7 +26,7 @@ from copernicusmarine_delivery.core_functions.core_functions import (
 from copernicusmarine_delivery.core_functions.core_functions import (
     upload as _upload,
 )
-from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries
+from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries, load_draft
 from copernicusmarine_delivery.core_functions.domain import (
     DeliveryFile,
     ResponseDelete,
@@ -106,11 +106,6 @@ _shared_options = [
 
 _draft_options = [
     click.option(
-        "--no-publish",
-        is_flag=True,
-        help="Save the delivery as a draft instead of publishing it. Publish later with `delivery publish-draft`.",
-    ),
-    click.option(
         "--delivery-id",
         type=str,
         default=None,
@@ -173,7 +168,7 @@ def base_options(func):
     return func
 
 
-def shared_options(func):
+def draft_options(func):
     for option in reversed(_draft_options):
         func = option(func)
     return base_options(func)
@@ -198,7 +193,7 @@ def cli(max_content_width=200) -> None:
 
 @cli.group("delivery", cls=OrderCommands, invoke_without_command=True, no_args_is_help=True)
 @file_option
-@shared_options
+@draft_options
 @upload_shared_options
 @pushing_entity_id_option
 @click.pass_context
@@ -215,8 +210,6 @@ def delivery_group(
     chunk_size_mb: int,
     chunk_concurrency: int,
     dry_run: bool,
-    no_publish: bool,
-    delivery_id: str | None,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete].
 
@@ -239,8 +232,7 @@ def delivery_group(
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            no_publish=no_publish,
-            delivery_id=delivery_id,
+            publish=True,
         )
         if save_delivery_json and delivery:
             saving_delivery_file(delivery)
@@ -258,6 +250,16 @@ for _param in delivery_group.params:
 @base_options
 @upload_shared_options
 @pushing_entity_id_option
+@click.option(
+    "--source",
+    type=str,
+    multiple=True,
+    help=(
+        """Relative or absolute path to the file.
+        If `anchor` is set, anything before it will be removed.
+        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
+    ),
+)
 @log_exception_and_exit
 def create_draft(
     file: Path,
@@ -285,8 +287,7 @@ def create_draft(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        no_publish=True,
-        delivery_id=None,
+        publish=False,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -304,8 +305,6 @@ def create_draft(
 def extend_draft(
     file: Path,
     delivery_id: str,
-    dataset_id: str,
-    product_id: str,
     pushing_entity_id: str | None,
     raise_on_upload_error: bool,
     save_delivery_json: bool,
@@ -318,18 +317,20 @@ def extend_draft(
     with open(file) as f:
         delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
+    draft_delivery = load_draft(get_config(), pushing_entity_id, delivery_id)
+
     response_delivery, delivery = _delivery(
         [operation for operation in delivery_file.delivery],
         on_behalf_of=pushing_entity_id,
-        dataset_id=dataset_id,
-        product_id=product_id,
+        dataset_id=draft_delivery.dataset_id,
+        product_id=draft_delivery.product_id,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        no_publish=True,
-        delivery_id=delivery_id,
+        publish=False,
+        draft_delivery=draft_delivery,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -386,7 +387,7 @@ def publish_draft(
         """
     ),
 )
-@shared_options
+@base_options
 @upload_shared_options
 @pushing_entity_id_option
 @log_exception_and_exit
@@ -402,8 +403,6 @@ def upload(
     chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
     chunk_concurrency: int = CHUNK_CONCURRENCY,
     dry_run: bool = False,
-    no_publish: bool = False,
-    delivery_id: str | None = None,
 ) -> None:
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
@@ -429,8 +428,6 @@ def upload(
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
         on_behalf_of=pushing_entity_id,
-        no_publish=no_publish,
-        delivery_id=delivery_id,
     )
     if save_delivery_json and delivery:
         saving_delivery_file(delivery)
@@ -445,7 +442,7 @@ def upload(
     multiple=True,
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
-@shared_options
+@base_options
 @pushing_entity_id_option
 @log_exception_and_exit
 def delete(
@@ -455,8 +452,6 @@ def delete(
     pushing_entity_id: str | None,
     save_delivery_json: bool = False,
     dry_run: bool = False,
-    no_publish: bool = False,
-    delivery_id: str | None = None,
 ) -> None:
     """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
@@ -477,8 +472,6 @@ def delete(
         files=source,
         dry_run=dry_run,
         on_behalf_of=pushing_entity_id,
-        no_publish=no_publish,
-        delivery_id=delivery_id,
     )
 
     if save_delivery_json:
