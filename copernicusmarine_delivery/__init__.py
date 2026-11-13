@@ -16,6 +16,7 @@ from copernicusmarine_delivery.core_functions.domain import (
 from copernicusmarine_delivery.python_interface import (
     Delete,
     Delivery,
+    DraftDelivery,
     Upload,
     delivery_status,
     list_deliveries,
@@ -32,6 +33,7 @@ __all__ = [
     # Operations
     "Delete",
     "Delivery",
+    "DraftDelivery",
     "Upload",
     "delivery_status",
     "list_deliveries",

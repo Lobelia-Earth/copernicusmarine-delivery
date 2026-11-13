@@ -21,14 +21,19 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
+    publish_draft as _publish_draft,
+)
+from copernicusmarine_delivery.core_functions.core_functions import (
     upload as _upload,
 )
-from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries
+from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries, load_draft
 from copernicusmarine_delivery.core_functions.domain import (
     BaseResponse,
+    Delete,
     DeliveryFile,
     ResponseDelete,
     ResponseUpload,
+    Upload,
 )
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
 from copernicusmarine_delivery.logger import LOG_LEVELS, logger
@@ -89,9 +94,12 @@ def log_exception_and_exit(function: Callable) -> Any:
     return wrapper
 
 
-_shared_options = [
+_id_options = [
     click.option("-i", "--dataset-id", type=str, help="ID of the dataset.", required=True),
     click.option("-p", "--product-id", type=str, help="ID of the product.", required=True),
+]
+
+_shared_options = [
     click.option(
         "--save-delivery-json",
         is_flag=True,
@@ -115,6 +123,57 @@ _shared_options = [
         help="Validate the upload without performing any actual operation in S3.",
     ),
 ]
+
+_FILE_HELP = (
+    "A path to a yaml file that describes the deliver, "
+    "containing a set of operations [upload, delete] and their relative files."
+    "See the documentation for the format of the delivery file"
+)
+
+file_option = click.option("--file", required=True, help=_FILE_HELP)
+
+optional_file_option = click.option("--file", required=False, help=_FILE_HELP)
+
+
+anchor_option = click.option(
+    "--anchor",
+    type=str,
+    required=False,
+    default=None,
+    help=(
+        """
+        If set, anything before and up to such anchor will be removed
+        from the given path upon uploading to the ingestion bucket.
+        For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
+        """
+    ),
+)
+
+
+def _validate_file_or_operation(
+    file: Path | None, operation: str | None, source: tuple[str, ...], anchor: str | None
+) -> None:
+    """
+    For `delivery create-draft` and `delivery extend-draft` users can pass a delivery file or an operation.
+    If None or all are passed an error is raised.
+    """
+    if file is not None and (operation or source or anchor):
+        raise click.UsageError("--file cannot be combined with --operation, --source or --anchor.")
+    if file is None and (not operation or not source):
+        raise click.UsageError("Without --file, both --operation and --source are required.")
+    if anchor and operation != "upload":
+        raise click.UsageError("--anchor is only accepted with --operation upload.")
+
+
+def _get_operations(
+    file: Path | None, operation: str | None, source: tuple[str, ...], anchor: str | None
+) -> list[Upload | Delete]:
+    """Operations from the delivery file, or a single operation built from `--operation` and `--source`."""
+    if file:
+        with open(file) as f:
+            return DeliveryFile.model_validate(yaml.safe_load(f)).delivery
+    return [Upload(files=list(source), anchor=anchor) if operation == "upload" else Delete(files=list(source))]
+
 
 pushing_entity_id_option = click.option(
     "-e",
@@ -172,11 +231,21 @@ _upload_shared_options = [
 ]
 
 
+def id_options(func):
+    for option in reversed(_id_options):
+        func = option(func)
+    return func
+
+
 def shared_options(func):
     """Prepend in reversed order, as click applies from bottom-up"""
     for option in reversed(_shared_options):
         func = option(func)
     return func
+
+
+def base_options(func):
+    return id_options(shared_options(func))
 
 
 def upload_shared_options(func):
@@ -196,23 +265,104 @@ def cli(max_content_width=200) -> None:
     """Pusher command line interface."""
 
 
-@cli.command()
+@cli.group("delivery", cls=OrderCommands, invoke_without_command=True, no_args_is_help=True)
+@file_option
+@base_options
+@upload_shared_options
+@pushing_entity_id_option
+@click.pass_context
+@log_level_option
+@log_exception_and_exit
+def delivery_group(
+    ctx: click.Context,
+    file: Path | None,
+    dataset_id: str | None,
+    product_id: str | None,
+    pushing_entity_id: str | None,
+    raise_on_upload_error: bool,
+    save_delivery_json: bool,
+    show_less: bool,
+    output: str,
+    max_concurrent_uploads: int,
+    chunk_size_mb: int,
+    chunk_concurrency: int,
+    dry_run: bool,
+    disable_progress_bar: bool,
+) -> None:
+    """Perform a delivery with multiple operations [upload, delete].
+
+    Without a subcommand, the whole delivery is performed in one step.
+    Use the subcommands to build it in steps through a draft.
+    """
+    if ctx.invoked_subcommand is None:
+        if file is None or dataset_id is None or product_id is None:
+            raise click.UsageError("Without a subcommand, --file, --dataset-id and --product-id are required.")
+        with open(file) as f:
+            delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
+
+        response_delivery, delivery = _delivery(
+            [operation for operation in delivery_file.delivery],
+            on_behalf_of=pushing_entity_id,
+            dataset_id=dataset_id,
+            product_id=product_id,
+            raise_on_upload_error=raise_on_upload_error,
+            max_concurrent_uploads=max_concurrent_uploads,
+            chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
+            chunk_concurrency=chunk_concurrency,
+            dry_run=dry_run,
+            publish=True,
+            disable_progress_bar=disable_progress_bar,
+        )
+        if save_delivery_json and delivery:
+            saving_delivery_file(delivery)
+
+        if output == "json":
+            click.echo(
+                json.dumps({"delivery_id": response_delivery.delivery_id})
+                if show_less
+                else response_delivery.model_dump_json(indent=2)
+            )
+        else:
+            click.echo(response_delivery.delivery_id if show_less else f"{response_delivery}")
+
+
+# Group options are only required when no subcommand is given, checked in the callback.
+for _param in delivery_group.params:
+    _param.required = False
+
+
+@delivery_group.command("create-draft")
+@optional_file_option
+@id_options
 @click.option(
-    "--file",
-    required=True,
-    help="A path to a yaml file that describes the deliver, "
-    "containing a set of operations [upload, delete] and their relative files."
-    "See the documentation for the format of the delivery file",
+    "--operation",
+    type=click.Choice(["upload", "delete"]),
+    help="Specify when creating a draft with a single operation.",
 )
+@click.option(
+    "--source",
+    type=str,
+    multiple=True,
+    help=(
+        """Only accepted if `--operation` is set. For draft delivereis with a single operation.
+        Relative or absolute path to the file.
+        If `anchor` is set, anything before it will be removed.
+        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
+    ),
+)
+@anchor_option
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
 @log_level_option
 @log_exception_and_exit
-def delivery(
-    file: Path,
+def create_draft(
+    file: Path | None,
     dataset_id: str,
     product_id: str,
+    operation: str | None = None,
+    source: tuple[str, ...] = (),
+    anchor: str | None = None,
     pushing_entity_id: str | None = None,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
@@ -224,12 +374,12 @@ def delivery(
     output: str = "text",
     disable_progress_bar: bool = False,
 ) -> None:
-    """Perform a delivery with multiple operations [upload, delete]."""
-    with open(file) as f:
-        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
+    """Create a draft delivery from a file. Its delivery ID is printed."""
+    _validate_file_or_operation(file, operation, source, anchor)
+    operations = _get_operations(file, operation, source, anchor)
 
     response_delivery, delivery = _delivery(
-        [operation for operation in delivery_file.delivery],
+        operations=operations,
         on_behalf_of=pushing_entity_id,
         dataset_id=dataset_id,
         product_id=product_id,
@@ -238,6 +388,7 @@ def delivery(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
+        publish=False,
         disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
@@ -255,6 +406,109 @@ def delivery(
         sys.exit(1)
 
 
+@delivery_group.command("extend-draft")
+@optional_file_option
+@click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to extend.")
+@click.option(
+    "--operation",
+    type=click.Choice(["upload", "delete"]),
+    help="Specify when creating a draft with a single operation.",
+)
+@click.option(
+    "--source",
+    type=str,
+    multiple=True,
+    help=(
+        """Only accepted if `--operation` is set. For draft delivereis with a single operation.
+        Relative or absolute path to the file.
+        If `anchor` is set, anything before it will be removed.
+        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
+    ),
+)
+@anchor_option
+@shared_options
+@upload_shared_options
+@pushing_entity_id_option
+@log_level_option
+@log_exception_and_exit
+def extend_draft(
+    file: Path | None,
+    delivery_id: str,
+    operation: str | None,
+    source: tuple[str, ...],
+    anchor: str | None,
+    pushing_entity_id: str | None,
+    raise_on_upload_error: bool,
+    save_delivery_json: bool,
+    show_less: bool,
+    output: str,
+    max_concurrent_uploads: int,
+    chunk_size_mb: int,
+    chunk_concurrency: int,
+    dry_run: bool,
+    disable_progress_bar: bool,
+) -> None:
+    """Append the operations of a file to an existing draft delivery."""
+    _validate_file_or_operation(file, operation, source, anchor)
+    operations = _get_operations(file, operation, source, anchor)
+
+    draft_delivery = load_draft(get_config(), pushing_entity_id, delivery_id)
+
+    response_delivery, delivery = _delivery(
+        operations,
+        on_behalf_of=pushing_entity_id,
+        dataset_id=draft_delivery.dataset_id,
+        product_id=draft_delivery.product_id,
+        raise_on_upload_error=raise_on_upload_error,
+        max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
+        chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
+        publish=False,
+        draft_delivery=draft_delivery,
+        disable_progress_bar=disable_progress_bar,
+    )
+    if save_delivery_json and delivery:
+        saving_delivery_file(delivery)
+
+    if output == "json":
+        click.echo(
+            json.dumps({"delivery_id": response_delivery.delivery_id})
+            if show_less
+            else response_delivery.model_dump_json(indent=2)
+        )
+    else:
+        click.echo(response_delivery.delivery_id if show_less else f"{response_delivery}")
+    if not response_delivery.is_succesful():
+        sys.exit(1)
+
+
+@delivery_group.command("publish-draft")
+@click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to publish.")
+@click.option("--dataset-id", type=str, required=True, help="ID of the dataset.")
+@click.option("--product-id", type=str, required=True, help="ID of the product.")
+@click.option("--dry-run", is_flag=True, help="Validate without publishing.")
+@pushing_entity_id_option
+@log_level_option
+@log_exception_and_exit
+def publish_draft(
+    delivery_id: str,
+    dataset_id: str,
+    product_id: str,
+    pushing_entity_id: str | None,
+    dry_run: bool = False,
+) -> None:
+    """Publish a draft delivery, previously saved with --no-publish, as is."""
+    delivery = _publish_draft(
+        product_id=product_id,
+        dataset_id=dataset_id,
+        delivery_id=delivery_id,
+        dry_run=dry_run,
+        on_behalf_of=pushing_entity_id,
+    )
+    click.echo(message=delivery.get_summary(show_all=False))
+
+
 @cli.command()
 @click.option(
     "--source",
@@ -266,20 +520,8 @@ def delivery(
         Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
     ),
 )
-@click.option(
-    "--anchor",
-    type=str,
-    required=False,
-    default=None,
-    help=(
-        """
-        If set, anything before and up to such anchor will be removed
-        from the given path upon uploading to the ingestion bucket.
-        For more information, please refer to the documentation and, in particular, the `Folder structure and path` section.
-        """
-    ),
-)
-@shared_options
+@anchor_option
+@base_options
 @upload_shared_options
 @pushing_entity_id_option
 @log_level_option
@@ -346,7 +588,7 @@ def upload(
     multiple=True,
     help="S3 Path to the file. `product_id/dataset_id` are prepended by default.",
 )
-@shared_options
+@base_options
 @pushing_entity_id_option
 @log_level_option
 @log_exception_and_exit

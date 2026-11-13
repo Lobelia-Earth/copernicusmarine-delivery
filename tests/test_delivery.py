@@ -55,6 +55,7 @@ def test_delivery_python_interface(
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
         on_behalf_of=None,
+        publish=True,
         disable_progress_bar=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
@@ -80,6 +81,7 @@ def test_delivery_early_exit_with_validation_error(
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
             on_behalf_of=None,
+            publish=True,
             disable_progress_bar=False,
         )
     assert "Found 1 invalid files." in str(exc_info.value)
@@ -137,6 +139,7 @@ def test_delivery_dry_run_does_not_call_s3(
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=True,
         on_behalf_of=None,
+        publish=True,
         disable_progress_bar=False,
     )
 
@@ -187,6 +190,7 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
         on_behalf_of=None,
+        publish=True,
         disable_progress_bar=False,
     )
 
