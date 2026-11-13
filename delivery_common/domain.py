@@ -83,6 +83,7 @@ class DeliveryStatus(str, Enum):
     failed = "failed"
     published = "published"
     partially_failed = "partially-failed"
+    draft = "draft"
 
 
 class OperationNames(str, Enum):
@@ -254,6 +255,9 @@ class Delivery(BaseModel):
     #: Please check the individual files for more details.
     #: For further help, please contact the User Support team.
     error_message: str | None = None
+
+    #: True while the delivery is a draft (created or extended, not yet published).
+    is_draft: bool = False
 
     def is_succesful(self) -> bool:
         return self.status not in (DeliveryStatus.failed, DeliveryStatus.partially_failed)

@@ -185,7 +185,7 @@ def validate_test_token_header(request) -> httpx.Response | None:
 def ingestion_service(s3_client, mock_keycloak, monkeypatch):
     """Patches http_client with an httpx-backed mock transport that mimics the ingestion service.
 
-    - PUT /draft-delivery: creates or updates a draft delivery (kept in memory, not published), returns 201.
+    - PUT /delivery: creates or updates a draft delivery (kept in memory, not published), returns 201.
     - POST /delivery: accepts a delivery JSON, saves it to S3 (publishes it, consuming its draft), returns 201.
     - GET /delivery?is_draft=true: returns the draft with the given delivery_id, if any.
     - GET /delivery: returns all stored deliveries for the entity resolved from the token.
@@ -204,10 +204,14 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
 
         path = request.url.path
 
-        if path == "/draft-delivery" and request.method == "PUT":
+        if path == "/delivery" and request.method == "PUT":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             body = json.loads(request.content)
+            if not body["operations"]:
+                return httpx.Response(422, json={"detail": "A delivery must have at least one operation."})
+            if not body.get("is_draft"):
+                return httpx.Response(422, json={"detail": "Only draft deliveries can be saved or overwritten."})
             drafts[body["delivery_id"]] = body
             return httpx.Response(201, json=body)
 
@@ -221,8 +225,12 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             body = json.loads(request.content)
+            if not body["operations"]:
+                return httpx.Response(422, json={"detail": "A delivery must have at least one operation."})
+            if body.get("is_draft"):
+                return httpx.Response(422, json={"detail": "A draft delivery cannot be published."})
             delivery_id = body["delivery_id"]
-            if request.url.params.get("is_draft") == "true":
+            if request.url.params.get("delete_draft") == "true":
                 drafts.pop(delivery_id, None)  # publishing a draft deletes it
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(

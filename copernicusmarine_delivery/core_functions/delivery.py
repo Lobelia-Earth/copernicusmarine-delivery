@@ -90,7 +90,7 @@ def create_and_upload_delivery(
 ) -> Delivery:
     """
     Build the delivery (on top of ``draft`` if continuing one) and send it:
-    with PUT /draft-delivery if not ``publish`` (creates or overwrites the draft), else with POST /delivery (publishes it).
+    with PUT /delivery if not ``publish`` (creates or overwrites the draft), else with POST /delivery (publishes it).
     ``draft`` is not modified: the returned delivery is a copy with the new operations appended.
     """
     if draft:
@@ -104,6 +104,7 @@ def create_and_upload_delivery(
             operations=operations,
             delivery_id=delivery_id,
         )
+    delivery.is_draft = not publish
     if dry_run:
         return delivery
 
@@ -113,12 +114,12 @@ def create_and_upload_delivery(
             f"{INGESTION_SERVICE_URL}/delivery",
             json=delivery.model_dump(by_alias=True),
             headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
-            params={"is_draft": "true"} if draft else None,
+            params={"delete_draft": "true"} if draft else None,
         )
     else:
-        logger.debug(f"PUTting draft delivery to ingestion service at {INGESTION_SERVICE_URL}/draft-delivery")
+        logger.debug(f"PUTting draft delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery")
         response = http_client.put(
-            f"{INGESTION_SERVICE_URL}/draft-delivery",
+            f"{INGESTION_SERVICE_URL}/delivery",
             json=delivery.model_dump(by_alias=True),
             headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
         )

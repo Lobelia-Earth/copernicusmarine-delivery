@@ -3,18 +3,7 @@
   '''
   Deliveries:
   
-  [DELIVERY] 20120114T120001-product1-6514 for pushing entity GLO-MERCATOR-TOULOUSE-FR
-  	product_id: product1
-  	dataset_id: dataset2
-  	status: pending
-  	created at: None
-  	total uploads: 1
-  	total volume (MB): 0
-  	errored uploads: 0
-  	total deletes: 0
-  	errored deletes: 0
-  
-  [DELIVERY] 20120114T120001-product1-4527 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  [DELIVERY] 20120114T120001-product1-7924 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
@@ -25,7 +14,18 @@
   	total deletes: 0
   	errored deletes: 0
   
-  [DELIVERY] 20120114T120001-product1-2674 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  [DELIVERY] 20120114T120001-product1-6574 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset2
+  	status: pending
+  	created at: None
+  	total uploads: 1
+  	total volume (MB): 0
+  	errored uploads: 0
+  	total deletes: 0
+  	errored deletes: 0
+  
+  [DELIVERY] 20120114T120001-product1-5552 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
@@ -41,7 +41,7 @@
   '''
   [
     {
-      "delivery_id": "20120114T120001-product1-6574",
+      "delivery_id": "20120114T120001-product1-5557",
       "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
       "product_id": "product1",
       "dataset_id": "dataset1",
@@ -63,35 +63,11 @@
       "creation_timestamp": null,
       "status": "pending",
       "status_timestamp": null,
-      "error_message": null
+      "error_message": null,
+      "is_draft": false
     },
     {
-      "delivery_id": "20120114T120001-product1-5552",
-      "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
-      "product_id": "product1",
-      "dataset_id": "dataset2",
-      "operations": [
-        {
-          "files": [
-            {
-              "key_suffix": "file2.txt",
-              "error_message": null,
-              "file_size_mb": 0,
-              "checksum": "e9c91642feb1c07cf3c270c7165c3c3c",
-              "upload_start_time": "2012-01-14T12:00:01Z",
-              "upload_end_time": "2012-01-14T12:00:01Z"
-            }
-          ],
-          "operation": "upload"
-        }
-      ],
-      "creation_timestamp": null,
-      "status": "pending",
-      "status_timestamp": null,
-      "error_message": null
-    },
-    {
-      "delivery_id": "20120114T120001-product1-3547",
+      "delivery_id": "20120114T120001-product1-3615",
       "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
       "product_id": "product1",
       "dataset_id": "dataset1",
@@ -121,7 +97,34 @@
       "creation_timestamp": null,
       "status": "pending",
       "status_timestamp": null,
-      "error_message": null
+      "error_message": null,
+      "is_draft": false
+    },
+    {
+      "delivery_id": "20120114T120001-product1-1106",
+      "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
+      "product_id": "product1",
+      "dataset_id": "dataset2",
+      "operations": [
+        {
+          "files": [
+            {
+              "key_suffix": "file2.txt",
+              "error_message": null,
+              "file_size_mb": 0,
+              "checksum": "e9c91642feb1c07cf3c270c7165c3c3c",
+              "upload_start_time": "2012-01-14T12:00:01Z",
+              "upload_end_time": "2012-01-14T12:00:01Z"
+            }
+          ],
+          "operation": "upload"
+        }
+      ],
+      "creation_timestamp": null,
+      "status": "pending",
+      "status_timestamp": null,
+      "error_message": null,
+      "is_draft": false
     }
   ]
   '''

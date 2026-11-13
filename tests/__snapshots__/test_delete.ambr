@@ -29,6 +29,7 @@
     'dataset_id': 'cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311',
     'delivery_id': '20120114T120001-GLOBAL_ANALYSISFORECAST_BGC_001_028-5506',
     'error_message': None,
+    'is_draft': False,
     'operations': list([
       dict({
         'files': list([
@@ -97,7 +98,8 @@
     "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
-    "error_message": null
+    "error_message": null,
+    "is_draft": false
   }
   '''
 # ---
