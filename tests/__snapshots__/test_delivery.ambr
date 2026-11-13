@@ -1,4 +1,21 @@
 # serializer version: 1
+<<<<<<< HEAD
+=======
+# name: test_delivery_cli_with_delivery_file
+  '''
+  Uploading:   0%|          | 0/2 [00:00<?, ?file/s]
+  Uploading: 100%|██████████| 2/2 [00:00<?, ?file/s]
+  Delivery summary:
+  
+  	delivery_id: 20120114T120001-product1-3286
+  	pushing_entity_id: GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset1
+  
+  	Total: 2 files uploaded, 2 files to delete.
+  '''
+# ---
+>>>>>>> origin
 # name: test_delivery_python_interface
   '''
   {

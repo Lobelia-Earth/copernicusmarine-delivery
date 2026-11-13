@@ -6,6 +6,8 @@
 import tomllib
 from pathlib import Path
 
+from copernicusmarine_delivery.auth import get_config
+
 data = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text())
 
 # -- Project information -----------------------------------------------------
@@ -46,7 +48,18 @@ autodoc_pydantic_field_show_constraints = False
 myst_enable_extensions = [
     "colon_fence",
     "deflist",
+    "substitution",
 ]
+
+_limits = get_config().api_limits
+_recommended_delivery_size_gb = _limits.max_delivery_size_gb * 0.95
+myst_substitutions = {
+    "recommended_delivery_size_gb": f"{_recommended_delivery_size_gb:g}",
+    "recommended_delivery_size_bytes": f"{round(_recommended_delivery_size_gb * 1024**3):,}",
+    "max_files": f"{_limits.max_number_of_files_per_delivery:,}".replace(",", "."),
+    "max_delivery_size_gb": f"{_limits.max_delivery_size_gb:g}",
+    "max_file_size_gb": f"{_limits.max_file_size_gb:g}",
+}
 myst_heading_anchors = 3
 
 templates_path = ["_templates"]

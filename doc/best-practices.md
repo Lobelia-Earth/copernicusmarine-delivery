@@ -4,9 +4,9 @@
 
 The ingestion system enforces the following limits **per delivery**:
 
-- **Maximum number of files to upload: 150.** It counts the files of all the upload operations of the delivery. Deletes are not counted.
-- **Maximum size of the delivery: 200 GB.** It is the sum of the size of all the files to upload.
-- **Maximum size of a single file: 40 GB.** Larger files cannot be processed.
+- **Maximum number of files to upload: {{ max_files }}.** It counts the files of all the upload operations of the delivery. Deletes are not counted.
+- **Maximum size of the delivery: {{ max_delivery_size_gb }} GB.** It is the sum of the size of all the files to upload.
+- **Maximum size of a single file: {{ max_file_size_gb }} GB.** Larger files cannot be processed.
 
 ```{note}
 These are the current values. They might change, so if you need to deliver more, please contact the MDS Service Desk.
@@ -21,7 +21,7 @@ Sizes are counted in 1024-based units: **1 GB = 1,073,741,824 bytes**. Some tool
 The limits are checked as part of the validation, before anything is uploaded. If one is exceeded, nothing is uploaded and no delivery is submitted. It is also checked with `--dry-run`. The error looks like:
 
 ```text
-Invalid delivery size error: Invalid delivery limit exceeded: Maximum number of files exceeded. Reason: The number of files in delivery (200) exceeded the limit (150)
+Invalid delivery size error: Invalid delivery limit exceeded: Maximum number of files exceeded. Reason: The number of files in delivery (200) exceeded the limit (10.000)
 Invalid delivery size error: Invalid delivery limit exceeded: Maximum delivery size exceeded. Reason: The delivery size (210.0 GB) exceeded the limit (200.0 GB)
 Invalid delivery size error: Invalid delivery limit exceeded: Maximum file size exceeded. Reason: One or more files exceeded the maximum file size limit (40.0 GB): {'data/big_file.nc': 46080}
 ```
@@ -31,7 +31,7 @@ For the file size, each file is listed with its size in MB. In Python it is rais
 The ingestion system checks the limits again when the delivery is submitted. In that case the delivery is rejected with a message like:
 
 ```text
-HTTP error: Manifest validation failed: The total number of files to upload (200) exceeds the limit: 150
+HTTP error: Manifest validation failed: The total number of files to upload (200) exceeds the limit: 10.000
 HTTP error: Manifest validation failed: Delivery size 210.0 GB is bigger than the server limits: 50.0 GB
 ```
 
@@ -43,9 +43,9 @@ Do not go over the following values. They leave some margin below the limits:
 
 | | Limit | Recommended maximum |
 | --- | --- | --- |
-| Files to upload per delivery | 150 | **135** |
-| Size of a delivery | 200 GB | **190 GB** (204,010,946,560 bytes) |
-| Size of a single file | 40 GB | **40 GB** (42,949,672,960 bytes) |
+| Files to upload per delivery | {{ max_files }} | **10.000** |
+| Size of a delivery | {{ max_delivery_size_gb }} GB | **{{ recommended_delivery_size_gb }} GB** ({{ recommended_delivery_size_bytes }} bytes) |
+| Size of a single file | {{ max_file_size_gb }} GB | **40 GB** (42,949,672,960 bytes) |
 
 Other recommendations:
 
@@ -64,6 +64,7 @@ Other recommendations:
 
 - **Keep operations that depend on each other in the same delivery.** The operations of a delivery run in order, but separate deliveries are processed in parallel. For example, a delete followed by an upload of the same file must be in the same delivery. Remember that a delivery is for a single dataset.
 - **Join small files into bigger ones**, if your data format allows it. Files smaller than about 1.4 GB (190 GB / 135 files) reach the maximum number of files before the maximum size, so you can send less data per delivery. Bigger files reach the maximum size first.
+- **Adjust the upload concurrency to the shape of your delivery.** By default, 5 files are uploaded in parallel. If your delivery has many small files (for example, more than 5.000), the upload time is dominated by the per-file overhead, not by the transfer. In that case, you can increase `--max-concurrent-uploads` (`max_concurrent_uploads` in Python) to something like 10 or 15 to speed it up, as long as your environment allows it. Very high values can exhaust the network resources of your machine (for example, with errors like `Can't assign requested address`).
 - **Large files take longer.** To protect the disk of the ingestion system, the bigger the files of an upload operation, the fewer of them are processed at the same time. It depends on the median size of the files of the operation (not the biggest one):
 
   ```text

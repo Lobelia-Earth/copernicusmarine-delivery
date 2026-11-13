@@ -1,5 +1,8 @@
 import logging
-import os
+
+from copernicusmarine_delivery.environment_variables import COPERNICUSMARINE_SERVICE_LOG_LEVEL
+
+LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class CustomFormatter(logging.Formatter):
@@ -10,14 +13,7 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-if os.getenv("PYTHON_LOG_DEBUG", "").lower() in ("1", "true", "yes"):
-    level = logging.DEBUG
-else:
-    level = logging.INFO
-
-logging.getLogger().setLevel(level)
 logHandler = logging.StreamHandler()
-logHandler.setLevel(level)
 logHandler.setFormatter(CustomFormatter())
 
 for _name in (
@@ -32,4 +28,5 @@ for _name in (
     logging.getLogger(_name).setLevel(logging.WARNING)
 
 logger = logging.getLogger("copernicusmarine-delivery")
+logger.setLevel(COPERNICUSMARINE_SERVICE_LOG_LEVEL)
 logger.addHandler(logHandler)

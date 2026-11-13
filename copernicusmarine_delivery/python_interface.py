@@ -58,6 +58,7 @@ class Upload(_Upload):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        disable_progress_bar: bool = False,
         **kwargs,
     ) -> ResponseUpload:
         """
@@ -89,6 +90,7 @@ class Upload(_Upload):
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
             on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            disable_progress_bar=disable_progress_bar,
         )
         return response
 
@@ -165,6 +167,7 @@ class Delivery(BaseModel):
         dry_run: bool = False,
         publish: bool = True,
         draft_delivery: DeliveryModel | None = None,
+        disable_progress_bar: bool = False,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -197,6 +200,7 @@ class Delivery(BaseModel):
             on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
             publish=publish,
             draft_delivery=draft_delivery,
+            disable_progress_bar=disable_progress_bar,
         )
         return response
 
@@ -256,6 +260,7 @@ class DraftDelivery(BaseModel):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        disable_progress_bar: bool = True,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -285,6 +290,7 @@ class DraftDelivery(BaseModel):
             on_behalf_of=on_behalf_of,
             publish=False,
             draft_delivery=None,
+            disable_progress_bar=disable_progress_bar,
         )
         if not dry_run:
             self.delivery_id = response.delivery_id
@@ -299,6 +305,7 @@ class DraftDelivery(BaseModel):
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
+        disable_progress_bar: bool = True,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -325,6 +332,7 @@ class DraftDelivery(BaseModel):
             on_behalf_of=on_behalf_of,
             publish=False,
             draft_delivery=self.draft_delivery,
+            disable_progress_bar=disable_progress_bar,
         )
         if not dry_run:
             self.draft_delivery = delivery

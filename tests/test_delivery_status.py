@@ -38,6 +38,7 @@ def test_delivery_status_python_interface(
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
         publish=True,
+        disable_progress_bar=False,
     )
     assert delivery is not None
 

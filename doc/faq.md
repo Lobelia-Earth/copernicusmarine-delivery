@@ -35,3 +35,7 @@ List your recent deliveries. See the [list deliveries command](command-line-inte
 ### What happens if some of the files fail to upload?
 
 By default, the failed files are removed from the delivery and logged, and the rest is delivered. See [the troubleshooting page](troubleshooting.md).
+
+### Do I need to give you my IP to white list it?
+
+No, there is no need.

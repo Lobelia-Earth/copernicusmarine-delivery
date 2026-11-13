@@ -68,6 +68,7 @@ def upload(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
+    disable_progress_bar: bool,
     publish: bool = True,
     on_behalf_of: str | None = None,
 ) -> tuple[ResponseUpload, Delivery]:
@@ -116,6 +117,7 @@ def upload(
         chunk_size=chunk_size_bytes,
         max_concurrent_uploads=max_concurrent_uploads,
         dry_run=dry_run,
+        disable_progress_bar=disable_progress_bar,
     )
 
     delivery = create_and_upload_delivery(
@@ -237,6 +239,7 @@ def delivery(
     dry_run: bool,
     on_behalf_of: str | None,
     publish: bool,
+    disable_progress_bar: bool,
     draft_delivery: Delivery | None = None,
 ) -> tuple[ResponseDelivery, Delivery]:
     config = get_config()
@@ -299,6 +302,7 @@ def delivery(
                     chunk_size=chunk_size_bytes,
                     max_concurrent_uploads=max_concurrent_uploads,
                     dry_run=dry_run,
+                    disable_progress_bar=disable_progress_bar,
                 )
                 all_operations.append(upload_operation)
                 all_responses.append(
@@ -367,6 +371,7 @@ def _put_files_to_ingestion_system(
     chunk_size: int,
     max_concurrent_uploads: int,
     dry_run: bool,
+    disable_progress_bar: bool,
 ) -> tuple[PutFilesResult, UploadOperation]:
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
         [file.local_path for file in to_upload_operation.files],
@@ -381,6 +386,7 @@ def _put_files_to_ingestion_system(
         chunk_size=chunk_size,
         max_concurrent_uploads=max_concurrent_uploads,
         dry_run=dry_run,
+        disable_progress_bar=disable_progress_bar,
     )
     if not put_files_result.successful_files:
         raise NoSuccessfulUploadsError(put_files_result.errored_files)
