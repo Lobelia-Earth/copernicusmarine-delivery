@@ -55,6 +55,50 @@ from copernicusmarine_delivery import delivery_status
 delivery = delivery_status(delivery_id)
 ```
 
+## Draft delivery
+
+With `Delivery`, `submit` uploads the files and publishes the delivery in one step. With `DraftDelivery`, you build the delivery in steps. The files are uploaded and saved in a draft in the ingestion bucket, but nothing is published until you call `publish`.
+
+```python
+from copernicusmarine_delivery import Upload, Delete, DraftDelivery
+
+product_id = "some-product-id"
+dataset_id = "some-dataset-id"
+
+draft = DraftDelivery(product_id=product_id, dataset_id=dataset_id)
+
+# --- Create: upload the added operations and save them in a new draft ---
+draft.add(Upload(files=["some/file.nc"]))
+response = draft.create()
+print(draft.delivery_id)
+
+# --- Extend: upload more operations and append them to the draft ---
+draft.add(Delete(files=["some/old/file.nc"]))
+draft.add(Upload(files=["some/other/file.nc"]))
+draft.extend()
+
+# --- Publish the draft as it is saved ---
+delivery = draft.publish()
+```
+
+- `add` only keeps the operation in memory. It is saved in the draft by `create` or `extend`.
+- `publish` raises if there are added operations not saved yet. Call `extend` first.
+- Operations are executed in the order they were added.
+- `create`, `extend` and `publish` accept `dry_run=True`. See [dry run](#dry-run).
+
+You can continue a draft in another session, or from another machine, with its delivery ID. The draft is fetched when the object is created, so it raises if it is not found. The product and the dataset are taken from the draft:
+
+```python
+from copernicusmarine_delivery import Upload, DraftDelivery
+
+draft = DraftDelivery(delivery_id="some-delivery-id")
+draft.add(Upload(files=["some/another/file.nc"]))
+draft.extend()
+draft.publish()
+```
+
+Once published, check the delivery as usual with [`delivery_status`](#wait-for-a-delivery).
+
 ## Dry run
 
 Use `dry_run=True` to validate a delivery before submitting it. The product, the dataset, the files and the [delivery limits](../best-practices.md#delivery-limits) are checked, but nothing is uploaded and no delivery is submitted. Since no delivery is submitted, you cannot check its status afterwards.
