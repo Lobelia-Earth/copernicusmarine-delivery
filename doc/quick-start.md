@@ -75,6 +75,9 @@ Use a real Copernicus Marine product and dataset that belong to your Pushing Ent
 > [!WARNING]  
 > At this moment, delivered data is not published in the operational MDS, to facilitate testing. Hence, the data you upload will not be visible through the `copernicusmarine` toolbox.
 
+> [!WARNING]  
+> By using the `--staging` flag, delivered data is **not** published in the operational MDS.
+
 ## Check the delivery status
 
 Check the status of the previous delivery:
