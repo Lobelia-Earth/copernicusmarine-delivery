@@ -30,8 +30,9 @@ copernicusmarine-delivery --help
 
 For installation alternatives, see [the installation guide](installation.md).
 
-> [!NOTE]
-> The commands below use the `--staging` flag (`staging=True` in Python) to run against the staging environment. Remove it to run against production.
+```{note}
+The commands below use the `--staging` flag (`staging=True` in Python) to run against the staging environment. Remove it to run against production.
+```
 
 ## Test Access
 
