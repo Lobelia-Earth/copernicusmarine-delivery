@@ -98,11 +98,10 @@ html_sidebars = {
 }
 
 # -- Hidden CLI options ------------------------------------------------------
-# sphinx-click skips hidden options but still documents their environment
-# variable (e.g. the operators-only `--pushing-entity-id`). Drop it from the docs.
+# sphinx-click skips hidden options in the options list but still documents
+# their environment variable (e.g. the operators-only `--pushing-entity-id`),
+# linking to an option that doesn't exist. Remove hidden params from the docs.
 from copernicusmarine_delivery.command_line_interface import cli  # noqa: E402
 
 for _command in cli.commands.values():
-    for _param in _command.params:
-        if getattr(_param, "hidden", False):
-            _param.envvar = None
+    _command.params = [p for p in _command.params if not getattr(p, "hidden", False)]
