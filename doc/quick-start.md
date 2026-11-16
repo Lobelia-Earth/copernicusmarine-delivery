@@ -34,13 +34,13 @@ For installation alternatives, see [the installation guide](installation.md).
 
 To prevent impacting the official MDS catalogue with the tests of the Copernicus Marine Delivery tool, a dedicated **staging environment** has been setup. Use the `--staging` flag to deliver the data to this staging environment:
 
-#```bash
+```bash
 copernicusmarine-delivery --staging <OTHER-OPTIONS>
-#```
+```
 
-#```{note}
+```{note}
 All commands below use the `--staging` flag (`staging=True` in Python) to run against this staging environment. Remove it to run against production.
-#```
+```
 
 Similarly, the `copernicusmarine` toolbox also has the `--staging` flag. Hence, the data you upload tot he MDS staging environment can be listed with `copernicusmarine get --staging --dry-run <OTHER-OPTIONS>`
 

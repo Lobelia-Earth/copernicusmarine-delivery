@@ -38,6 +38,17 @@ For a `partially-failed` or `failed` delivery, the status comes with an error me
 In Python, `delivery_status` and `list_deliveries` return [`DeliveryModel`](#copernicusmarine_delivery.DeliveryModel) objects. Their `status` field is a [`DeliveryStatus`](#copernicusmarine_delivery.DeliveryStatus). This can be helpful if "waiting" for status to change in order to perform another action.
 ```
 
+### Extra validation of data publication in MDS
+
+You can run an extra test to validate the publication of the delivery, once it is marked as `published`.
+Use the `copernicusmarine` toolbox to get the published native files:
+
+```bash
+copernicusmarine get --dataset-id DATASET_ID --staging --dry-run --filter "*FILTER_TO_NARROW_SEARCH*"
+```
+
+For further information, please refer to the official “MDS Upload Validation Process” document.
+
 ## Folder structure and path
 
 Let's define the different paths you can encounter:
