@@ -103,6 +103,7 @@ html_sidebars = {
 # linking to an option that doesn't exist. Remove hidden params from the docs.
 from copernicusmarine_delivery.command_line_interface import cli  # noqa: E402
 
+
 def _drop_hidden_params(command):
     command.params = [p for p in command.params if not getattr(p, "hidden", False)]
     for _sub in getattr(command, "commands", {}).values():
