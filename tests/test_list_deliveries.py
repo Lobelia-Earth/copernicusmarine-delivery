@@ -6,6 +6,7 @@ from freezegun import freeze_time
 
 from copernicusmarine_delivery import list_deliveries
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.context import ServiceContext, build_context
 from copernicusmarine_delivery.core_functions import delivery as delivery_module
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
@@ -35,6 +36,7 @@ def _upload(files: list[str], dataset_id: str, product_id: str, anchor: str | No
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
         disable_progress_bar=False,
+        ctx=build_context(),
     )
 
 
@@ -110,19 +112,20 @@ def test_get_deliveries_sends_timeframe_as_created_after_param(monkeypatch):
 
     mock_client = httpx.Client(transport=httpx.MockTransport(handler))
     monkeypatch.setattr(delivery_module, "http_client", mock_client)
-    monkeypatch.setattr(delivery_module, "fetch_keycloak_token", lambda config: "test-token")
+    monkeypatch.setattr(delivery_module, "fetch_keycloak_token", lambda ctx: "test-token")
+    ctx = ServiceContext(ingestion_service_url="http://localhost", config=None)  # type: ignore
 
-    get_deliveries(config=None, timeframe="w", on_behalf_of=None)  # type: ignore
+    get_deliveries(ctx=ctx, timeframe="w")
 
     # now (frozen) minus one week, in ISO 8601 UTC.
     assert captured["params"] == {"created_after": "2012-01-07T12:00:01Z"}
 
-    get_deliveries(config=None, timeframe="all", on_behalf_of=None)  # type: ignore
+    get_deliveries(ctx=ctx, timeframe="all")
 
     # datetime.min in ISO 8601 UTC.
     assert captured["params"].get("created_after") == None
 
-    get_deliveries(config=None, timeframe="d", on_behalf_of=None)  # type: ignore
+    get_deliveries(ctx=ctx, timeframe="d")
 
     # now (frozen) minus one day, in ISO 8601 UTC.
     assert captured["params"] == {"created_after": "2012-01-13T12:00:01Z"}

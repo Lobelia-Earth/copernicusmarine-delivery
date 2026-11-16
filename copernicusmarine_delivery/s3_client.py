@@ -14,7 +14,6 @@ from tqdm.contrib.concurrent import thread_map
 from copernicusmarine_delivery.auth import fetch_keycloak_token
 from copernicusmarine_delivery.core_functions.domain import (
     ErrorFile,
-    GetConfigResponse,
     PutFilesResult,
     S3File,
     S3Path,
@@ -23,16 +22,15 @@ from copernicusmarine_delivery.core_functions.exceptions import (
     ConnectionRefusedException,
     NoSuchBucketException,
 )
-from copernicusmarine_delivery.environment_variables import (
-    ALLOW_HTTP,
-    INGESTION_SERVICE_URL,
-)
+from copernicusmarine_delivery.environment_variables import ALLOW_HTTP
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import now_in_utc_isoformat
 
 if TYPE_CHECKING:
     from obstore.store import S3Credential, S3CredentialProvider
+
+    from copernicusmarine_delivery.context import ServiceContext
 
 _RETRY_CONFIG: Any = {
     "max_retries": 5,
@@ -75,21 +73,19 @@ class OpdvS3CredentialProvider:
     def __init__(
         self,
         pushing_entity_id: str,
-        config: GetConfigResponse,
-        on_behalf_of: str | None,
+        ctx: ServiceContext,
         refresh_threshold: timedelta = _CREDENTIAL_REFRESH_THRESHOLD,
     ) -> None:
         self._pushing_entity_id = pushing_entity_id
-        self._config = config
+        self._ctx = ctx
         self.refresh_threshold = refresh_threshold
-        self.on_behalf_of = on_behalf_of
 
     def __call__(self) -> S3Credential:
         logger.debug("Getting new set of S3 Credentials from OPDV's API.")
-        token = fetch_keycloak_token(self._config)
-        params = {"on_behalf_of": self.on_behalf_of} if self.on_behalf_of else None
+        token = fetch_keycloak_token(self._ctx)
+        params = {"on_behalf_of": self._ctx.on_behalf_of} if self._ctx.on_behalf_of else None
         resp = http_client.get(
-            f"{INGESTION_SERVICE_URL}/credentials",
+            f"{self._ctx.ingestion_service_url}/credentials",
             headers={"Authorization": f"Bearer {token}"},
             params=params,
             timeout=30,
@@ -108,13 +104,11 @@ def _get_s3_store(
     endpoint_url: str,
     bucket_name: str,
     pushing_entity_id: str,
-    on_behalf_of: str | None,
-    config: GetConfigResponse,
+    ctx: ServiceContext,
 ) -> S3Store:
     credential_provider: S3CredentialProvider = OpdvS3CredentialProvider(
         pushing_entity_id=pushing_entity_id,
-        config=config,
-        on_behalf_of=on_behalf_of,
+        ctx=ctx,
     )
     return S3Store.from_url(
         url=f"s3://{bucket_name}",
@@ -142,9 +136,8 @@ def _make_client(
 def get_s3_ingestion_client(
     pushing_entity_id: str,
     bucket_name: str,
-    config: GetConfigResponse,
+    ctx: ServiceContext,
     endpoint_url: str,
-    on_behalf_of: str | None,
     chunk_concurrency: int = 6,
 ) -> "S3Client":
     return _make_client(
@@ -153,8 +146,7 @@ def get_s3_ingestion_client(
             bucket_name=bucket_name,
             endpoint_url=endpoint_url,
             pushing_entity_id=pushing_entity_id,
-            config=config,
-            on_behalf_of=on_behalf_of,
+            ctx=ctx,
         ),
         chunk_concurrency=chunk_concurrency,
     )

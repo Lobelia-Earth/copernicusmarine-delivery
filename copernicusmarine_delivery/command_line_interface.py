@@ -10,7 +10,7 @@ import click
 import yaml
 from pydantic import ValidationError
 
-from copernicusmarine_delivery.auth import get_config
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -125,6 +125,12 @@ pushing_entity_id_option = click.option(
     help="ADMIN only: act on behalf of this pushing entity.",
 )
 
+staging_option = click.option(
+    "--staging",
+    is_flag=True,
+    help="Use the staging environment instead of production.",
+)
+
 log_level_option = click.option(
     "--log-level",
     type=click.Choice(LOG_LEVELS, case_sensitive=False),
@@ -207,6 +213,7 @@ def cli(max_content_width=200) -> None:
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def delivery(
@@ -214,6 +221,7 @@ def delivery(
     dataset_id: str,
     product_id: str,
     pushing_entity_id: str | None = None,
+    staging: bool = False,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -230,7 +238,7 @@ def delivery(
 
     response_delivery, delivery = _delivery(
         [operation for operation in delivery_file.delivery],
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
         dataset_id=dataset_id,
         product_id=product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -282,6 +290,7 @@ def delivery(
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def upload(
@@ -290,6 +299,7 @@ def upload(
     product_id: str,
     pushing_entity_id: str | None,
     anchor: str | None,
+    staging: bool = False,
     save_delivery_json: bool = False,
     raise_on_upload_error: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -323,7 +333,7 @@ def upload(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
         disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
@@ -348,6 +358,7 @@ def upload(
 )
 @shared_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def delete(
@@ -355,6 +366,7 @@ def delete(
     dataset_id: str,
     product_id: str,
     pushing_entity_id: str | None,
+    staging: bool = False,
     save_delivery_json: bool = False,
     dry_run: bool = False,
     show_less: bool = False,
@@ -378,7 +390,7 @@ def delete(
         dataset_id=dataset_id,
         files=source,
         dry_run=dry_run,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
     )
 
     if save_delivery_json:
@@ -430,12 +442,14 @@ def saving_delivery_file(delivery: Delivery) -> None:
     help="Output format.",
 )
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     delivery_json: Path | None = None,
     pushing_entity_id: str | None = None,
+    staging: bool = False,
     show_all: bool = False,
     show_less: bool = False,
     output: str = "text",
@@ -445,7 +459,7 @@ def status(
     """
     if not delivery_id and not delivery_json:
         raise click.UsageError(message=("Specify either delivery_id or a path to a delivery json file."))
-    config = get_config()
+    ctx = build_context(staging, pushing_entity_id)
     if delivery_json:
         try:
             with open(delivery_json) as delivery_file:
@@ -456,8 +470,7 @@ def status(
 
     deliveries = get_deliveries(
         delivery_id=delivery_id,
-        config=config,
-        on_behalf_of=pushing_entity_id,
+        ctx=ctx,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
@@ -478,17 +491,16 @@ def status(
     default="mo",
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
+@staging_option
 @log_level_option
 @log_exception_and_exit
-def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None) -> None:
+def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None, staging: bool = False) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
-    config = get_config()
     deliveries = get_deliveries(
-        config=config,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
         timeframe=timeframe,
     )
     print_list_deliveries(deliveries)

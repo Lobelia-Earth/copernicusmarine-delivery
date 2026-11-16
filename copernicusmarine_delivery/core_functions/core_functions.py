@@ -2,7 +2,8 @@ import os
 from pathlib import Path
 from typing import Sequence
 
-from copernicusmarine_delivery.auth import fetch_keycloak_token, get_config, get_pushing_entity_config
+from copernicusmarine_delivery.auth import get_pushing_entity_config
+from copernicusmarine_delivery.context import ServiceContext
 from copernicusmarine_delivery.core_functions.constants import NEW_DATA_BUCKET_PATH
 from copernicusmarine_delivery.core_functions.delivery import create_and_upload_delivery, create_delivery_id
 from copernicusmarine_delivery.core_functions.delivery_validator import (
@@ -65,15 +66,14 @@ def upload(
     chunk_concurrency: int,
     dry_run: bool,
     disable_progress_bar: bool,
-    on_behalf_of: str | None = None,
+    ctx: ServiceContext,
 ) -> tuple[ResponseUpload, Delivery]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
     3. Create Delivery with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
     """
-    config = get_config()
-    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
+    pushing_entity_config = get_pushing_entity_config(ctx)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -90,15 +90,14 @@ def upload(
         anchor,
     )
 
-    validate_delivery_sizes(config.api_limits, [to_upload_operation])
+    validate_delivery_sizes(ctx.config.api_limits, [to_upload_operation])
 
     s3_client = get_s3_ingestion_client(
         pushing_entity_id,
         pushing_entity_config.pushing_entity.bucket,
-        config=config,
+        ctx=ctx,
         chunk_concurrency=chunk_concurrency,
         endpoint_url=pushing_entity_config.s3_endpoint_url,
-        on_behalf_of=on_behalf_of,
     )
     delivery_id = create_delivery_id(product_id)
     put_files_result, upload_operation = _put_files_to_ingestion_system(
@@ -121,7 +120,7 @@ def upload(
         dataset_id=dataset_id,
         operations=[upload_operation],
         delivery_id=delivery_id,
-        config=config,
+        ctx=ctx,
         dry_run=dry_run,
     )
 
@@ -143,13 +142,12 @@ def delete(
     dataset_id: str,
     files: list[str],
     dry_run: bool,
-    on_behalf_of: str | None = None,
+    ctx: ServiceContext,
 ) -> tuple[ResponseDelete, Delivery]:
     """
     Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
-    config = get_config()
-    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
+    pushing_entity_config = get_pushing_entity_config(ctx)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -166,7 +164,7 @@ def delete(
         product_id=product_id,
         dataset_id=dataset_id,
         operations=[delete_operation],
-        config=config,
+        ctx=ctx,
         dry_run=dry_run,
     )
     return (
@@ -200,11 +198,10 @@ def delivery(
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-    on_behalf_of: str | None,
+    ctx: ServiceContext,
     disable_progress_bar: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
-    config = get_config()
-    pushing_entity_config = get_pushing_entity_config(fetch_keycloak_token(config), on_behalf_of)
+    pushing_entity_config = get_pushing_entity_config(ctx)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
@@ -216,9 +213,8 @@ def delivery(
         pushing_entity_id,
         pushing_entity_config.pushing_entity.bucket,
         chunk_concurrency=chunk_concurrency,
-        config=config,
+        ctx=ctx,
         endpoint_url=pushing_entity_config.s3_endpoint_url,
-        on_behalf_of=on_behalf_of,
     )
     for operation in operations:
         match operation:
@@ -231,7 +227,9 @@ def delivery(
                 )
                 pending_operations.append(to_upload_operation)
 
-    validate_delivery_sizes(config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)])
+    validate_delivery_sizes(
+        ctx.config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)]
+    )
 
     all_operations: list[Operation] = []
     all_responses: list[ResponseUpload | ResponseDelete] = []
@@ -281,7 +279,7 @@ def delivery(
         dataset_id,
         all_operations,
         dry_run,
-        config=config,
+        ctx=ctx,
         delivery_id=delivery_id,
     )
     return (
