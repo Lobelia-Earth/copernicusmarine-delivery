@@ -4,7 +4,6 @@ from copernicusmarine_delivery.auth import get_config
 from copernicusmarine_delivery.core_functions.domain import GetConfigResponse
 from copernicusmarine_delivery.environment_variables import (
     COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
-    get_ingestion_service_url,
 )
 
 
@@ -13,6 +12,12 @@ class ServiceContext:
     ingestion_service_url: str
     config: GetConfigResponse
     on_behalf_of: str | None = None
+
+
+def get_ingestion_service_url(staging: bool = False) -> str:
+    if staging:
+        return "https://opdv-api-dta.marine.copernicus.eu"
+    return "https://opdv-api.marine.copernicus.eu"
 
 
 def build_context(staging: bool = False, on_behalf_of: str | None = None) -> ServiceContext:

@@ -7,7 +7,7 @@ import tomllib
 from pathlib import Path
 
 from copernicusmarine_delivery.auth import get_config
-from copernicusmarine_delivery.environment_variables import get_ingestion_service_url
+from copernicusmarine_delivery.context import get_ingestion_service_url
 
 data = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text())
 

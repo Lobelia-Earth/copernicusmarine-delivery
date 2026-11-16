@@ -14,12 +14,6 @@ COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID = os.getenv("COPERNICUSMARINE_SERVICE
 COPERNICUSMARINE_SERVICE_LOG_LEVEL = os.getenv("COPERNICUSMARINE_SERVICE_LOG_LEVEL", "WARNING").upper()
 
 
-def get_ingestion_service_url(staging: bool = False) -> str:
-    if staging:
-        return "https://opdv-api-dta.marine.copernicus.eu"
-    return "https://opdv-api.marine.copernicus.eu"
-
-
 def get_copernicusmarine_username() -> str:
     return required_environment_variable("COPERNICUSMARINE_SERVICE_USERNAME")
 
