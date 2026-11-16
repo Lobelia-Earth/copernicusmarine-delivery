@@ -30,6 +30,9 @@ copernicusmarine-delivery --help
 
 For installation alternatives, see [the installation guide](installation.md).
 
+> [!NOTE]
+> The commands below use the `--staging` flag (`staging=True` in Python) to run against the staging environment. Remove it to run against production.
+
 ## Test Access
 
 You might want to check first that you can access the ingestion service and that you have the right credentials.
@@ -37,7 +40,7 @@ You might want to check first that you can access the ingestion service and that
 Run this command (that lists previous deliveries) to check that the account and the connection work:
 
 ```bash
-copernicusmarine-delivery list-deliveries
+copernicusmarine-delivery list-deliveries --staging
 ```
 
 If there is an error, please contact the MDS Service Desk.
@@ -50,7 +53,7 @@ Create or select a file you have locally and upload it:
 
 ```bash
 echo "hello" > test.nc
-copernicusmarine-delivery upload --product-id <MY_PRODUCT> --dataset-id <MY_DATASET_WITH_TAG> --source test.nc
+copernicusmarine-delivery upload --product-id <MY_PRODUCT> --dataset-id <MY_DATASET_WITH_TAG> --source test.nc --staging
 ```
 
 Use a real Copernicus Marine product and dataset that belong to your Pushing Entity.
@@ -66,13 +69,13 @@ Use a real Copernicus Marine product and dataset that belong to your Pushing Ent
 Check the status of the previous delivery:
 
 ```bash
-copernicusmarine-delivery status --delivery-id <DELIVERY-ID>
+copernicusmarine-delivery status --delivery-id <DELIVERY-ID> --staging
 ```
 
 Where `DELIVERY-ID` is the one from the output of the upload/delete/delivery command. You can also list all deliveries to find the relevant delivery ID:
 
 ```bash
-copernicusmarine-delivery list-deliveries
+copernicusmarine-delivery list-deliveries --staging
 ```
 
 ## More complex delivery
@@ -106,13 +109,13 @@ echo "hello 2" > my/local/files/file_02.nc
 ### Submit the delivery
 
 ```bash
-copernicusmarine-delivery delivery --product-id <MY_PRODUCT> --dataset-id <MY_DATASET_WITH_TAG> --file delivery-test.yml
+copernicusmarine-delivery delivery --product-id <MY_PRODUCT> --dataset-id <MY_DATASET_WITH_TAG> --file delivery-test.yml --staging
 ```
 
 Finally, check the status of this delivery:
 
 ```bash
-copernicusmarine-delivery status --delivery-id <DELIVERY-ID>
+copernicusmarine-delivery status --delivery-id <DELIVERY-ID> --staging
 ```
 
 ### Using an anchor
@@ -143,14 +146,14 @@ delivery = Delivery(
     ]
 )
 
-response = delivery.submit(product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>")
+response = delivery.submit(product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>", staging=True)
 
 if not response.fatal_error:
     print(f"Delivery successful with delivery ID: {response.delivery_id}")
 else:
     print(f"Delivery failed: {response.fatal_error}")
 
-status = delivery_status(response.delivery_id)
+status = delivery_status(response.delivery_id, staging=True)
 
 print(f"Delivery status: {status.model_dump_json(indent=2)}")
 ```
