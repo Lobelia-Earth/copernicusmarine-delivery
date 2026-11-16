@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from copernicusmarine_delivery.auth import get_config
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -27,9 +27,6 @@ from copernicusmarine_delivery.core_functions.domain import (
 )
 from copernicusmarine_delivery.core_functions.domain import Upload as _Upload
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
-from copernicusmarine_delivery.environment_variables import (
-    COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
-)
 from delivery_common.domain import Delivery as DeliveryModel
 
 
@@ -55,6 +52,7 @@ class Upload(_Upload):
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
         disable_progress_bar: bool = False,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseUpload:
         """
@@ -67,6 +65,7 @@ class Upload(_Upload):
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
         :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
+        :param staging: Use the staging environment instead of production.
 
         :return: :py:obj:`~copernicusmarine_delivery.ResponseUpload` object containing the result of the upload.
         """
@@ -83,7 +82,7 @@ class Upload(_Upload):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id")),
             disable_progress_bar=disable_progress_bar,
         )
         return response
@@ -102,6 +101,7 @@ class Delete(_Delete):
         product_id: str,
         dataset_id: str,
         dry_run: bool = False,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseDelete:
         """
@@ -109,6 +109,7 @@ class Delete(_Delete):
 
         :param product_id: The ID of the product.
         :param dataset_id: The ID of the dataset.
+        :param staging: Use the staging environment instead of production.
 
         :return: :py:obj:`~copernicusmarine_delivery.ResponseDelete` object containing the result of the delete.
 
@@ -120,7 +121,7 @@ class Delete(_Delete):
             dataset_id=dataset_id,
             files=self.files,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id")),
         )
         return response
 
@@ -159,6 +160,7 @@ class Delivery(BaseModel):
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
         disable_progress_bar: bool = False,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -171,6 +173,7 @@ class Delivery(BaseModel):
         :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
         :param chunk_size_mb: The chunk size (in MB) in which the files will be split into for multipart uploads. Defaults to 16 MB.
         :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
+        :param staging: Use the staging environment instead of production.
 
         :return: :py:obj:`~copernicusmarine_delivery.ResponseDelivery` object containing the result of the delivery.
         """  # noqa
@@ -186,26 +189,25 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id")),
             disable_progress_bar=disable_progress_bar,
         )
         return response
 
 
-def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> DeliveryModel:
+def delivery_status(delivery_id: str, on_behalf_of: str | None = None, staging: bool = False) -> DeliveryModel:
     """
     Get the status of a delivery.
 
     :param delivery_id: The ID of the delivery to check.
     :param on_behalf_of: For internal usage only.
+    :param staging: Use the staging environment instead of production.
 
     :return: DeliveryModel object representing the status of the delivery.
     """
-    config = get_config()
     delivery = get_deliveries(
         delivery_id=delivery_id,
-        config=config,
-        on_behalf_of=on_behalf_of,
+        ctx=build_context(staging, on_behalf_of),
     )
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
@@ -213,14 +215,15 @@ def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> Delive
     return delivery[0]
 
 
-def list_deliveries(timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None) -> list[DeliveryModel]:
+def list_deliveries(
+    timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None, staging: bool = False
+) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
     :param timeframe: The timeframe to filter deliveries by. Defaults to "mo" (last month).
+    :param staging: Use the staging environment instead of production.
 
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
-    config = get_config()
-    deliveries = get_deliveries(config=config, timeframe=timeframe, on_behalf_of=on_behalf_of)
-    return deliveries
+    return get_deliveries(ctx=build_context(staging, on_behalf_of), timeframe=timeframe)

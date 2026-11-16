@@ -12,7 +12,7 @@ import httpx
 import pytest
 import yaml
 
-from copernicusmarine_delivery.core_functions.core_functions import get_config
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.environment_variables import (
     get_copernicusmarine_password,
     get_copernicusmarine_username,
@@ -127,9 +127,8 @@ def service(ingestion_bucket: str, ministack_endpoint: str, ingestion_service) -
     return get_s3_ingestion_client(
         pushing_entity_id=_PUSHING_ENTITY_ID,
         bucket_name=_BUCKET_NAME,
-        config=get_config(),
+        ctx=build_context(),
         endpoint_url=ministack_endpoint,
-        on_behalf_of=None,
     )
 
 

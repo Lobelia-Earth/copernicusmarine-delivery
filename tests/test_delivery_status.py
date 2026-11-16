@@ -1,3 +1,4 @@
+from copernicusmarine_delivery.context import build_context
 import re
 
 from click.testing import CliRunner
@@ -38,6 +39,7 @@ def test_delivery_status_python_interface(
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
         disable_progress_bar=False,
+        ctx=build_context(),
     )
     assert delivery is not None
 

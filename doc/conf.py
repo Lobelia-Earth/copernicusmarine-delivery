@@ -7,6 +7,7 @@ import tomllib
 from pathlib import Path
 
 from copernicusmarine_delivery.auth import get_config
+from copernicusmarine_delivery.environment_variables import get_ingestion_service_url
 
 data = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text())
 
@@ -51,7 +52,7 @@ myst_enable_extensions = [
     "substitution",
 ]
 
-_limits = get_config().api_limits
+_limits = get_config(get_ingestion_service_url()).api_limits
 _recommended_delivery_size_gb = _limits.max_delivery_size_gb * 0.95
 myst_substitutions = {
     "recommended_delivery_size_gb": f"{_recommended_delivery_size_gb:g}",

@@ -61,7 +61,6 @@ clean-local = "python tests/resources/setup.py --clean"
 ALLOW_HTTP = "true"
 COPERNICUSMARINE_SERVICE_USERNAME = "test"
 COPERNICUSMARINE_SERVICE_PASSWORD = "test"
-INGESTION_SERVICE_URL = "http://localhost:8005"
 COPERNICUSMARINE_SERVICE_LOG_LEVEL = "INFO"
 
 [tool.pixi.feature.py311.dependencies]

@@ -8,7 +8,6 @@ from copernicusmarine_delivery.core_functions.domain import (
     GetPushingEntityConfigResponse,
 )
 from copernicusmarine_delivery.environment_variables import (
-    INGESTION_SERVICE_URL,
     get_copernicusmarine_password,
     get_copernicusmarine_username,
 )
@@ -17,6 +16,8 @@ from copernicusmarine_delivery.logger import logger
 
 if TYPE_CHECKING:
     import requests
+
+    from copernicusmarine_delivery.context import ServiceContext
 
 _token_cache: dict = {}
 
@@ -42,9 +43,10 @@ def _keycloak_error_message(response: requests.Response) -> str:
     )
 
 
-def fetch_keycloak_token(config: GetConfigResponse) -> str:
+def fetch_keycloak_token(ctx: ServiceContext) -> str:
     """Gets the Keycloak token necessary to operate with OPDV using username nd password.
     Small cache built to reuse token whenever possible"""
+    config = ctx.config
     now = time.time()
     if _token_cache.get("access_token") and now < _token_cache["access_expires_at"] - 30:
         logger.debug("Keycloak Token -> Reusing from cache")
@@ -86,17 +88,17 @@ def fetch_keycloak_token(config: GetConfigResponse) -> str:
     return token_response_json["access_token"]
 
 
-def get_config() -> GetConfigResponse:
-    config_response = http_client.get(f"{INGESTION_SERVICE_URL}/.well-known/config")
+def get_config(ingestion_service_url: str) -> GetConfigResponse:
+    config_response = http_client.get(f"{ingestion_service_url}/.well-known/config")
     config_response.raise_for_status()
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(token: str, on_behalf_of: str | None) -> GetPushingEntityConfigResponse:
+def get_pushing_entity_config(ctx: ServiceContext) -> GetPushingEntityConfigResponse:
     pushing_entity_config_response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/.well-known/pushing-entity-config",
-        params={"on_behalf_of": on_behalf_of} if on_behalf_of else None,
-        headers={"Authorization": f"Bearer {token}"},
+        f"{ctx.ingestion_service_url}/.well-known/pushing-entity-config",
+        params={"on_behalf_of": ctx.on_behalf_of} if ctx.on_behalf_of else None,
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
     )
     pushing_entity_config_response.raise_for_status()
     return GetPushingEntityConfigResponse.model_validate_json(pushing_entity_config_response.content)
