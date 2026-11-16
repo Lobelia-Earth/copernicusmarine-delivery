@@ -1,4 +1,3 @@
-from copernicusmarine_delivery.context import build_context
 import re
 
 from click.testing import CliRunner
@@ -6,6 +5,7 @@ from freezegun import freeze_time
 
 from copernicusmarine_delivery import delivery_status
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
