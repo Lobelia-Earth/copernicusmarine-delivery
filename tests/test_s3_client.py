@@ -7,8 +7,8 @@ import pytest
 from obstore.store import S3Store
 
 from copernicusmarine_delivery import ErrorFile
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import DEFAULT_CHUNK_SIZE_MB
-from copernicusmarine_delivery.core_functions.core_functions import get_config
 from copernicusmarine_delivery.core_functions.domain import S3File
 from copernicusmarine_delivery.core_functions.exceptions import NoSuchBucketException
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
@@ -29,9 +29,8 @@ def test_no_such_bucket_raises(ministack_endpoint: str, ingestion_service):
         get_s3_ingestion_client(
             pushing_entity_id="TEST-ENTITY-FR",
             bucket_name="nonexistent-entity-bucket-name",
-            config=get_config(),
+            ctx=build_context(),
             endpoint_url=ministack_endpoint,
-            on_behalf_of=None,
         )
 
 
@@ -160,9 +159,8 @@ def _build_service_with_mock_transport(
     return get_s3_ingestion_client(
         pushing_entity_id="TEST-ENTITY-FR",
         bucket_name=ingestion_bucket,
-        config=get_config(),
+        ctx=build_context(),
         endpoint_url=ministack_endpoint,
-        on_behalf_of=None,
     )
 
 
@@ -230,9 +228,8 @@ def _build_service_with_refresh_threshold(
 
     credential_provider = OpdvS3CredentialProvider(
         "TEST-ENTITY-FR",
-        get_config(),
+        build_context(),
         refresh_threshold=refresh_threshold,
-        on_behalf_of=None,
     )
     store = S3Store.from_url(
         url=f"s3://{ingestion_bucket}",

@@ -13,6 +13,7 @@ from copernicusmarine_delivery import (
     Upload,
 )
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -54,8 +55,8 @@ def test_delivery_python_interface(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        on_behalf_of=None,
         publish=True,
+        ctx=build_context(),
         disable_progress_bar=False,
     )
     assert response.model_dump_json(indent=2) == snapshot
@@ -80,8 +81,8 @@ def test_delivery_early_exit_with_validation_error(
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
-            on_behalf_of=None,
             publish=True,
+            ctx=build_context(),
             disable_progress_bar=False,
         )
     assert "Found 1 invalid files." in str(exc_info.value)
@@ -138,8 +139,8 @@ def test_delivery_dry_run_does_not_call_s3(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=True,
-        on_behalf_of=None,
         publish=True,
+        ctx=build_context(),
         disable_progress_bar=False,
     )
 
@@ -189,8 +190,8 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        on_behalf_of=None,
         publish=True,
+        ctx=build_context(),
         disable_progress_bar=False,
     )
 

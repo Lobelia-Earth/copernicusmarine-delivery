@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from copernicusmarine_delivery.auth import get_config
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -59,6 +59,7 @@ class Upload(_Upload):
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
         disable_progress_bar: bool = False,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseUpload:
         """
@@ -73,6 +74,7 @@ class Upload(_Upload):
         :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
         :param publish: Save the delivery as a draft instead of publishing it. Publish later with :py:func:`~copernicusmarine_delivery.publish_draft`.
         :param delivery_id: ID of an existing draft delivery. The operations are appended to it.
+        :param staging: Use the staging environment instead of production.
 
         :return: :py:obj:`~copernicusmarine_delivery.ResponseUpload` object containing the result of the upload.
         """
@@ -89,7 +91,7 @@ class Upload(_Upload):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
             disable_progress_bar=disable_progress_bar,
         )
         return response
@@ -108,6 +110,7 @@ class Delete(_Delete):
         product_id: str,
         dataset_id: str,
         dry_run: bool = False,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseDelete:
         """
@@ -117,6 +120,7 @@ class Delete(_Delete):
         :param dataset_id: The ID of the dataset.
         :param publish: Save the delivery as a draft instead of publishing it. Publish later with :py:func:`~copernicusmarine_delivery.publish_draft`.
         :param delivery_id: ID of an existing draft delivery. The operations are appended to it.
+        :param staging: Use the staging environment instead of production.
 
         :return: :py:obj:`~copernicusmarine_delivery.ResponseDelete` object containing the result of the delete.
 
@@ -128,7 +132,7 @@ class Delete(_Delete):
             dataset_id=dataset_id,
             files=self.files,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
         )
         return response
 
@@ -168,6 +172,7 @@ class Delivery(BaseModel):
         publish: bool = True,
         draft_delivery: DeliveryModel | None = None,
         disable_progress_bar: bool = False,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -182,6 +187,7 @@ class Delivery(BaseModel):
         :param chunk_concurrency: The number of chunks per file that will be uploaded in parallel in multipart uploads. Defaults to 6.
         :param publish: Save the delivery as a draft instead of publishing it. Publish later with :py:func:`~copernicusmarine_delivery.publish_draft`.
         :param delivery_id: ID of an existing draft delivery. The operations are appended to it.
+        :param staging: Use the staging environment instead of production.
 
         :return: :py:obj:`~copernicusmarine_delivery.ResponseDelivery` object containing the result of the delivery.
         """  # noqa
@@ -197,9 +203,9 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
             publish=publish,
             draft_delivery=draft_delivery,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
             disable_progress_bar=disable_progress_bar,
         )
         return response
@@ -231,13 +237,13 @@ class DraftDelivery(BaseModel):
         product_id: str | None = None,
         dataset_id: str | None = None,
         delivery_id: str | None = None,
+        staging: bool = False,
         **kwargs,
     ) -> None:
         draft = None
         if delivery_id is not None:
             draft = load_draft(
-                config=get_config(),
-                on_behalf_of=kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+                ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
                 delivery_id=delivery_id,
             )
             product_id = product_id or draft.product_id
@@ -261,6 +267,7 @@ class DraftDelivery(BaseModel):
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
         disable_progress_bar: bool = True,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -277,7 +284,6 @@ class DraftDelivery(BaseModel):
         """
         if not self.operations:
             return ResponseDelivery(fatal_error="No operations added to delivery.")
-        on_behalf_of = kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID
         response, delivery = _delivery(
             product_id=self.product_id,
             dataset_id=self.dataset_id,
@@ -287,7 +293,7 @@ class DraftDelivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=on_behalf_of,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
             publish=False,
             draft_delivery=None,
             disable_progress_bar=disable_progress_bar,
@@ -306,6 +312,7 @@ class DraftDelivery(BaseModel):
         chunk_concurrency: int = CHUNK_CONCURRENCY,
         dry_run: bool = False,
         disable_progress_bar: bool = True,
+        staging: bool = False,
         **kwargs,
     ) -> ResponseDelivery:
         """
@@ -319,7 +326,6 @@ class DraftDelivery(BaseModel):
             raise ValueError("No draft to extend. Call create() first or give a delivery_id.")
         if not self.operations:
             return ResponseDelivery(fatal_error="No operations added to delivery.")
-        on_behalf_of = kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID
         response, delivery = _delivery(
             product_id=self.product_id,
             dataset_id=self.dataset_id,
@@ -329,17 +335,17 @@ class DraftDelivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            on_behalf_of=on_behalf_of,
             publish=False,
             draft_delivery=self.draft_delivery,
             disable_progress_bar=disable_progress_bar,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
         )
         if not dry_run:
             self.draft_delivery = delivery
             self.operations = []
         return response
 
-    def publish(self, dry_run: bool = False, **kwargs) -> DeliveryModel:
+    def publish(self, dry_run: bool = False, staging: bool = False, **kwargs) -> DeliveryModel:
         """
         Publish the draft as it is saved. Raises if there are added operations not yet saved with :py:meth:`extend`.
 
@@ -357,24 +363,23 @@ class DraftDelivery(BaseModel):
             dataset_id=self.dataset_id,
             delivery_id=self.delivery_id,
             dry_run=dry_run,
-            on_behalf_of=on_behalf_of,
+            ctx=build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID),
         )
 
 
-def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> DeliveryModel:
+def delivery_status(delivery_id: str, on_behalf_of: str | None = None, staging: bool = False) -> DeliveryModel:
     """
     Get the status of a delivery.
 
     :param delivery_id: The ID of the delivery to check.
     :param on_behalf_of: For internal usage only.
+    :param staging: Use the staging environment instead of production.
 
     :return: DeliveryModel object representing the status of the delivery.
     """
-    config = get_config()
     delivery = get_deliveries(
         delivery_id=delivery_id,
-        config=config,
-        on_behalf_of=on_behalf_of,
+        ctx=build_context(staging, on_behalf_of),
     )
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
@@ -382,14 +387,15 @@ def delivery_status(delivery_id: str, on_behalf_of: str | None = None) -> Delive
     return delivery[0]
 
 
-def list_deliveries(timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None) -> list[DeliveryModel]:
+def list_deliveries(
+    timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None, staging: bool = False
+) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
     :param timeframe: The timeframe to filter deliveries by. Defaults to "mo" (last month).
+    :param staging: Use the staging environment instead of production.
 
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
-    config = get_config()
-    deliveries = get_deliveries(config=config, timeframe=timeframe, on_behalf_of=on_behalf_of)
-    return deliveries
+    return get_deliveries(ctx=build_context(staging, on_behalf_of), timeframe=timeframe)

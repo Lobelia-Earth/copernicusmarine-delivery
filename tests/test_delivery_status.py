@@ -5,6 +5,7 @@ from freezegun import freeze_time
 
 from copernicusmarine_delivery import delivery_status
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -39,6 +40,7 @@ def test_delivery_status_python_interface(
         dry_run=False,
         publish=True,
         disable_progress_bar=False,
+        ctx=build_context(),
     )
     assert delivery is not None
 

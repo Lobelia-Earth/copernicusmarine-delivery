@@ -9,6 +9,7 @@ from freezegun import freeze_time
 
 from copernicusmarine_delivery import InvalidDeliveryIdsError, Upload
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -57,6 +58,7 @@ def test_upload_python_interface(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         dry_run=False,
         disable_progress_bar=False,
+        ctx=build_context(),
     )
     result = response.model_dump(exclude_none=True)
     result["files_uploaded"] = sorted(result.get("files_uploaded", []))
@@ -165,6 +167,7 @@ def test_upload_raises_on_invalid_delivery_ids(monkeypatch, ingestion_service):
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
             disable_progress_bar=False,
+            ctx=build_context(),
         )
     assert f"product1 is not a valid Product ID for {PUSHING_ENTITY_ID}" in str(exc_info.value)
 
@@ -189,6 +192,7 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
         disable_progress_bar=False,
+        ctx=build_context(),
     )
 
     assert response.fatal_error is None
@@ -222,16 +226,16 @@ def test_upload_one_file_cannot_be_uploaded_with_raise(monkeypatch, glo_mercator
 
 
 def test_upload_cli_delivery_limits_exceeded(monkeypatch, caplog, skip_delivery_ids_validation, ingestion_service):
-    from copernicusmarine_delivery.core_functions import core_functions
+    from copernicusmarine_delivery import context
 
-    real_get_config = core_functions.get_config
+    real_get_config = context.get_config
 
-    def _low_limits_config():
-        config = real_get_config()
+    def _low_limits_config(ingestion_service_url):
+        config = real_get_config(ingestion_service_url)
         config.api_limits.max_number_of_files_per_delivery = 1
         return config
 
-    monkeypatch.setattr(core_functions, "get_config", _low_limits_config)
+    monkeypatch.setattr(context, "get_config", _low_limits_config)
 
     with caplog.at_level("ERROR"):
         result = CliRunner().invoke(

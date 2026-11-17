@@ -42,7 +42,8 @@ To be able to use the Copernicus Marine Services, you need to be able to access 
 
 - https://auth.marine.copernicus.eu: for the authentication process.
 - https://s3.lcj1-1.cloudferro.com: for uploading data to the ingestion bucket.
-- https://opdv-api-dta.lobelia.earth: for the API this tool relies on.
+- https://opdv-api.marine.copernicus.eu: for the production API this tool relies on.
+- https://opdv-api-dta.marine.copernicus.eu: for the staging API (used with the `--staging` flag).
 
 ### Test connection
 
@@ -52,11 +53,11 @@ To check if you are able to access you can try the `--list-deliveries` command o
 copernicusmarine-delivery list-deliveries
 ```
 
-If no errors shown (no deliveries does not mean error), it means that there is access to the above three addresses.
+If no errors shown (no deliveries does not mean error), it means that there is access to the production addresses above. To check the staging API, add `--staging` to the command.
 
 #### Python test
 
-If you wish to specifically test the connection to ``https://opdv-api-dta.lobelia.earth`` or ``https://s3.lcj1-1.cloudferro.com``, you can do the following Python/Shell scripts.
+If you wish to specifically test the connection to ``https://opdv-api.marine.copernicus.eu`` or ``https://s3.lcj1-1.cloudferro.com``, you can do the following Python/Shell scripts.
 
 First, open a Python console in the same environment as you would run your script:
 
@@ -69,7 +70,7 @@ Then, run a requests and check that the result is as expected:
 ```python
 import requests
 
-response = requests.get("https://opdv-api-dta.lobelia.earth/.well-known/config")
+response = requests.get("https://opdv-api.marine.copernicus.eu/.well-known/config")
 response.raise_for_status()
 
 print(response.json())
@@ -103,7 +104,7 @@ If successful, you should see something along these lines:
 Alternatively, if you do not wish to use Python, you can try the following in a terminal:
 
 ```bash
- curl -X GET https://opdv-api-dta.lobelia.earth/.well-known/config
+ curl -X GET https://opdv-api.marine.copernicus.eu/.well-known/config
 ```
 
 and

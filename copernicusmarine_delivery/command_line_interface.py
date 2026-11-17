@@ -10,7 +10,7 @@ import click
 import yaml
 from pydantic import ValidationError
 
-from copernicusmarine_delivery.auth import get_config
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -184,6 +184,12 @@ pushing_entity_id_option = click.option(
     help="ADMIN only: act on behalf of this pushing entity.",
 )
 
+staging_option = click.option(
+    "--staging",
+    is_flag=True,
+    help="Use the staging environment instead of production.",
+)
+
 log_level_option = click.option(
     "--log-level",
     type=click.Choice(LOG_LEVELS, case_sensitive=False),
@@ -270,6 +276,7 @@ def cli(max_content_width=200) -> None:
 @base_options
 @upload_shared_options
 @pushing_entity_id_option
+@staging_option
 @click.pass_context
 @log_level_option
 @log_exception_and_exit
@@ -288,6 +295,7 @@ def delivery_group(
     chunk_concurrency: int,
     dry_run: bool,
     disable_progress_bar: bool,
+    staging: bool,
 ) -> None:
     """Perform a delivery with multiple operations [upload, delete].
 
@@ -300,9 +308,11 @@ def delivery_group(
         with open(file) as f:
             delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
+        context = build_context(staging)
+
         response_delivery, delivery = _delivery(
-            [operation for operation in delivery_file.delivery],
-            on_behalf_of=pushing_entity_id,
+            ctx=context,
+            operations=[operation for operation in delivery_file.delivery],
             dataset_id=dataset_id,
             product_id=product_id,
             raise_on_upload_error=raise_on_upload_error,
@@ -354,6 +364,7 @@ for _param in delivery_group.params:
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def create_draft(
@@ -364,6 +375,7 @@ def create_draft(
     source: tuple[str, ...] = (),
     anchor: str | None = None,
     pushing_entity_id: str | None = None,
+    staging: bool = False,
     raise_on_upload_error: bool = False,
     save_delivery_json: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -380,7 +392,7 @@ def create_draft(
 
     response_delivery, delivery = _delivery(
         operations=operations,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
         dataset_id=dataset_id,
         product_id=product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -429,6 +441,7 @@ def create_draft(
 @shared_options
 @upload_shared_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def extend_draft(
@@ -447,16 +460,18 @@ def extend_draft(
     chunk_concurrency: int,
     dry_run: bool,
     disable_progress_bar: bool,
+    staging: bool,
 ) -> None:
     """Append the operations of a file to an existing draft delivery."""
     _validate_file_or_operation(file, operation, source, anchor)
     operations = _get_operations(file, operation, source, anchor)
 
-    draft_delivery = load_draft(get_config(), pushing_entity_id, delivery_id)
+    context = build_context(staging, pushing_entity_id)
+    draft_delivery = load_draft(context, delivery_id)
 
     response_delivery, delivery = _delivery(
-        operations,
-        on_behalf_of=pushing_entity_id,
+        ctx=context,
+        operations=operations,
         dataset_id=draft_delivery.dataset_id,
         product_id=draft_delivery.product_id,
         raise_on_upload_error=raise_on_upload_error,
@@ -489,6 +504,7 @@ def extend_draft(
 @click.option("--product-id", type=str, required=True, help="ID of the product.")
 @click.option("--dry-run", is_flag=True, help="Validate without publishing.")
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def publish_draft(
@@ -497,14 +513,16 @@ def publish_draft(
     product_id: str,
     pushing_entity_id: str | None,
     dry_run: bool = False,
+    staging: bool = False,
 ) -> None:
     """Publish a draft delivery, previously saved with --no-publish, as is."""
+    ctx = build_context(staging, pushing_entity_id)
     delivery = _publish_draft(
         product_id=product_id,
         dataset_id=dataset_id,
         delivery_id=delivery_id,
         dry_run=dry_run,
-        on_behalf_of=pushing_entity_id,
+        ctx=ctx,
     )
     click.echo(message=delivery.get_summary(show_all=False))
 
@@ -524,6 +542,7 @@ def publish_draft(
 @base_options
 @upload_shared_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def upload(
@@ -532,6 +551,7 @@ def upload(
     product_id: str,
     pushing_entity_id: str | None,
     anchor: str | None,
+    staging: bool = False,
     save_delivery_json: bool = False,
     raise_on_upload_error: bool = False,
     max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
@@ -565,7 +585,7 @@ def upload(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
         disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
@@ -590,6 +610,7 @@ def upload(
 )
 @base_options
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def delete(
@@ -597,6 +618,7 @@ def delete(
     dataset_id: str,
     product_id: str,
     pushing_entity_id: str | None,
+    staging: bool = False,
     save_delivery_json: bool = False,
     dry_run: bool = False,
     show_less: bool = False,
@@ -620,7 +642,7 @@ def delete(
         dataset_id=dataset_id,
         files=source,
         dry_run=dry_run,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
     )
 
     if save_delivery_json:
@@ -672,12 +694,14 @@ def saving_delivery_file(delivery: Delivery) -> None:
     help="Output format.",
 )
 @pushing_entity_id_option
+@staging_option
 @log_level_option
 @log_exception_and_exit
 def status(
     delivery_id: str | None = None,
     delivery_json: Path | None = None,
     pushing_entity_id: str | None = None,
+    staging: bool = False,
     show_all: bool = False,
     show_less: bool = False,
     output: str = "text",
@@ -687,7 +711,7 @@ def status(
     """
     if not delivery_id and not delivery_json:
         raise click.UsageError(message=("Specify either delivery_id or a path to a delivery json file."))
-    config = get_config()
+    ctx = build_context(staging, pushing_entity_id)
     if delivery_json:
         try:
             with open(delivery_json) as delivery_file:
@@ -698,8 +722,7 @@ def status(
 
     deliveries = get_deliveries(
         delivery_id=delivery_id,
-        config=config,
-        on_behalf_of=pushing_entity_id,
+        ctx=ctx,
     )
     delivery = deliveries[0] if deliveries else None
     if not delivery:
@@ -720,17 +743,16 @@ def status(
     default="mo",
     help="The timeframe to filter deliveries by. Defaults to 'mo' (last month).",
 )
+@staging_option
 @log_level_option
 @log_exception_and_exit
-def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None) -> None:
+def list_deliveries(timeframe: TimeframeLiteral, pushing_entity_id: str | None = None, staging: bool = False) -> None:
     """
     List all deliveries for the pushing entity tied to the current credentials.
     The result is sorted by delivery_id in descending order (most recent first).
     """
-    config = get_config()
     deliveries = get_deliveries(
-        config=config,
-        on_behalf_of=pushing_entity_id,
+        ctx=build_context(staging, pushing_entity_id),
         timeframe=timeframe,
     )
     print_list_deliveries(deliveries)

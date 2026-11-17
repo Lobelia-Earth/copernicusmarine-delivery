@@ -1,6 +1,6 @@
 [project]
 name = "copernicusmarine-delivery"
-version = "0.5.0"
+version = "0.6.0"
 description = "Python tool for data producers from the Copernicus Marine services"
 readme = "README.md"
 license = "EUPL-1.2"
@@ -61,7 +61,6 @@ clean-local = "python tests/resources/setup.py --clean"
 ALLOW_HTTP = "true"
 COPERNICUSMARINE_SERVICE_USERNAME = "test"
 COPERNICUSMARINE_SERVICE_PASSWORD = "test"
-INGESTION_SERVICE_URL = "http://localhost:8005"
 COPERNICUSMARINE_SERVICE_LOG_LEVEL = "INFO"
 
 [tool.pixi.feature.py311.dependencies]

@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from random import randint
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
 from copernicusmarine_delivery.core_functions.domain import GetConfigResponse
 from copernicusmarine_delivery.core_functions.exceptions import DraftDeliveryMismatchError, DraftDeliveryNotFoundError
-from copernicusmarine_delivery.environment_variables import INGESTION_SERVICE_URL
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import Delivery, Operation, datetime_to_iso_format
+
+if TYPE_CHECKING:
+    from copernicusmarine_delivery.context import ServiceContext
 
 TIMEFRAME_MAPPING = {
     "s": timedelta(seconds=1),
@@ -47,18 +51,17 @@ def create_delivery_id(product_id: str) -> str:
 
 
 def load_draft(
-    config: GetConfigResponse,
-    on_behalf_of: str | None,
+    ctx: ServiceContext,
     delivery_id: str,
     product_id: str | None = None,
     dataset_id: str | None = None,
 ) -> Delivery:
     params = {"delivery_id": delivery_id, "is_draft": "true"}
-    if on_behalf_of:
-        params["on_behalf_of"] = on_behalf_of
+    if ctx.on_behalf_of:
+        params["on_behalf_of"] = ctx.on_behalf_of
     response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/delivery",
-        headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+        f"{ctx.ingestion_service_url}/delivery",
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
         params=params,
     )
     response.raise_for_status()
@@ -83,9 +86,9 @@ def create_and_upload_delivery(
     dataset_id: str,
     operations: list[Operation],
     dry_run: bool,
-    config: GetConfigResponse,
     delivery_id: str,
     publish: bool,
+    ctx: ServiceContext,
     draft: Delivery | None = None,
 ) -> Delivery:
     """
@@ -109,19 +112,19 @@ def create_and_upload_delivery(
         return delivery
 
     if publish:
-        logger.debug(f"POSTing delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery")
+        logger.debug(f"POSTing delivery to ingestion service at {ctx.ingestion_service_url}/delivery")
         response = http_client.post(
-            f"{INGESTION_SERVICE_URL}/delivery",
+            f"{ctx.ingestion_service_url}/delivery",
             json=delivery.model_dump(by_alias=True),
-            headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+            headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
             params={"delete_draft": "true"} if draft else None,
         )
     else:
-        logger.debug(f"PUTting draft delivery to ingestion service at {INGESTION_SERVICE_URL}/delivery")
+        logger.debug(f"PUTting draft delivery to ingestion service at {ctx.ingestion_service_url}/delivery")
         response = http_client.put(
-            f"{INGESTION_SERVICE_URL}/delivery",
+            f"{ctx.ingestion_service_url}/delivery",
             json=delivery.model_dump(by_alias=True),
-            headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+            headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
         )
     response.raise_for_status()
     if not publish:
@@ -133,8 +136,7 @@ def create_and_upload_delivery(
 
 
 def get_deliveries(
-    config: GetConfigResponse,
-    on_behalf_of: str | None,
+    ctx: ServiceContext,
     delivery_id: str | None = None,
     timeframe: TimeframeLiteral | None = None,
 ) -> list[Delivery]:
@@ -143,12 +145,12 @@ def get_deliveries(
         params["delivery_id"] = delivery_id
     if timeframe and (create_after := _timeframe_to_created_after(timeframe)):
         params["created_after"] = create_after
-    if on_behalf_of:
-        params["on_behalf_of"] = on_behalf_of
+    if ctx.on_behalf_of:
+        params["on_behalf_of"] = ctx.on_behalf_of
 
     response = http_client.get(
-        f"{INGESTION_SERVICE_URL}/delivery",
-        headers={"Authorization": f"Bearer {fetch_keycloak_token(config)}"},
+        f"{ctx.ingestion_service_url}/delivery",
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
         params=params,
     )
     response.raise_for_status()
