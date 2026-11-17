@@ -224,6 +224,8 @@ class ResponseDelete(BaseResponse):
 class ResponseDelivery(BaseResponse):
     """Metadata returned when using :func:`~copernicusmarine_delivery.delivery`"""
 
+    #: Delivery ID.
+    delivery_id: str
     #: List of responses for each operation in the delivery.
     operations_responses: list[ResponseUpload | ResponseDelete] = Field(default_factory=list)
 

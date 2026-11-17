@@ -22,14 +22,10 @@ All the objects below are importable from `copernicusmarine_delivery`.
 
    .. automethod:: add
    .. automethod:: submit
+   .. automethod:: create_draft
+   .. automethod:: extend_draft
 
-.. autopydantic_model:: copernicusmarine_delivery.DraftDelivery
-   :inherited-members: BaseModel
-
-   .. automethod:: add
-   .. automethod:: create
-   .. automethod:: extend
-   .. automethod:: publish
+.. autofunction:: copernicusmarine_delivery.publish_draft
 ```
 
 ## Delivery status

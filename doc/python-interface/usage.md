@@ -57,45 +57,37 @@ delivery = delivery_status(delivery_id)
 
 ## Draft delivery
 
-With `Delivery`, `submit` uploads the files and publishes the delivery in one step. With `DraftDelivery`, you build the delivery in steps. The files are uploaded and saved in a draft in the ingestion bucket, but nothing is published until you call `publish`.
+With `submit`, the files are uploaded and the delivery is published in one step. To build a delivery in steps, save it as a draft first. The files are uploaded and saved in a draft in the ingestion bucket, but nothing is published until you call `publish_draft`. See [draft delivery](../concepts.md#draft-delivery) for the concept.
+
+```{important}
+Keep track of the `delivery_id` that `create_draft` returns. It is the only thing that identifies the draft, and you need it to extend or publish it.
+```
 
 ```python
-from copernicusmarine_delivery import Upload, Delete, DraftDelivery
+from copernicusmarine_delivery import Upload, Delete, Delivery, publish_draft
 
 product_id = "some-product-id"
 dataset_id = "some-dataset-id"
 
-draft = DraftDelivery(product_id=product_id, dataset_id=dataset_id)
-
-# --- Create: upload the added operations and save them in a new draft ---
-draft.add(Upload(files=["some/file.nc"]))
-response = draft.create()
-print(draft.delivery_id)
+# --- Create: upload the operations and save them in a new draft ---
+delivery = Delivery(operations=[Upload(files=["some/file.nc"])])
+response = delivery.create_draft(product_id, dataset_id)
+delivery_id = response.delivery_id
 
 # --- Extend: upload more operations and append them to the draft ---
-draft.add(Delete(files=["some/old/file.nc"]))
-draft.add(Upload(files=["some/other/file.nc"]))
-draft.extend()
+more = Delivery(operations=[Delete(files=["some/old/file.nc"])])
+more.add(Upload(files=["some/other/file.nc"]))
+more.extend_draft(delivery_id)
 
 # --- Publish the draft as it is saved ---
-delivery = draft.publish()
+delivered = publish_draft(delivery_id)
 ```
 
-- `add` only keeps the operation in memory. It is saved in the draft by `create` or `extend`.
-- `publish` raises if there are added operations not saved yet. Call `extend` first.
+- The draft lives in the ingestion service, so `extend_draft` and `publish_draft` only need its `delivery_id`. They can run in another session or from another machine. The product and the dataset are taken from the draft.
+- `extend_draft` and `publish_draft` raise if the draft is not found, for example if it is already published.
+- `create_draft` accepts an empty `Delivery()`, to be filled later with `extend_draft`. `submit` raises a `ValueError` if there are no operations.
 - Operations are executed in the order they were added.
-- `create`, `extend` and `publish` accept `dry_run=True`. See [dry run](#dry-run).
-
-You can continue a draft in another session, or from another machine, with its delivery ID. The draft is fetched when the object is created, so it raises if it is not found. The product and the dataset are taken from the draft:
-
-```python
-from copernicusmarine_delivery import Upload, DraftDelivery
-
-draft = DraftDelivery(delivery_id="some-delivery-id")
-draft.add(Upload(files=["some/another/file.nc"]))
-draft.extend()
-draft.publish()
-```
+- `create_draft`, `extend_draft` and `publish_draft` accept `dry_run=True`. See [dry run](#dry-run).
 
 Once published, check the delivery as usual with [`delivery_status`](#wait-for-a-delivery).
 

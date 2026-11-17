@@ -5,7 +5,6 @@ from random import randint
 from typing import TYPE_CHECKING, Literal
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
-from copernicusmarine_delivery.core_functions.domain import GetConfigResponse
 from copernicusmarine_delivery.core_functions.exceptions import DraftDeliveryMismatchError, DraftDeliveryNotFoundError
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
@@ -117,7 +116,7 @@ def create_and_upload_delivery(
             f"{ctx.ingestion_service_url}/delivery",
             json=delivery.model_dump(by_alias=True),
             headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
-            params={"delete_draft": "true"} if draft else None,
+            params={"publish_draft": "true"} if draft else None,
         )
     else:
         logger.debug(f"PUTting draft delivery to ingestion service at {ctx.ingestion_service_url}/delivery")
@@ -129,8 +128,8 @@ def create_and_upload_delivery(
     response.raise_for_status()
     if not publish:
         logger.info(
-            f"Delivery '{delivery_id}' saved as DRAFT, NOT published. Add more with "
-            f"`--delivery-id {delivery_id} --no-publish`, publish with `publish-draft --delivery-id {delivery_id}`."
+            f"Delivery '{delivery_id}' saved as DRAFT, NOT published. Add more with the `extend-draft` command and passing "
+            f"`--delivery-id {delivery_id}`, publish with `publish-draft --delivery-id {delivery_id}`."
         )
     return delivery
 

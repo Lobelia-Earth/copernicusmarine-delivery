@@ -207,8 +207,6 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
             body = json.loads(request.content)
-            if not body["operations"]:
-                return httpx.Response(422, json={"detail": "A delivery must have at least one operation."})
             if not body.get("is_draft"):
                 return httpx.Response(422, json={"detail": "Only draft deliveries can be saved or overwritten."})
             drafts[body["delivery_id"]] = body
@@ -229,7 +227,7 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             if body.get("is_draft"):
                 return httpx.Response(422, json={"detail": "A draft delivery cannot be published."})
             delivery_id = body["delivery_id"]
-            if request.url.params.get("delete_draft") == "true":
+            if request.url.params.get("publish_draft") == "true":
                 drafts.pop(delivery_id, None)  # publishing a draft deletes it
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(

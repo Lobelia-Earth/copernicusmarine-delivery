@@ -18,6 +18,14 @@ Deliveries are defined at the datasetID level, i.e. if you need to submit operat
 When using the "upload" and "delete" functions directly, you submit a delivery of one operation.
 ```
 
+### Draft delivery
+
+A delivery is normally uploaded and published in one step. A **draft delivery** is built in steps instead: you create the draft, extend it as many times as needed, and publish it at the end. The files are uploaded and saved in the draft as you go, but nothing is published until you publish the draft. The delivery then runs as a single delivery, with all its operations in the order they were added.
+
+A draft can be created **empty**, with no operations, and filled later by extending it. Publishing is always a separate, explicit step.
+
+A draft is identified by its delivery ID, which is all that is needed to extend or publish it, even from another session or machine. **Keep track of the delivery ID** returned when the draft is created: you need it every time you extend or publish the draft. See [the Python interface](python-interface/usage.md#draft-delivery) and [the command line interface](command-line-interface/usage.md#delivery-in-steps-drafts).
+
 ### Delivery status
 
 A delivery has one of these five statuses:

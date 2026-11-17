@@ -65,7 +65,11 @@ delivery:
 
 ## Delivery in steps: drafts
 
-`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use a draft. The files are uploaded and saved in the draft, and nothing is published until you run `publish-draft`.
+`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use a draft. The files are uploaded and saved in the draft, and nothing is published until you run `publish-draft`. See [draft delivery](../concepts.md#draft-delivery) for the concept.
+
+```{important}
+Keep track of the delivery ID that `create-draft` prints. It is the only thing that identifies the draft, and you need it to extend or publish it.
+```
 
 ```bash
 copernicusmarine-delivery delivery --help
@@ -79,7 +83,7 @@ The workflow is:
 
 ### Create a draft
 
-`create-draft` needs the dataset and the product, and the operations in one of two ways.
+`create-draft` needs the dataset and the product. The operations are given in one of two ways, or not at all to create an empty draft.
 
 With a YAML file (same structure as for the [delivery command](#delivery-command)), to create a draft with several operations:
 
@@ -93,7 +97,13 @@ Or with `--operation` (`upload` or `delete`) and one or more `--source`, to crea
 copernicusmarine-delivery delivery create-draft --operation upload --source some/file.nc --source some/other/file.nc --dataset-id dataset_id --product-id product_id
 ```
 
-`--anchor` is only accepted with `--operation upload`. `--file` cannot be combined with `--operation`, `--source` or `--anchor`, and without `--file`, both `--operation` and `--source` are required.
+`--anchor` is only accepted with `--operation upload`. `--file` cannot be combined with `--operation`, `--source` or `--anchor`.
+
+Without `--file`, `--operation` and `--source`, an empty draft is created, to be filled later with `extend-draft`:
+
+```bash
+copernicusmarine-delivery delivery create-draft --dataset-id dataset_id --product-id product_id
+```
 
 It also accepts `--dry-run`, `--save-delivery-json`, `--show-less` and `--output json` as with the delivery command. With `--show-less` only the delivery ID is printed, which is useful to store it in a script:
 

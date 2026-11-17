@@ -3,11 +3,13 @@ import json
 import pytest
 from click.testing import CliRunner
 
-from copernicusmarine_delivery import Delete, DraftDelivery, InvalidDeliverySizeError, list_deliveries
+from copernicusmarine_delivery import Delete, InvalidDeliverySizeError, list_deliveries, publish_draft
+from copernicusmarine_delivery import Delivery as PythonDelivery
 from copernicusmarine_delivery.command_line_interface import cli
+from copernicusmarine_delivery.context import build_context
 from copernicusmarine_delivery.core_functions.delivery import (
-    DraftDeliveryMismatchError,
     DraftDeliveryNotFoundError,
+    load_draft,
 )
 from copernicusmarine_delivery.core_functions.delivery_validator import validate_delivery_sizes
 from copernicusmarine_delivery.core_functions.domain import APILimits, FileToUpload, ToUploadOperation
@@ -45,13 +47,11 @@ def _extend_draft(delivery_id: str, *files: str, operation: str = "delete", extr
 
 
 def _publish_draft(delivery_id: str, *extra: str):
-    return _run("publish-draft", *IDS, "--delivery-id", delivery_id, *extra)
+    return _run("publish-draft", "--delivery-id", delivery_id, *extra)
 
 
 def _saved_draft(delivery_id: str) -> Delivery:
-    draft = DraftDelivery(delivery_id=delivery_id).draft_delivery
-    assert draft is not None
-    return draft
+    return load_draft(ctx=build_context(), delivery_id=delivery_id)
 
 
 def _delivery_file(tmp_path, operations: list[dict]) -> str:
@@ -197,10 +197,10 @@ def test_same_file_in_draft_and_in_extend_exits(glo_mercator_bucket, skip_delive
     assert _extend_draft(delivery_id, "a.txt").exit_code == 1
 
 
-def test_empty_draft_is_rejected(tmp_path, glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
+def test_empty_draft_is_accepted(tmp_path, glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
     result = _run("create-draft", *IDS, "--file", _delivery_file(tmp_path, []))
 
-    assert result.exit_code == 1
+    assert result.exit_code == 0
 
 
 def test_extend_unknown_draft_exits(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
@@ -211,98 +211,41 @@ def test_publish_unknown_draft_exits(glo_mercator_bucket, skip_delivery_ids_vali
     assert _publish_draft("does-not-exist").exit_code == 1
 
 
-def test_draft_of_other_dataset_raises(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
-    delivery_id = _new_draft("a.txt")
-    wrong_draft = DraftDelivery(product_id=PRODUCT_ID, dataset_id="another-dataset", delivery_id=delivery_id)
-    with pytest.raises(DraftDeliveryMismatchError):
-        wrong_draft.publish()
-
-
-def test_draft_delivery_create_extend_publish(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
-    draft = DraftDelivery(product_id=PRODUCT_ID, dataset_id=DATASET_ID)
-    draft.add(Delete(files=["a.txt"]))
-    response = draft.create()
-    assert draft.delivery_id == response.delivery_id
-    assert draft.operations == []
-    assert draft.draft_delivery is not None and draft.draft_delivery.is_draft is True
+def test_python_create_extend_publish_draft(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
+    delivery_id = PythonDelivery(operations=[Delete(files=["a.txt"])]).create_draft(PRODUCT_ID, DATASET_ID).delivery_id
     assert list_deliveries(timeframe="all") == []
 
-    draft.add(Delete(files=["b.txt"]))
-    draft.extend()
-    published = draft.publish()
+    PythonDelivery(operations=[Delete(files=["b.txt"])]).extend_draft(delivery_id)
+    published = publish_draft(delivery_id)
 
     assert published.is_draft is False
     assert len(published.operations) == 2
     [stored] = list_deliveries(timeframe="all")
-    assert stored.delivery_id == draft.delivery_id
+    assert stored.delivery_id == delivery_id
 
 
-def test_draft_delivery_continued_from_delivery_id(
+def test_python_empty_draft_can_be_extended_and_published(
     glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
 ):
-    first = DraftDelivery(product_id=PRODUCT_ID, dataset_id=DATASET_ID)
-    first.add(Delete(files=["a.txt"]))
-    first.create()
+    delivery_id = PythonDelivery().create_draft(PRODUCT_ID, DATASET_ID).delivery_id
+    PythonDelivery(operations=[Delete(files=["a.txt"])]).extend_draft(delivery_id)
 
-    second = DraftDelivery(delivery_id=first.delivery_id)
-    assert (second.product_id, second.dataset_id) == (PRODUCT_ID, DATASET_ID)
-    second.add(Delete(files=["b.txt"]))
-    second.extend()
-
-    assert len(second.publish().operations) == 2
+    assert len(publish_draft(delivery_id).operations) == 1
 
 
-def test_draft_delivery_publish_twice_raises(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
-    draft = DraftDelivery(product_id=PRODUCT_ID, dataset_id=DATASET_ID)
-    draft.add(Delete(files=["a.txt"]))
-    draft.create()
-    draft.publish()
+def test_python_publish_draft_twice_raises(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
+    delivery_id = PythonDelivery(operations=[Delete(files=["a.txt"])]).create_draft(PRODUCT_ID, DATASET_ID).delivery_id
+    publish_draft(delivery_id)
 
     with pytest.raises(DraftDeliveryNotFoundError):
-        draft.publish()
+        publish_draft(delivery_id)
 
 
-def test_draft_delivery_without_operations_is_not_created(
-    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
-):
-    draft = DraftDelivery(product_id=PRODUCT_ID, dataset_id=DATASET_ID)
-
-    assert draft.create().fatal_error == "No operations added to delivery."
-    assert draft.delivery_id is None
-
-
-def test_draft_delivery_publish_with_unsaved_operations_raises(
-    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
-):
-    draft = DraftDelivery(product_id=PRODUCT_ID, dataset_id=DATASET_ID)
-    draft.add(Delete(files=["a.txt"]))
-    draft.create()
-    draft.add(Delete(files=["b.txt"]))
-    with pytest.raises(ValueError, match="extend"):
-        draft.publish()
-
-
-def test_draft_delivery_extend_and_publish_need_a_draft(
-    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
-):
-    draft = DraftDelivery(product_id=PRODUCT_ID, dataset_id=DATASET_ID)
-    draft.add(Delete(files=["a.txt"]))
-    with pytest.raises(ValueError, match="No draft to extend"):
-        draft.extend()
-    with pytest.raises(ValueError, match="No draft to publish"):
-        draft.publish()
-
-
-def test_draft_delivery_needs_ids_or_delivery_id():
-    with pytest.raises(ValueError, match="required"):
-        DraftDelivery()
-
-
-def test_draft_delivery_unknown_delivery_id_raises_at_instantiation(
-    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
-):
+def test_python_unknown_draft_raises(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
     with pytest.raises(DraftDeliveryNotFoundError):
-        DraftDelivery(delivery_id="does-not-exist")
+        PythonDelivery(operations=[Delete(files=["a.txt"])]).extend_draft("does-not-exist")
+    with pytest.raises(DraftDeliveryNotFoundError):
+        publish_draft("does-not-exist")
 
 
 def test_size_limits_count_the_draft_files():

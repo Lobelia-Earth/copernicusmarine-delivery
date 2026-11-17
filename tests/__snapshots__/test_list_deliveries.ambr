@@ -3,12 +3,23 @@
   '''
   Deliveries:
   
-  [DELIVERY] 20120114T120001-product1-8527 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  [DELIVERY] 20120114T120001-product1-6881 for pushing entity GLO-MERCATOR-TOULOUSE-FR
   	product_id: product1
   	dataset_id: dataset1
   	status: pending
   	created at: None
-  	total uploads: 2
+  	total uploads: 1
+  	total volume (MB): 0
+  	errored uploads: 0
+  	total deletes: 0
+  	errored deletes: 0
+  
+  [DELIVERY] 20120114T120001-product1-6635 for pushing entity GLO-MERCATOR-TOULOUSE-FR
+  	product_id: product1
+  	dataset_id: dataset2
+  	status: pending
+  	created at: None
+  	total uploads: 1
   	total volume (MB): 0
   	errored uploads: 0
   	total deletes: 0
@@ -19,18 +30,7 @@
   	dataset_id: dataset1
   	status: pending
   	created at: None
-  	total uploads: 1
-  	total volume (MB): 0
-  	errored uploads: 0
-  	total deletes: 0
-  	errored deletes: 0
-  
-  [DELIVERY] 20120114T120001-product1-1711 for pushing entity GLO-MERCATOR-TOULOUSE-FR
-  	product_id: product1
-  	dataset_id: dataset2
-  	status: pending
-  	created at: None
-  	total uploads: 1
+  	total uploads: 2
   	total volume (MB): 0
   	errored uploads: 0
   	total deletes: 0
@@ -41,7 +41,7 @@
   '''
   [
     {
-      "delivery_id": "20120114T120001-product1-6881",
+      "delivery_id": "20120114T120001-product1-7224",
       "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
       "product_id": "product1",
       "dataset_id": "dataset2",
@@ -67,7 +67,7 @@
       "is_draft": false
     },
     {
-      "delivery_id": "20120114T120001-product1-6635",
+      "delivery_id": "20120114T120001-product1-2584",
       "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
       "product_id": "product1",
       "dataset_id": "dataset1",
@@ -101,7 +101,7 @@
       "is_draft": false
     },
     {
-      "delivery_id": "20120114T120001-product1-2584",
+      "delivery_id": "20120114T120001-product1-2519",
       "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
       "product_id": "product1",
       "dataset_id": "dataset1",

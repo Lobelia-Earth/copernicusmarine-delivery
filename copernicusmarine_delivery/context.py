@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 
 from copernicusmarine_delivery.auth import get_config
@@ -15,6 +16,9 @@ class ServiceContext:
 
 
 def get_ingestion_service_url(staging: bool = False) -> str:
+    # A shorcut for testing purposes.
+    if url := os.getenv("COPERNICUSMARINE_SERVICE_INGESTION_URL"):
+        return url
     if staging:
         return "https://opdv-api-dta.marine.copernicus.eu"
     return "https://opdv-api.marine.copernicus.eu"

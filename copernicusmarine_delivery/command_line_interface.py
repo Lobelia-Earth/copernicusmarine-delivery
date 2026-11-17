@@ -151,7 +151,7 @@ anchor_option = click.option(
 
 
 def _validate_file_or_operation(
-    file: Path | None, operation: str | None, source: tuple[str, ...], anchor: str | None
+    file: Path | None, operation: str | None, source: tuple[str, ...], anchor: str | None, allow_empty: bool = False
 ) -> None:
     """
     For `delivery create-draft` and `delivery extend-draft` users can pass a delivery file or an operation.
@@ -159,7 +159,9 @@ def _validate_file_or_operation(
     """
     if file is not None and (operation or source or anchor):
         raise click.UsageError("--file cannot be combined with --operation, --source or --anchor.")
-    if file is None and (not operation or not source):
+    if (operation and source) is not None and file:
+        raise click.UsageError("--operation, --source cannot be combined with --file.")
+    if file is None and (not operation or not source) and not allow_empty:
         raise click.UsageError("Without --file, both --operation and --source are required.")
     if anchor and operation != "upload":
         raise click.UsageError("--anchor is only accepted with --operation upload.")
@@ -172,7 +174,9 @@ def _get_operations(
     if file:
         with open(file) as f:
             return DeliveryFile.model_validate(yaml.safe_load(f)).delivery
-    return [Upload(files=list(source), anchor=anchor) if operation == "upload" else Delete(files=list(source))]
+    if operation:
+        return [Upload(files=list(source), anchor=anchor) if operation == "upload" else Delete(files=list(source))]
+    return []
 
 
 pushing_entity_id_option = click.option(
@@ -387,7 +391,7 @@ def create_draft(
     disable_progress_bar: bool = False,
 ) -> None:
     """Create a draft delivery from a file. Its delivery ID is printed."""
-    _validate_file_or_operation(file, operation, source, anchor)
+    _validate_file_or_operation(file, operation, source, anchor, allow_empty=True)
     operations = _get_operations(file, operation, source, anchor)
 
     response_delivery, delivery = _delivery(
@@ -500,8 +504,6 @@ def extend_draft(
 
 @delivery_group.command("publish-draft")
 @click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to publish.")
-@click.option("--dataset-id", type=str, required=True, help="ID of the dataset.")
-@click.option("--product-id", type=str, required=True, help="ID of the product.")
 @click.option("--dry-run", is_flag=True, help="Validate without publishing.")
 @pushing_entity_id_option
 @staging_option
@@ -509,8 +511,6 @@ def extend_draft(
 @log_exception_and_exit
 def publish_draft(
     delivery_id: str,
-    dataset_id: str,
-    product_id: str,
     pushing_entity_id: str | None,
     dry_run: bool = False,
     staging: bool = False,
@@ -518,8 +518,6 @@ def publish_draft(
     """Publish a draft delivery, previously saved with --no-publish, as is."""
     ctx = build_context(staging, pushing_entity_id)
     delivery = _publish_draft(
-        product_id=product_id,
-        dataset_id=dataset_id,
         delivery_id=delivery_id,
         dry_run=dry_run,
         ctx=ctx,
