@@ -65,73 +65,65 @@ delivery:
 
 ## Delivery in steps: drafts
 
-`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use a draft. The files are uploaded and saved in the draft, and nothing is published until you run `publish-draft`. See [draft delivery](../concepts.md#draft-delivery) for the concept.
+`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use the `draft` command. The files are uploaded and saved in the draft, and nothing is published until you run `draft publish`. See [draft delivery](../concepts.md#draft-delivery) for the concept.
 
 ```{important}
-Keep track of the delivery ID that `create-draft` prints. It is the only thing that identifies the draft, and you need it to extend or publish it.
+Keep track of the delivery ID that `draft create` prints. It is the only thing that identifies the draft, and you need it to extend or publish it.
 ```
 
 ```bash
-copernicusmarine-delivery delivery --help
+copernicusmarine-delivery draft --help
 ```
 
 The workflow is:
 
-1. `delivery create-draft` creates the draft and prints its delivery ID.
-2. `delivery extend-draft` appends more operations to the draft. Optional, and can be repeated.
-3. `delivery publish-draft` publishes the draft as it is saved.
+1. `draft create` creates an empty draft and prints its delivery ID.
+2. `draft extend` uploads operations and appends them to the draft. It can be repeated.
+3. `draft publish` publishes the draft as it is saved.
 
 ### Create a draft
 
-`create-draft` needs the dataset and the product. The operations are given in one of two ways, or not at all to create an empty draft.
-
-With a YAML file (same structure as for the [delivery command](#delivery-command)), to create a draft with several operations:
+`draft create` needs the dataset and the product. It creates an empty draft, uploads nothing, and prints its delivery ID:
 
 ```bash
-copernicusmarine-delivery delivery create-draft --file delivery_file.yaml --dataset-id dataset_id --product-id product_id
+copernicusmarine-delivery draft create --dataset-id dataset_id --product-id product_id
 ```
 
-Or with `--operation` (`upload` or `delete`) and one or more `--source`, to create a draft with a single operation without writing a file:
+With `--output json` the delivery ID is printed as `{"delivery_id": "..."}`. With `--dry-run` the draft is validated but not saved. To store the delivery ID in a script:
 
 ```bash
-copernicusmarine-delivery delivery create-draft --operation upload --source some/file.nc --source some/other/file.nc --dataset-id dataset_id --product-id product_id
-```
-
-`--anchor` is only accepted with `--operation upload`. `--file` cannot be combined with `--operation`, `--source` or `--anchor`.
-
-Without `--file`, `--operation` and `--source`, an empty draft is created, to be filled later with `extend-draft`:
-
-```bash
-copernicusmarine-delivery delivery create-draft --dataset-id dataset_id --product-id product_id
-```
-
-It also accepts `--dry-run`, `--save-delivery-json`, `--show-less` and `--output json` as with the delivery command. With `--show-less` only the delivery ID is printed, which is useful to store it in a script:
-
-```bash
-id=$(copernicusmarine-delivery delivery create-draft --operation upload --source some/file.nc --dataset-id dataset_id --product-id product_id --show-less)
+id=$(copernicusmarine-delivery draft create --dataset-id dataset_id --product-id product_id)
 ```
 
 ### Extend a draft
 
-`extend-draft` takes the delivery ID of the draft instead of the dataset and the product, which are taken from the draft. The operations are given in the same two ways, and are appended after the existing ones:
+`draft extend` takes the delivery ID of the draft instead of the dataset and the product, which are taken from the draft. The operations are given in one of two ways, and are appended after the existing ones.
+
+With a YAML file (same structure as for the [delivery command](#delivery-command)), to add several operations:
 
 ```bash
-copernicusmarine-delivery delivery extend-draft --delivery-id some-delivery-id --file delivery_file.yaml
+copernicusmarine-delivery draft extend --delivery-id "$id" --file delivery_file.yaml
 ```
+
+Or with `--operation` (`upload` or `delete`) and one or more `--source`, to add a single operation without writing a file:
 
 ```bash
-copernicusmarine-delivery delivery extend-draft --delivery-id some-delivery-id --operation delete --source some/old/file.nc
+copernicusmarine-delivery draft extend --delivery-id "$id" --operation upload --source some/file.nc --source some/other/file.nc
 ```
 
-The same options as `create-draft` are accepted.
+`--anchor` is only accepted with `--operation upload`. `--file` cannot be combined with `--operation`, `--source` or `--anchor`. One of the two ways is required.
+
+It also accepts `--dry-run`, `--save-delivery-json`, `--show-less` and `--output json` as with the delivery command, and the same upload options. The draft is not changed with `--dry-run`.
 
 ### Publish a draft
 
-Publish the draft as it is saved. It needs the delivery ID, the dataset and the product:
+Publish the draft as it is saved. It only needs the delivery ID:
 
 ```bash
-copernicusmarine-delivery delivery publish-draft --delivery-id some-delivery-id --dataset-id dataset_id --product-id product_id
+copernicusmarine-delivery draft publish --delivery-id "$id"
 ```
+
+With `--dry-run` the draft is validated but not published, and it can still be extended.
 
 You can validate without publishing with `--dry-run`. Once published, check the delivery with the [status command](#delivery-status-command).
 

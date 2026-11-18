@@ -22,10 +22,18 @@ All the objects below are importable from `copernicusmarine_delivery`.
 
    .. automethod:: add
    .. automethod:: submit
-   .. automethod:: create_draft
-   .. automethod:: extend_draft
+```
 
-.. autofunction:: copernicusmarine_delivery.publish_draft
+## Draft delivery
+
+```{eval-rst}
+.. automodule:: copernicusmarine_delivery.draft
+
+.. autofunction:: copernicusmarine_delivery.draft.create
+
+.. autofunction:: copernicusmarine_delivery.draft.extend
+
+.. autofunction:: copernicusmarine_delivery.draft.publish
 ```
 
 ## Delivery status

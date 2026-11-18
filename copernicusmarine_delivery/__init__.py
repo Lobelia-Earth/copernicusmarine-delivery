@@ -1,5 +1,6 @@
 """Copernicus Marine Delivery package."""
 
+from copernicusmarine_delivery import draft
 from copernicusmarine_delivery.auth import AuthenticationError
 from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral
 from copernicusmarine_delivery.core_functions.domain import (
@@ -19,7 +20,6 @@ from copernicusmarine_delivery.python_interface import (
     Upload,
     delivery_status,
     list_deliveries,
-    publish_draft,
 )
 from copernicusmarine_delivery.versioner import __version__
 from delivery_common.domain import DeleteFile, DeliveryStatus, InvalidDeliveryIdsError
@@ -34,9 +34,9 @@ __all__ = [
     "Delete",
     "Delivery",
     "Upload",
+    "draft",
     "delivery_status",
     "list_deliveries",
-    "publish_draft",
     # Responses and the types they use
     "ResponseDelete",
     "ResponseDelivery",

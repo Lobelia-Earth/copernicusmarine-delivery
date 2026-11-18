@@ -13,15 +13,11 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
-    publish_draft as _publish_draft,
-)
-from copernicusmarine_delivery.core_functions.core_functions import (
     upload as _upload,
 )
 from copernicusmarine_delivery.core_functions.delivery import (
     TimeframeLiteral,
     get_deliveries,
-    load_draft,
 )
 from copernicusmarine_delivery.core_functions.domain import Delete as _Delete
 from copernicusmarine_delivery.core_functions.domain import (
@@ -144,11 +140,7 @@ class Delivery(BaseModel):
     Each operation will be performed sequentially in the order they are given.
     Each operation can have multiple sources (files) to be processed.
 
-    To deliver in steps instead, save a draft and publish it at the end::
-
-        response = Delivery(operations=[Upload(files=batch_1)]).create_draft(product_id, dataset_id)
-        Delivery(operations=[Upload(files=batch_2)]).extend_draft(response.delivery_id)
-        publish_draft(response.delivery_id)
+    To deliver in steps instead, see the :py:mod:`~copernicusmarine_delivery.draft` module.
 
     :param operations: A list of operations to be performed. Each operation is a tuple with the operation name as the first element and a list of sources as the second element. Available operations are 'upload' and 'delete'.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
@@ -211,101 +203,6 @@ class Delivery(BaseModel):
             disable_progress_bar=disable_progress_bar,
         )
         return response
-
-    def create_draft(
-        self,
-        product_id: str,
-        dataset_id: str,
-        raise_on_upload_error: bool = False,
-        max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
-        chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
-        chunk_concurrency: int = CHUNK_CONCURRENCY,
-        dry_run: bool = False,
-        disable_progress_bar: bool = False,
-        staging: bool = False,
-        **kwargs,
-    ) -> ResponseDelivery:
-        """
-        Upload the added operations and save them in a new draft. Nothing is published.
-        The draft can be empty. Its ``delivery_id`` is in the response.
-
-        Same parameters as :py:meth:`Delivery.submit`.
-        Continue the draft with :py:meth:`Delivery.extend_draft`, publish it with :py:func:`~copernicusmarine_delivery.publish_draft`.
-
-        :return: :py:obj:`~copernicusmarine_delivery.ResponseDelivery` object containing the result of the delivery.
-        """
-        response, _ = _delivery(
-            product_id=product_id,
-            dataset_id=dataset_id,
-            operations=self.operations,
-            raise_on_upload_error=raise_on_upload_error,
-            max_concurrent_uploads=max_concurrent_uploads,
-            chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
-            chunk_concurrency=chunk_concurrency,
-            dry_run=dry_run,
-            publish=False,
-            draft_delivery=None,
-            ctx=_context(staging, kwargs),
-            disable_progress_bar=disable_progress_bar,
-        )
-        return response
-
-    def extend_draft(
-        self,
-        delivery_id: str,
-        raise_on_upload_error: bool = False,
-        max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
-        chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
-        chunk_concurrency: int = CHUNK_CONCURRENCY,
-        dry_run: bool = False,
-        disable_progress_bar: bool = False,
-        staging: bool = False,
-        **kwargs,
-    ) -> ResponseDelivery:
-        """
-        Upload the added operations and append them to the draft ``delivery_id``. Nothing is published.
-        Raises if the draft is not found. The product and the dataset are the ones of the draft.
-
-        Same parameters as :py:meth:`Delivery.submit`.
-
-        :param delivery_id: The ID of the existing draft, from :py:meth:`Delivery.create_draft`.
-
-        :return: :py:obj:`~copernicusmarine_delivery.ResponseDelivery` object containing the result of the delivery.
-        """
-        ctx = _context(staging, kwargs)
-        draft = load_draft(ctx=ctx, delivery_id=delivery_id)
-        response, _ = _delivery(
-            product_id=draft.product_id,
-            dataset_id=draft.dataset_id,
-            operations=self.operations,
-            raise_on_upload_error=raise_on_upload_error,
-            max_concurrent_uploads=max_concurrent_uploads,
-            chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
-            chunk_concurrency=chunk_concurrency,
-            dry_run=dry_run,
-            publish=False,
-            draft_delivery=draft,
-            ctx=ctx,
-            disable_progress_bar=disable_progress_bar,
-        )
-        return response
-
-
-def publish_draft(delivery_id: str, dry_run: bool = False, staging: bool = False, **kwargs) -> DeliveryModel:
-    """
-    Publish the draft ``delivery_id`` as it is saved. Raises if the draft is not found, for example if it is already published.
-
-    :param delivery_id: The ID of the draft, from :py:meth:`Delivery.create_draft`.
-    :param dry_run: Validate without publishing.
-    :param staging: Use the staging environment instead of production.
-
-    :return: DeliveryModel object of the published delivery.
-    """  # noqa
-    return _publish_draft(
-        delivery_id=delivery_id,
-        dry_run=dry_run,
-        ctx=_context(staging, kwargs),
-    )
 
 
 def delivery_status(delivery_id: str, on_behalf_of: str | None = None, staging: bool = False) -> DeliveryModel:

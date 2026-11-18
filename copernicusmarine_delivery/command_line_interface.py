@@ -16,6 +16,9 @@ from copernicusmarine_delivery.core_functions.constants import (
     DEFAULT_CHUNK_SIZE_MB,
     MAX_CONCURRENT_UPLOADS,
 )
+from copernicusmarine_delivery.core_functions.core_functions import (
+    create_draft as _create_draft,
+)
 from copernicusmarine_delivery.core_functions.core_functions import delete as _delete
 from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
@@ -151,17 +154,17 @@ anchor_option = click.option(
 
 
 def _validate_file_or_operation(
-    file: Path | None, operation: str | None, source: tuple[str, ...], anchor: str | None, allow_empty: bool = False
+    file: Path | None, operation: str | None, source: tuple[str, ...], anchor: str | None
 ) -> None:
     """
-    For `delivery create-draft` and `delivery extend-draft` users can pass a delivery file or an operation.
+    For `draft extend` users can pass a delivery file or an operation.
     If None or all are passed an error is raised.
     """
     if file is not None and (operation or source or anchor):
         raise click.UsageError("--file cannot be combined with --operation, --source or --anchor.")
     if (operation and source) is not None and file:
         raise click.UsageError("--operation, --source cannot be combined with --file.")
-    if file is None and (not operation or not source) and not allow_empty:
+    if file is None and (not operation or not source):
         raise click.UsageError("Without --file, both --operation and --source are required.")
     if anchor and operation != "upload":
         raise click.UsageError("--anchor is only accepted with --operation upload.")
@@ -272,112 +275,21 @@ class OrderCommands(click.Group):
 
 @click.group(cls=OrderCommands)
 def cli(max_content_width=200) -> None:
-    """Pusher command line interface."""
+    """Copernicus Marine delivery command line interface."""
 
 
-@cli.group("delivery", cls=OrderCommands, invoke_without_command=True, no_args_is_help=True)
+@cli.command()
 @file_option
 @base_options
 @upload_shared_options
 @pushing_entity_id_option
 @staging_option
-@click.pass_context
 @log_level_option
 @log_exception_and_exit
-def delivery_group(
-    ctx: click.Context,
-    file: Path | None,
-    dataset_id: str | None,
-    product_id: str | None,
-    pushing_entity_id: str | None,
-    raise_on_upload_error: bool,
-    save_delivery_json: bool,
-    show_less: bool,
-    output: str,
-    max_concurrent_uploads: int,
-    chunk_size_mb: int,
-    chunk_concurrency: int,
-    dry_run: bool,
-    disable_progress_bar: bool,
-    staging: bool,
-) -> None:
-    """Perform a delivery with multiple operations [upload, delete].
-
-    Without a subcommand, the whole delivery is performed in one step.
-    Use the subcommands to build it in steps through a draft.
-    """
-    if ctx.invoked_subcommand is None:
-        if file is None or dataset_id is None or product_id is None:
-            raise click.UsageError("Without a subcommand, --file, --dataset-id and --product-id are required.")
-        with open(file) as f:
-            delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
-
-        context = build_context(staging)
-
-        response_delivery, delivery = _delivery(
-            ctx=context,
-            operations=[operation for operation in delivery_file.delivery],
-            dataset_id=dataset_id,
-            product_id=product_id,
-            raise_on_upload_error=raise_on_upload_error,
-            max_concurrent_uploads=max_concurrent_uploads,
-            chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
-            chunk_concurrency=chunk_concurrency,
-            dry_run=dry_run,
-            publish=True,
-            disable_progress_bar=disable_progress_bar,
-        )
-        if save_delivery_json and delivery:
-            saving_delivery_file(delivery)
-
-        if output == "json":
-            click.echo(
-                json.dumps({"delivery_id": response_delivery.delivery_id})
-                if show_less
-                else response_delivery.model_dump_json(indent=2)
-            )
-        else:
-            click.echo(response_delivery.delivery_id if show_less else f"{response_delivery}")
-
-
-# Group options are only required when no subcommand is given, checked in the callback.
-for _param in delivery_group.params:
-    _param.required = False
-
-
-@delivery_group.command("create-draft")
-@optional_file_option
-@id_options
-@click.option(
-    "--operation",
-    type=click.Choice(["upload", "delete"]),
-    help="Specify when creating a draft with a single operation.",
-)
-@click.option(
-    "--source",
-    type=str,
-    multiple=True,
-    help=(
-        """Only accepted if `--operation` is set. For draft delivereis with a single operation.
-        Relative or absolute path to the file.
-        If `anchor` is set, anything before it will be removed.
-        Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
-    ),
-)
-@anchor_option
-@shared_options
-@upload_shared_options
-@pushing_entity_id_option
-@staging_option
-@log_level_option
-@log_exception_and_exit
-def create_draft(
-    file: Path | None,
+def delivery(
+    file: Path,
     dataset_id: str,
     product_id: str,
-    operation: str | None = None,
-    source: tuple[str, ...] = (),
-    anchor: str | None = None,
     pushing_entity_id: str | None = None,
     staging: bool = False,
     raise_on_upload_error: bool = False,
@@ -390,12 +302,12 @@ def create_draft(
     output: str = "text",
     disable_progress_bar: bool = False,
 ) -> None:
-    """Create a draft delivery from a file. Its delivery ID is printed."""
-    _validate_file_or_operation(file, operation, source, anchor, allow_empty=True)
-    operations = _get_operations(file, operation, source, anchor)
+    """Perform a delivery with multiple operations [upload, delete]."""
+    with open(file) as f:
+        delivery_file = DeliveryFile.model_validate(yaml.safe_load(f))
 
     response_delivery, delivery = _delivery(
-        operations=operations,
+        operations=[operation for operation in delivery_file.delivery],
         ctx=build_context(staging, pushing_entity_id),
         dataset_id=dataset_id,
         product_id=product_id,
@@ -404,7 +316,7 @@ def create_draft(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        publish=False,
+        publish=True,
         disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
@@ -422,7 +334,48 @@ def create_draft(
         sys.exit(1)
 
 
-@delivery_group.command("extend-draft")
+@cli.group("draft", cls=OrderCommands, no_args_is_help=True)
+def draft_group() -> None:
+    """Build a delivery in steps: create an empty draft, extend it with operations, then publish it.
+
+    Nothing is published until `draft publish`.
+    Keep the delivery ID printed by `draft create`: it is needed to extend and publish the draft.
+    """
+
+
+@draft_group.command("create")
+@id_options
+@click.option("--dry-run", is_flag=True, help="Validate without saving the draft.")
+@click.option(
+    "--output",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+    help="Output format.",
+)
+@pushing_entity_id_option
+@staging_option
+@log_level_option
+@log_exception_and_exit
+def create_draft(
+    dataset_id: str,
+    product_id: str,
+    pushing_entity_id: str | None = None,
+    dry_run: bool = False,
+    output: str = "text",
+    staging: bool = False,
+) -> None:
+    """Create an empty draft delivery. Its delivery ID is printed."""
+    draft = _create_draft(
+        product_id=product_id,
+        dataset_id=dataset_id,
+        dry_run=dry_run,
+        ctx=build_context(staging, pushing_entity_id),
+    )
+    click.echo(json.dumps({"delivery_id": draft.delivery_id}) if output == "json" else draft.delivery_id)
+
+
+@draft_group.command("extend")
 @optional_file_option
 @click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to extend.")
 @click.option(
@@ -502,7 +455,7 @@ def extend_draft(
         sys.exit(1)
 
 
-@delivery_group.command("publish-draft")
+@draft_group.command("publish")
 @click.option("--delivery-id", type=str, required=True, help="ID of the draft delivery to publish.")
 @click.option("--dry-run", is_flag=True, help="Validate without publishing.")
 @pushing_entity_id_option
@@ -515,7 +468,7 @@ def publish_draft(
     dry_run: bool = False,
     staging: bool = False,
 ) -> None:
-    """Publish a draft delivery, previously saved with --no-publish, as is."""
+    """Publish a draft delivery as it is saved."""
     ctx = build_context(staging, pushing_entity_id)
     delivery = _publish_draft(
         delivery_id=delivery_id,

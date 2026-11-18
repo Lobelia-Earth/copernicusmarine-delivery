@@ -6,6 +6,7 @@ from copernicusmarine_delivery.environment_variables import ALLOW_HTTP
 
 _retry_strategy = Retry(
     total=5,
+    connect=3,
     backoff_factor=1,
     status_forcelist=[429, 500, 502, 503, 504],
 )

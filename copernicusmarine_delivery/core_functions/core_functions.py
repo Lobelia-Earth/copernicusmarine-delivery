@@ -190,6 +190,28 @@ def delete(
     )
 
 
+def create_draft(
+    product_id: str,
+    dataset_id: str,
+    dry_run: bool,
+    ctx: ServiceContext,
+) -> Delivery:
+    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
+
+    return create_and_upload_delivery(
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operations=[],
+        dry_run=dry_run,
+        delivery_id=create_delivery_id(product_id),
+        publish=False,
+        ctx=ctx,
+    )
+
+
 def publish_draft(
     delivery_id: str,
     dry_run: bool,
