@@ -5,7 +5,7 @@ from random import randint
 from typing import TYPE_CHECKING, Literal
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
-from copernicusmarine_delivery.core_functions.exceptions import DraftDeliveryMismatchError, DraftDeliveryNotFoundError
+from copernicusmarine_delivery.core_functions.exceptions import DraftDeliveryNotFoundError
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import Delivery, Operation, datetime_to_iso_format
@@ -52,8 +52,6 @@ def create_delivery_id(product_id: str) -> str:
 def load_draft(
     ctx: ServiceContext,
     delivery_id: str,
-    product_id: str | None = None,
-    dataset_id: str | None = None,
 ) -> Delivery:
     params = {"delivery_id": delivery_id, "is_draft": "true"}
     if ctx.on_behalf_of:
@@ -71,11 +69,6 @@ def load_draft(
             "expired or belong to another pushing entity."
         )
     draft = Delivery(**drafts[0])
-    if product_id and dataset_id and (draft.product_id, draft.dataset_id) != (product_id, dataset_id):
-        raise DraftDeliveryMismatchError(
-            f"Draft '{delivery_id}' belongs to product '{draft.product_id}' and dataset '{draft.dataset_id}', "
-            f"not '{product_id}' / '{dataset_id}'."
-        )
     return draft
 
 

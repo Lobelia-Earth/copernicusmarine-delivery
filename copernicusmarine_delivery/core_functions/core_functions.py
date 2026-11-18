@@ -60,6 +60,7 @@ def get_local_path_s3_keys_mapping(
 
 
 def upload(
+    ctx: ServiceContext,
     product_id: str,
     dataset_id: str,
     files: list[str],
@@ -70,7 +71,6 @@ def upload(
     chunk_concurrency: int,
     dry_run: bool,
     disable_progress_bar: bool,
-    ctx: ServiceContext,
     publish: bool = True,
 ) -> tuple[ResponseUpload, Delivery]:
     """
@@ -144,11 +144,11 @@ def upload(
 
 
 def delete(
+    ctx: ServiceContext,
     product_id: str,
     dataset_id: str,
     files: list[str],
     dry_run: bool,
-    ctx: ServiceContext,
     publish: bool = True,
 ) -> tuple[ResponseDelete, Delivery]:
     """
@@ -191,10 +191,10 @@ def delete(
 
 
 def create_draft(
+    ctx: ServiceContext,
     product_id: str,
     dataset_id: str,
     dry_run: bool,
-    ctx: ServiceContext,
 ) -> Delivery:
     pushing_entity_config = get_pushing_entity_config(ctx)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
@@ -213,9 +213,9 @@ def create_draft(
 
 
 def publish_draft(
+    ctx: ServiceContext,
     delivery_id: str,
     dry_run: bool,
-    ctx: ServiceContext,
 ) -> Delivery:
     pushing_entity_config = get_pushing_entity_config(ctx)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
