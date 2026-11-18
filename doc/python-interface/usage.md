@@ -57,7 +57,7 @@ delivery = delivery_status(delivery_id)
 
 ## Draft delivery
 
-With `submit`, the files are uploaded and the delivery is published in one step. To build a delivery in steps, use the `draft` module. The files are uploaded and saved in a draft in the ingestion bucket, but nothing is published until you call `draft.publish`. See [draft delivery](../concepts.md#draft-delivery) for the concept.
+With `submit`, the files are uploaded and the delivery is published in one step. To build a delivery in steps, use the `draft` module. The files are uploaded and saved in a draft in the ingestion bucket, but nothing is published until you call `draft.publish`. See [the draft delivery concept explanations](../concepts.md#draft-delivery).
 
 ```{important}
 Keep track of the delivery ID that `draft.create` returns. It is the only thing that identifies the draft, and you need it to extend or publish it.

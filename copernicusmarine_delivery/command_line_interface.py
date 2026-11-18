@@ -130,7 +130,7 @@ _shared_options = [
 _FILE_HELP = (
     "A path to a yaml file that describes the deliver, "
     "containing a set of operations [upload, delete] and their relative files."
-    "See the documentation for the format of the delivery file"
+    "See the documentation for the format of the delivery file."
 )
 
 file_option = click.option("--file", required=True, help=_FILE_HELP)
@@ -388,7 +388,7 @@ def create_draft(
     type=str,
     multiple=True,
     help=(
-        """Only accepted if `--operation` is set. For draft delivereis with a single operation.
+        """Only accepted if `--operation` is set. For draft deliveries with a single operation.
         Relative or absolute path to the file.
         If `anchor` is set, anything before it will be removed.
         Please consider that upon uploading, a prefix consisting of `product_id/dataset_id` is prepended to the final S3 Path."""
