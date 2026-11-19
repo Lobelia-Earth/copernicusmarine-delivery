@@ -55,7 +55,6 @@ def test_delivery_python_interface(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        publish=True,
         ctx=build_context(),
         disable_progress_bar=False,
     )
@@ -81,7 +80,6 @@ def test_delivery_early_exit_with_validation_error(
             chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
             chunk_concurrency=CHUNK_CONCURRENCY,
             dry_run=False,
-            publish=True,
             ctx=build_context(),
             disable_progress_bar=False,
         )
@@ -139,7 +137,6 @@ def test_delivery_dry_run_does_not_call_s3(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=True,
-        publish=True,
         ctx=build_context(),
         disable_progress_bar=False,
     )
@@ -190,7 +187,6 @@ def test_delivery_upload_anchor_strips_expected_s3_key(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        publish=True,
         ctx=build_context(),
         disable_progress_bar=False,
     )

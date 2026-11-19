@@ -197,8 +197,6 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            publish=True,
-            draft_delivery=None,
             ctx=_context(staging, kwargs),
             disable_progress_bar=disable_progress_bar,
         )

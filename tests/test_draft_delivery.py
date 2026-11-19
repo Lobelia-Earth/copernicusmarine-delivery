@@ -218,8 +218,9 @@ def test_same_file_twice_in_one_operation_exits(
     assert _extend_draft(delivery_id, file, file, operation=operation, extra=extra).exit_code == 1
 
 
-@pytest.mark.xfail(strict=True, reason="Duplicates are only checked per operation, not across the draft.")
-def test_same_file_in_draft_and_in_extend_exits(glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service):
+def test_same_file_in_draft_and_in_extend_is_error(
+    glo_mercator_bucket, skip_delivery_ids_validation, ingestion_service
+):
     delivery_id = _new_draft("a.txt")
 
     assert _extend_draft(delivery_id, "a.txt").exit_code == 1

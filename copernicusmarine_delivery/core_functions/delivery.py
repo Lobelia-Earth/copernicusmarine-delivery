@@ -62,7 +62,7 @@ def load_draft(
         params=params,
     )
     response.raise_for_status()
-    drafts = response.json()["deliveries"]
+    drafts = [draft for draft in response.json()["deliveries"] if draft["delivery_id"] == delivery_id]
     if not drafts:
         raise DraftDeliveryNotFoundError(
             f"No draft delivery '{delivery_id}' found. It may be already published, "
@@ -81,15 +81,17 @@ def create_and_upload_delivery(
     delivery_id: str,
     publish: bool,
     ctx: ServiceContext,
-    draft: Delivery | None = None,
+    is_draft: bool,
+    draft_delivery: Delivery | None = None,
 ) -> Delivery:
     """
-    Build the delivery (on top of ``draft`` if continuing one) and send it:
+    Build the delivery (on top of ``draft_delivery`` if continuing one) and send it:
     with PUT /delivery if not ``publish`` (creates or overwrites the draft), else with POST /delivery (publishes it).
-    ``draft`` is not modified: the returned delivery is a copy with the new operations appended.
+    ``is_draft`` is sent in the body: True for a draft, and also when publishing a draft so the server removes it.
+    ``draft_delivery`` is not modified: the returned delivery is a copy with the new operations appended.
     """
-    if draft:
-        delivery = draft.model_copy(deep=True)
+    if draft_delivery:
+        delivery = draft_delivery.model_copy(deep=True)
         delivery.operations.extend(operations)
     else:
         delivery = create_delivery(
@@ -99,7 +101,8 @@ def create_and_upload_delivery(
             operations=operations,
             delivery_id=delivery_id,
         )
-    delivery.is_draft = not publish
+    delivery.is_draft = is_draft
+
     if dry_run:
         return delivery
 
@@ -109,7 +112,6 @@ def create_and_upload_delivery(
             f"{ctx.ingestion_service_url}/delivery",
             json=delivery.model_dump(by_alias=True),
             headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
-            params={"publish_draft": "true"} if draft else None,
         )
     else:
         logger.debug(f"PUTting draft delivery to ingestion service at {ctx.ingestion_service_url}/delivery")

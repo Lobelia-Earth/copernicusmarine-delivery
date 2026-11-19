@@ -14,12 +14,11 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     create_draft as _create_draft,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
-    delivery as _delivery,
+    extend_draft as _extend_draft,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
     publish_draft as _publish_draft,
 )
-from copernicusmarine_delivery.core_functions.delivery import load_draft
 from copernicusmarine_delivery.core_functions.domain import ResponseDelivery
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
 from copernicusmarine_delivery.python_interface import Delete, Upload, _context
@@ -77,20 +76,15 @@ def extend(
     """  # noqa
     if not operations:
         raise ValueError("No operations to add to the draft.")
-    ctx = _context(staging, kwargs)
-    draft = load_draft(ctx=ctx, delivery_id=delivery_id)
-    response, _ = _delivery(
-        product_id=draft.product_id,
-        dataset_id=draft.dataset_id,
+    response, _ = _extend_draft(
+        ctx=_context(staging, kwargs),
+        delivery_id=delivery_id,
         operations=operations,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        publish=False,
-        draft_delivery=draft,
-        ctx=ctx,
         disable_progress_bar=disable_progress_bar,
     )
     return response

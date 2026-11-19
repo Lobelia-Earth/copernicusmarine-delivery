@@ -38,7 +38,6 @@ def test_delivery_status_python_interface(
         chunk_size_bytes=megabytes_to_bytes(DEFAULT_CHUNK_SIZE_MB),
         chunk_concurrency=CHUNK_CONCURRENCY,
         dry_run=False,
-        publish=True,
         disable_progress_bar=False,
         ctx=build_context(),
     )

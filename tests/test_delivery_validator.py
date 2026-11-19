@@ -5,7 +5,7 @@ import yaml
 
 from copernicusmarine_delivery import InvalidDeliveryIdsError, InvalidFilesError
 from copernicusmarine_delivery.core_functions.delivery_validator import (
-    validate_delete_files,
+    validate_delivery_duplicates,
     validate_delivery_sizes,
     validate_upload_files,
 )
@@ -19,7 +19,7 @@ from copernicusmarine_delivery.core_functions.utils import (
     local_path_to_key_suffix,
 )
 from copernicusmarine_delivery.s3_client import S3Client
-from delivery_common.domain import PushingEntities
+from delivery_common.domain import DeleteFile, DeleteOperation, PushingEntities
 from delivery_common.validation import validate_delivery_ids
 
 _PUSHING_ENTITIES_YAML = yaml.dump(
@@ -83,20 +83,37 @@ DUPLICATED_FILES = ["file1.txt", "file2.txt", "file1.txt"]
 MORE_DUPLICATED_FILES = ["file2.txt"] + [f"file1.txt" for i in range(10)]
 
 
+def _to_upload_operation(files: list[str], anchor: str | None = None) -> ToUploadOperation:
+    return ToUploadOperation(files=[FileToUpload(local_path=file, file_size_mb=1) for file in files], anchor=anchor)
+
+
+def _delete_operation(files: list[str]) -> DeleteOperation:
+    return DeleteOperation(files=[DeleteFile(key_suffix=file) for file in files])
+
+
 @pytest.mark.parametrize("file_list", [DUPLICATED_FILES, MORE_DUPLICATED_FILES])
 def test_duplicate_files_upload(file_list, caplog):
     with caplog.at_level("ERROR"):
         with pytest.raises(InvalidFilesError):
-            validate_upload_files(file_list, "dataset1", "product1", anchor="does not matter here")
-        assert caplog.text.count("Duplicate file path") == 1
+            validate_delivery_duplicates([_to_upload_operation(file_list)])
+        assert caplog.text.count("Duplicate S3 key suffix") == 1
 
 
 @pytest.mark.parametrize("file_list", [DUPLICATED_FILES, MORE_DUPLICATED_FILES])
 def test_duplicate_files_delete(file_list, caplog):
     with caplog.at_level("ERROR"):
         with pytest.raises(InvalidFilesError):
-            validate_delete_files(file_list)
-        assert caplog.text.count("Duplicate file path") == 1
+            validate_delivery_duplicates([_delete_operation(file_list)])
+        assert caplog.text.count("Duplicate S3 key suffix") == 1
+
+
+def test_duplicate_key_suffix_from_different_local_paths():
+    with pytest.raises(InvalidFilesError):
+        validate_delivery_duplicates([_to_upload_operation(["a/dataset1/x.nc", "b/dataset1/x.nc"], anchor="dataset1")])
+
+
+def test_same_file_uploaded_and_deleted_is_allowed():
+    validate_delivery_duplicates([_delete_operation(["x.nc"]), _to_upload_operation(["x.nc"])])
 
 
 @pytest.mark.parametrize(

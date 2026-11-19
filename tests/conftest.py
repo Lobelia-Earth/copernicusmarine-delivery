@@ -224,11 +224,10 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
             body = json.loads(request.content)
             if not body["operations"]:
                 return httpx.Response(422, json={"detail": "A delivery must have at least one operation."})
-            if body.get("is_draft"):
-                return httpx.Response(422, json={"detail": "A draft delivery cannot be published."})
             delivery_id = body["delivery_id"]
-            if request.url.params.get("publish_draft") == "true":
-                drafts.pop(delivery_id, None)  # publishing a draft deletes it
+            if body.get("is_draft"):  # published from a draft: the draft is deleted and the delivery is not a draft
+                drafts.pop(delivery_id, None)
+                body["is_draft"] = False
             pushing_entity_id = body["pushing_entity_id"]
             bucket = next(
                 pe["bucket"] for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == pushing_entity_id

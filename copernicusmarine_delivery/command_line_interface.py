@@ -24,12 +24,15 @@ from copernicusmarine_delivery.core_functions.core_functions import (
     delivery as _delivery,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
+    extend_draft as _extend_draft,
+)
+from copernicusmarine_delivery.core_functions.core_functions import (
     publish_draft as _publish_draft,
 )
 from copernicusmarine_delivery.core_functions.core_functions import (
     upload as _upload,
 )
-from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries, load_draft
+from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries
 from copernicusmarine_delivery.core_functions.domain import (
     BaseResponse,
     Delete,
@@ -162,8 +165,6 @@ def _validate_file_or_operation(
     """
     if file is not None and (operation or source or anchor):
         raise click.UsageError("--file cannot be combined with --operation, --source or --anchor.")
-    if (operation and source) is not None and file:
-        raise click.UsageError("--operation, --source cannot be combined with --file.")
     if file is None and (not operation or not source):
         raise click.UsageError("Without --file, both --operation and --source are required.")
     if anchor and operation != "upload":
@@ -316,7 +317,6 @@ def delivery(
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        publish=True,
         disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
@@ -423,21 +423,15 @@ def extend_draft(
     _validate_file_or_operation(file, operation, source, anchor)
     operations = _get_operations(file, operation, source, anchor)
 
-    context = build_context(staging, pushing_entity_id)
-    draft_delivery = load_draft(context, delivery_id)
-
-    response_delivery, delivery = _delivery(
-        ctx=context,
+    response_delivery, delivery = _extend_draft(
+        ctx=build_context(staging, pushing_entity_id),
+        delivery_id=delivery_id,
         operations=operations,
-        dataset_id=draft_delivery.dataset_id,
-        product_id=draft_delivery.product_id,
         raise_on_upload_error=raise_on_upload_error,
         max_concurrent_uploads=max_concurrent_uploads,
         chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
         chunk_concurrency=chunk_concurrency,
         dry_run=dry_run,
-        publish=False,
-        draft_delivery=draft_delivery,
         disable_progress_bar=disable_progress_bar,
     )
     if save_delivery_json and delivery:
