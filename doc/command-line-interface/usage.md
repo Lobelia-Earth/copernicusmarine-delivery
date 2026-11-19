@@ -65,7 +65,7 @@ delivery:
 
 ## Delivery in steps: drafts
 
-`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use the `draft` command. The files are uploaded and saved in the draft, and nothing is published until you run `draft publish`. See [draft delivery](../concepts.md#draft-delivery) for the concept.
+`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use the `draft` command. The files are uploaded and saved in the draft, and nothing is published until you run `draft publish`. See [the draft delivery concept explanations](../concepts.md#draft-delivery).
 
 ```{important}
 Keep track of the delivery ID that `draft create` prints. It is the only thing that identifies the draft, and you need it to extend or publish it.
