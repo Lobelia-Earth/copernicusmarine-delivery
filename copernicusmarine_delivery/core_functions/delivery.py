@@ -63,11 +63,16 @@ def load_draft(
     )
     response.raise_for_status()
     drafts = [draft for draft in response.json()["deliveries"]]
-    if not drafts or drafts[0]["delivery_id"] != delivery_id:
+    if not drafts:
         raise DraftDeliveryNotFoundError(
             f"No draft delivery '{delivery_id}' found. It may be already published, "
             "expired or belong to another pushing entity."
         )
+    assert drafts[0]["delivery_id"] == delivery_id, (
+        "Something went wrong and the wrong draft has been returned "
+        f"(wrong draft delivery ID: {drafts[0]['delivery_id']}, "
+        f"requested draft delivery ID: {delivery_id}. Please contact user support"
+    )
     draft = Delivery(**drafts[0])
     return draft
 
