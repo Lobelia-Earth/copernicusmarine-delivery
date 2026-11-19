@@ -463,22 +463,6 @@ def extend_draft(
     )
 
 
-def create_to_upload_operation(
-    files: list[str],
-    anchor: str | None,
-) -> ToUploadOperation:
-    return ToUploadOperation(
-        files=[
-            FileToUpload(
-                local_path=file,
-                file_size_mb=os.path.getsize(file) / (1024 * 1024),
-            )
-            for file in files
-        ],
-        anchor=anchor,
-    )
-
-
 def create_and_validate_to_upload_operation(
     files: list[str],
     dataset_id: str,
