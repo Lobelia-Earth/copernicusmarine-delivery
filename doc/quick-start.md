@@ -151,7 +151,14 @@ The file is published as `<MY_PRODUCT>/<MY_DATASET_WITH_TAG>/2024/file_01.nc`: e
 The same delivery done in Python would look like this:
 
 ```python
-from copernicusmarine_delivery import Delivery, Upload, Delete, delivery_status
+from copernicusmarine_delivery import (
+    Delivery,
+    InvalidFilesError,
+    NoSuccessfulUploadsError,
+    Upload,
+    Delete,
+    delivery_status,
+)
 
 delivery = Delivery(
     operations=[
@@ -160,12 +167,12 @@ delivery = Delivery(
     ]
 )
 
-response = delivery.submit(product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>", staging=True)
+try:
+    response = delivery.submit(product_id="<MY_PRODUCT>", dataset_id="<MY_DATASET_WITH_TAG>", staging=True)
+except (InvalidFilesError, NoSuccessfulUploadsError) as error:
+    raise SystemExit(f"Delivery failed: {error}")
 
-if not response.fatal_error:
-    print(f"Delivery successful with delivery ID: {response.delivery_id}")
-else:
-    print(f"Delivery failed: {response.fatal_error}")
+print(f"Delivery successful with delivery ID: {response.delivery_id}")
 
 status = delivery_status(response.delivery_id, staging=True)
 

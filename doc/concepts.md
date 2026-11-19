@@ -22,9 +22,14 @@ When using the "upload" and "delete" functions directly, you submit a delivery o
 
 A delivery is normally uploaded and published in one step. A **draft delivery** is built in steps instead: you create the draft, extend it as many times as needed, and publish it at the end. The files are uploaded and saved in the draft as you go, but nothing is published until you publish the draft. The delivery then runs as a single delivery, with all its operations in the order they were added.
 
-A draft is always created **empty**: creating it only reserves its delivery ID. The operations are added by extending it. Publishing is always a separate, explicit step.
+Use a draft delivery when you cannot submit all the files at once:
 
-A draft is identified by its delivery ID, which is all that is needed to extend or publish it, even from another session or machine. **Keep track of the delivery ID** returned when the draft is created: you need it every time you extend or publish the draft. See [the Python interface](python-interface/usage.md#draft-delivery) and [the command line interface](command-line-interface/usage.md#delivery-in-steps-drafts).
+- **Files produced at different times.** If the files of a product are not ready together, push them to the draft as they become available and publish once the last one is uploaded. The draft holds them until then: nothing reaches the MDS before you publish it.
+- **Unreliable connections.** Uploads are partial by default: the files that fail are skipped and the others are kept (unless you ask to stop at the first error with `--raise-on-upload-error` or `raise_on_upload_error=True`). With a draft, you extend it again with only the files that failed, instead of repeating the whole delivery until every file uploads in a single attempt.
+
+Do not use a draft delivery if you need the data published immediately. It takes more work on your side: you keep the delivery ID, extend the draft, and publish it yourself. The [delivery limits](best-practices.md#delivery-limits) also apply to the draft as a whole, not to each extension. For an immediate publication, use the delivery, upload or delete commands.
+
+See [draft deliveries](draft-deliveries.md) to create, extend and publish a draft.
 
 ### Delivery status
 

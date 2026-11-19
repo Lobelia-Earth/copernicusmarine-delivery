@@ -65,35 +65,15 @@ delivery:
 
 ## Delivery in steps: drafts
 
-`delivery` uploads the files and publishes the delivery in one step. To build the delivery in steps, use the `draft` command. The files are uploaded and saved in the draft, and nothing is published until you run `draft publish`. See [the draft delivery concept explanations](../concepts.md#draft-delivery).
-
-```{important}
-Keep track of the delivery ID that `draft create` prints. It is the only thing that identifies the draft, and you need it to extend or publish it.
-```
+`delivery` uploads the files and publishes the delivery in one step. The `draft` command builds a delivery in steps instead. See [draft deliveries](../draft-deliveries.md) for the workflow and examples. The options of the command line are described here.
 
 ```bash
 copernicusmarine-delivery draft --help
 ```
 
-The workflow is:
-
-1. `draft create` creates an empty draft and prints its delivery ID.
-2. `draft extend` uploads operations and appends them to the draft. It can be repeated.
-3. `draft publish` publishes the draft as it is saved.
-
 ### Create a draft
 
-`draft create` needs the dataset and the product. It creates an empty draft, uploads nothing, and prints its delivery ID:
-
-```bash
-copernicusmarine-delivery draft create --dataset-id dataset_id --product-id product_id
-```
-
-With `--output json` the delivery ID is printed as `{"delivery_id": "..."}`. With `--dry-run` the draft is validated but not saved. To store the delivery ID in a script:
-
-```bash
-id=$(copernicusmarine-delivery draft create --dataset-id dataset_id --product-id product_id)
-```
+`draft create` prints the delivery ID of the new draft. With `--output json` it is printed as `{"delivery_id": "..."}`. With `--dry-run` the draft is validated but not saved.
 
 ### Extend a draft
 
@@ -117,15 +97,11 @@ It also accepts `--dry-run`, `--save-delivery-json`, `--show-less` and `--output
 
 ### Publish a draft
 
-Publish the draft as it is saved. It only needs the delivery ID:
-
 ```bash
 copernicusmarine-delivery draft publish --delivery-id "$id"
 ```
 
-With `--dry-run` the draft is validated but not published, and it can still be extended.
-
-You can validate without publishing with `--dry-run`. Once published, check the delivery with the [status command](#delivery-status-command).
+With `--dry-run` the draft is validated but not published, and it can still be extended. Once published, check the delivery with the [status command](#delivery-status-command).
 
 ## Upload command
 

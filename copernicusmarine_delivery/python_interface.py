@@ -78,7 +78,7 @@ class Upload(_Upload):
         """
 
         if not self.files:
-            return ResponseUpload(fatal_error="No files added to upload.")
+            raise ValueError("No files added to upload.")
         response, _ = _upload(
             product_id=product_id,
             dataset_id=dataset_id,
@@ -122,7 +122,7 @@ class Delete(_Delete):
 
         """  # noqa
         if not self.files:
-            return ResponseDelete(fatal_error="No files added to delete.")
+            raise ValueError("No files added to delete.")
         response, _ = _delete(
             product_id=product_id,
             dataset_id=dataset_id,

@@ -29,6 +29,8 @@ def create(product_id: str, dataset_id: str, dry_run: bool = False, staging: boo
     """
     Create an empty draft for the dataset. Nothing is uploaded and nothing is published.
 
+    See :ref:`Create a draft <draft-create>`.
+
     :param product_id: The ID of the product.
     :param dataset_id: The ID of the dataset.
     :param dry_run: Validate without saving the draft.
@@ -63,6 +65,8 @@ def extend(
     Raises if the draft is not found, for example if it is already published, or if there are no operations.
     The product and the dataset are the ones of the draft.
 
+    See :ref:`Extend a draft <draft-extend>`.
+
     :param delivery_id: The ID of the draft, from :py:func:`create`.
     :param operations: The :class:`~copernicusmarine_delivery.Upload` and :class:`~copernicusmarine_delivery.Delete` operations to append.
     :param raise_on_upload_error: If True, raise an exception and stop if any file fails to upload. By default, the upload will continue and skip any files that fail to upload.
@@ -95,6 +99,8 @@ def publish(delivery_id: str, dry_run: bool = False, staging: bool = False, **kw
     Publish the draft ``delivery_id`` as it is saved.
 
     Raises if the draft is not found, for example if it is already published.
+
+    See :ref:`Publish a draft <draft-publish>`.
 
     :param delivery_id: The ID of the draft, from :py:func:`create`.
     :param dry_run: Validate without publishing.

@@ -34,11 +34,8 @@ from copernicusmarine_delivery.core_functions.core_functions import (
 )
 from copernicusmarine_delivery.core_functions.delivery import TimeframeLiteral, get_deliveries
 from copernicusmarine_delivery.core_functions.domain import (
-    BaseResponse,
     Delete,
     DeliveryFile,
-    ResponseDelete,
-    ResponseUpload,
     Upload,
 )
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
@@ -94,7 +91,7 @@ def log_exception_and_exit(function: Callable) -> Any:
             message = _exception_message(exception)
             logger.error(message)
             if kwargs.get("output") == "json":
-                click.echo(BaseResponse(fatal_error=message).model_dump_json(indent=2))
+                click.echo(json.dumps({"fatal_error": message}, indent=2))
             sys.exit(1)
 
     return wrapper
@@ -330,8 +327,6 @@ def delivery(
         )
     else:
         click.echo(response_delivery.delivery_id if show_less else f"{response_delivery}")
-    if not response_delivery.is_succesful():
-        sys.exit(1)
 
 
 @cli.group("draft", cls=OrderCommands, no_args_is_help=True)
@@ -445,8 +440,6 @@ def extend_draft(
         )
     else:
         click.echo(response_delivery.delivery_id if show_less else f"{response_delivery}")
-    if not response_delivery.is_succesful():
-        sys.exit(1)
 
 
 @draft_group.command("publish")
@@ -510,15 +503,7 @@ def upload(
     """Upload local SOURCE(S) of the given dataset to MDS."""
     if not source:
         logger.error("No files added to upload.")
-        click.echo(
-            ResponseUpload(fatal_error="No files added to upload.").model_dump_json(
-                indent=2,
-                exclude_none=True,
-                exclude_unset=True,
-                exclude_defaults=True,
-            )
-        )
-        sys.exit(1)
+        raise ValueError("No files added to upload.")
 
     response, delivery = _upload(
         product_id=product_id,
@@ -542,8 +527,6 @@ def upload(
         )
     else:
         click.echo(response.delivery_id if show_less else f"{response}")
-    if not response.is_succesful():
-        sys.exit(1)
 
 
 @cli.command()
@@ -572,15 +555,7 @@ def delete(
     """Delete remote SOURCE(S) from the given dataset from MDS."""
     if not source:
         logger.error("No files added to delete.")
-        click.echo(
-            ResponseDelete(fatal_error="No files added to delete.").model_dump_json(
-                indent=2,
-                exclude_none=True,
-                exclude_unset=True,
-                exclude_defaults=True,
-            )
-        )
-        sys.exit(1)
+        raise ValueError("No files added to delete.")
 
     response, delivery = _delete(
         product_id=product_id,
@@ -599,8 +574,6 @@ def delete(
         )
     else:
         click.echo(response.delivery_id if show_less else f"{response}")
-    if not response.is_succesful():
-        sys.exit(1)
 
 
 def saving_delivery_file(delivery: Delivery) -> None:

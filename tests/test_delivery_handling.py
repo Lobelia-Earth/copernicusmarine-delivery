@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 from freezegun import freeze_time
 
-from copernicusmarine_delivery import ResponseUpload
 from copernicusmarine_delivery.core_functions.delivery import (
     create_delivery,
     create_delivery_id,
@@ -32,11 +31,6 @@ def test_delivery_round_trip():
         operations=[],
     )
     assert delivery.model_dump()["delivery_id"] == "20240101T000000-dataset1-1234"
-
-
-def test_response_upload_error_no_delivery():
-    response = ResponseUpload(fatal_error="No successful uploads - no data were sent.")
-    assert response.files_uploaded == []
 
 
 # --- Delivery creation ---

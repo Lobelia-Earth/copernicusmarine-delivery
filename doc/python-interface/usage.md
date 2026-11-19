@@ -57,40 +57,7 @@ delivery = delivery_status(delivery_id)
 
 ## Draft delivery
 
-With `submit`, the files are uploaded and the delivery is published in one step. To build a delivery in steps, use the `draft` module. The files are uploaded and saved in a draft in the ingestion bucket, but nothing is published until you call `draft.publish`. See [the draft delivery concept explanations](../concepts.md#draft-delivery).
-
-```{important}
-Keep track of the delivery ID that `draft.create` returns. It is the only thing that identifies the draft, and you need it to extend or publish it.
-```
-
-```python
-from copernicusmarine_delivery import Upload, Delete, draft
-
-product_id = "some-product-id"
-dataset_id = "some-dataset-id"
-
-# --- Create: an empty draft. Returns its delivery ID ---
-delivery_id = draft.create(product_id, dataset_id)
-
-# --- Extend: upload operations and append them to the draft ---
-draft.extend(delivery_id, [Upload(files=["some/file.nc"])])
-draft.extend(
-    delivery_id,
-    [Delete(files=["some/old/file.nc"]), Upload(files=["some/other/file.nc"])],
-)
-
-# --- Publish the draft as it is saved ---
-delivery = draft.publish(delivery_id)
-```
-
-- The draft lives in the ingestion service, so `draft.extend` and `draft.publish` only need its delivery ID. They can run in another session or from another machine. The product and the dataset are taken from the draft.
-- `draft.create` uploads nothing. Operations are only added with `draft.extend`, which raises a `ValueError` if the list is empty.
-- `draft.extend` and `draft.publish` raise if the draft is not found, for example if it is already published.
-- `submit` raises a `ValueError` if there are no operations.
-- Operations are executed in the order they were added.
-- `draft.create`, `draft.extend` and `draft.publish` accept `dry_run=True`. See [dry run](#dry-run).
-
-Once published, check the delivery as usual with [`delivery_status`](#wait-for-a-delivery).
+With `submit`, the files are uploaded and the delivery is published in one step. To build a delivery in steps, use the `draft` module: `draft.create`, `draft.extend` and `draft.publish`. See [draft deliveries](../draft-deliveries.md) for the workflow and examples.
 
 ## Dry run
 
@@ -109,7 +76,6 @@ response = delivery.submit(product_id, dataset_id, dry_run=True)
 ```python
 response = delivery.submit(product_id, dataset_id)
 
-print(response.fatal_error)  # None if nothing stopped the delivery
 for operation_response in response.operations_responses:
     print(type(operation_response).__name__)
 ```
@@ -118,6 +84,28 @@ for operation_response in response.operations_responses:
 - A delete response has `files_to_delete`.
 
 See the [API reference](api-reference.md) for all the fields.
+
+## Handle errors
+
+`submit` raises an exception if the delivery cannot be submitted, so a returned response means it was. For example:
+
+- `ValueError` if there is nothing to submit.
+- `InvalidFilesError`, `InvalidDeliveryIdsError` or `InvalidDeliverySizeError` if the validation fails.
+- `NoSuccessfulUploadsError` if no file could be uploaded.
+- `AuthenticationError` if the authentication fails.
+
+Catch the ones you want to handle:
+
+```python
+from copernicusmarine_delivery import InvalidFilesError, NoSuccessfulUploadsError
+
+try:
+    response = delivery.submit(product_id, dataset_id)
+except (InvalidFilesError, NoSuccessfulUploadsError) as error:
+    print(f"The delivery was not submitted: {error}")
+```
+
+Files that fail to upload do not stop the delivery by default. They are skipped and listed in `files_failed` of the upload responses. With `raise_on_upload_error=True`, the first error is raised instead.
 
 ## Wait for a delivery
 

@@ -20,7 +20,6 @@
     "product_id": "product1",
     "dataset_id": "dataset1",
     "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
-    "fatal_error": null,
     "dry_run": false,
     "operations_responses": [
       {
@@ -28,7 +27,6 @@
         "product_id": "product1",
         "dataset_id": "dataset1",
         "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
-        "fatal_error": null,
         "dry_run": false,
         "files_to_delete": [
           {
@@ -46,7 +44,6 @@
         "product_id": "product1",
         "dataset_id": "dataset1",
         "pushing_entity_id": "GLO-MERCATOR-TOULOUSE-FR",
-        "fatal_error": null,
         "dry_run": false,
         "files_uploaded": [
           [
