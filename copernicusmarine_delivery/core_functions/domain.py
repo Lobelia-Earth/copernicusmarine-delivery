@@ -70,13 +70,8 @@ class BaseResponse(BaseModel):
     dataset_id: str | None = None
     #: Pushing entity ID.
     pushing_entity_id: str | None = None
-    #: Any error that may prematurely stop the delivery.
-    fatal_error: str | None = None
     #: Dry run flag, if True, no actual operation was performed in S3.
     dry_run: bool | None = None
-
-    def is_succesful(self) -> bool:
-        return not self.fatal_error
 
     def _get_summary(self) -> GetSummaryResponse:
         """
@@ -147,9 +142,6 @@ class ResponseUpload(BaseResponse):
     def sort_lists(cls, v: list) -> list:
         return sorted(v)
 
-    def is_succesful(self) -> bool:
-        return super().is_succesful() and not self.files_failed
-
     # function to initialise the response
     @classmethod
     def create(
@@ -192,10 +184,6 @@ class ResponseDelete(BaseResponse):
     files_to_delete: list[DeleteFile] = Field(default_factory=list)
 
     @classmethod
-    def create_from_fatal_error(cls, fatal_error: str) -> "ResponseDelete":
-        return cls(fatal_error=fatal_error)
-
-    @classmethod
     def create(
         cls,
         delivery_id: str,
@@ -224,6 +212,8 @@ class ResponseDelete(BaseResponse):
 class ResponseDelivery(BaseResponse):
     """Metadata returned when using :func:`~copernicusmarine_delivery.delivery`"""
 
+    #: Delivery ID.
+    delivery_id: str
     #: List of responses for each operation in the delivery.
     operations_responses: list[ResponseUpload | ResponseDelete] = Field(default_factory=list)
 
@@ -245,9 +235,6 @@ class ResponseDelivery(BaseResponse):
             dry_run=dry_run,
             operations_responses=operations_responses,
         )
-
-    def is_succesful(self) -> bool:
-        return super().is_succesful() and all(r.is_succesful() for r in self.operations_responses)
 
     def _get_summary(self) -> GetSummaryResponse:
         message, uploads, failed_uploads, deletes = "", 0, 0, 0

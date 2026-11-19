@@ -5,15 +5,21 @@ from typing import Sequence
 from copernicusmarine_delivery.auth import get_pushing_entity_config
 from copernicusmarine_delivery.context import ServiceContext
 from copernicusmarine_delivery.core_functions.constants import NEW_DATA_BUCKET_PATH
-from copernicusmarine_delivery.core_functions.delivery import create_and_upload_delivery, create_delivery_id
+from copernicusmarine_delivery.core_functions.delivery import (
+    create_and_upload_delivery,
+    create_delivery_id,
+    load_draft,
+)
 from copernicusmarine_delivery.core_functions.delivery_validator import (
     validate_delete_files,
+    validate_delivery_duplicates,
     validate_delivery_sizes,
     validate_upload_files,
 )
 from copernicusmarine_delivery.core_functions.domain import (
     Delete,
     FileToUpload,
+    GetPushingEntityConfigResponse,
     NoSuccessfulUploadsError,
     PutFilesResult,
     ResponseDelete,
@@ -29,6 +35,7 @@ from delivery_common.domain import (
     DeleteFile,
     DeleteOperation,
     Delivery,
+    DeliveryStatus,
     Operation,
     OperationNames,
     UploadFile,
@@ -56,6 +63,7 @@ def get_local_path_s3_keys_mapping(
 
 
 def upload(
+    ctx: ServiceContext,
     product_id: str,
     dataset_id: str,
     files: list[str],
@@ -66,7 +74,6 @@ def upload(
     chunk_concurrency: int,
     dry_run: bool,
     disable_progress_bar: bool,
-    ctx: ServiceContext,
 ) -> tuple[ResponseUpload, Delivery]:
     """
     1. Quick-validate all files, keep track of invalid files. If no valid files, return early.
@@ -89,7 +96,7 @@ def upload(
         product_id,
         anchor,
     )
-
+    validate_delivery_duplicates([to_upload_operation])
     validate_delivery_sizes(ctx.config.api_limits, [to_upload_operation])
 
     s3_client = get_s3_ingestion_client(
@@ -122,6 +129,8 @@ def upload(
         delivery_id=delivery_id,
         ctx=ctx,
         dry_run=dry_run,
+        publish=True,
+        is_draft=False,
     )
 
     return (
@@ -138,11 +147,11 @@ def upload(
 
 
 def delete(
+    ctx: ServiceContext,
     product_id: str,
     dataset_id: str,
     files: list[str],
     dry_run: bool,
-    ctx: ServiceContext,
 ) -> tuple[ResponseDelete, Delivery]:
     """
     Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
@@ -158,6 +167,7 @@ def delete(
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     delete_operation = create_and_validate_delete_operation(files)
+    validate_delivery_duplicates([delete_operation])
 
     delivery = create_and_upload_delivery(
         pushing_entity_id=pushing_entity_id,
@@ -166,7 +176,11 @@ def delete(
         operations=[delete_operation],
         ctx=ctx,
         dry_run=dry_run,
+        delivery_id=create_delivery_id(product_id),
+        publish=True,
+        is_draft=False,
     )
+
     return (
         ResponseDelete.create(
             delivery_id=delivery.delivery_id,
@@ -180,6 +194,57 @@ def delete(
     )
 
 
+def create_draft(
+    ctx: ServiceContext,
+    product_id: str,
+    dataset_id: str,
+    dry_run: bool,
+) -> Delivery:
+    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
+
+    return create_and_upload_delivery(
+        pushing_entity_id=pushing_entity_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operations=[],
+        dry_run=dry_run,
+        delivery_id=create_delivery_id(product_id),
+        publish=False,
+        is_draft=True,
+        ctx=ctx,
+    )
+
+
+def publish_draft(
+    ctx: ServiceContext,
+    delivery_id: str,
+    dry_run: bool,
+) -> Delivery:
+    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+
+    draft = load_draft(ctx, delivery_id)
+    validate_delivery_ids(pushing_entity_id, draft.product_id, draft.dataset_id, pushing_entity_config.pushing_entity)
+
+    delivery = create_and_upload_delivery(
+        ctx=ctx,
+        pushing_entity_id=pushing_entity_id,
+        product_id=draft.product_id,
+        dataset_id=draft.dataset_id,
+        operations=[],
+        dry_run=dry_run,
+        delivery_id=delivery_id,
+        publish=True,
+        is_draft=True,
+        draft_delivery=draft,
+    )
+    delivery.is_draft = False
+    delivery.status = DeliveryStatus.pending
+    return delivery
+
+
 def create_and_validate_delete_operation(
     files: list[str],
 ) -> DeleteOperation:
@@ -189,24 +254,26 @@ def create_and_validate_delete_operation(
     )
 
 
-def delivery(
-    operations: Sequence[Upload | Delete],
-    dataset_id: str,
+def _process_operations(
+    ctx: ServiceContext,
+    pushing_entity_config: GetPushingEntityConfigResponse,
+    delivery_id: str,
     product_id: str,
+    dataset_id: str,
+    operations: Sequence[Upload | Delete],
     raise_on_upload_error: bool,
     max_concurrent_uploads: int,
     chunk_size_bytes: int,
     chunk_concurrency: int,
     dry_run: bool,
-    ctx: ServiceContext,
     disable_progress_bar: bool,
-) -> tuple[ResponseDelivery, Delivery]:
-    pushing_entity_config = get_pushing_entity_config(ctx)
+    draft: Delivery | None,
+) -> tuple[list[Operation], list[ResponseUpload | ResponseDelete]]:
+    """
+    Validate all the operations, then upload the files and build the responses.
+    ``draft`` is the draft being extended, if any; its size counts for the delivery size limits.
+    """
     pushing_entity_id = pushing_entity_config.pushing_entity.name
-
-    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
-
-    delivery_id = create_delivery_id(product_id)
     pending_operations: list[DeleteOperation | ToUploadOperation] = []
 
     s3_client = get_s3_ingestion_client(
@@ -227,8 +294,9 @@ def delivery(
                 )
                 pending_operations.append(to_upload_operation)
 
+    validate_delivery_duplicates(pending_operations, draft)
     validate_delivery_sizes(
-        ctx.config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)]
+        ctx.config.api_limits, [op for op in pending_operations if isinstance(op, ToUploadOperation)], draft
     )
 
     all_operations: list[Operation] = []
@@ -272,6 +340,42 @@ def delivery(
                         result_upload=put_files_result,
                     )
                 )
+    return all_operations, all_responses
+
+
+def delivery(
+    ctx: ServiceContext,
+    operations: Sequence[Upload | Delete],
+    dataset_id: str,
+    product_id: str,
+    raise_on_upload_error: bool,
+    max_concurrent_uploads: int,
+    chunk_size_bytes: int,
+    chunk_concurrency: int,
+    dry_run: bool,
+    disable_progress_bar: bool,
+) -> tuple[ResponseDelivery, Delivery]:
+    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
+
+    delivery_id = create_delivery_id(product_id)
+    all_operations, all_responses = _process_operations(
+        ctx=ctx,
+        pushing_entity_config=pushing_entity_config,
+        delivery_id=delivery_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operations=operations,
+        raise_on_upload_error=raise_on_upload_error,
+        max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=chunk_size_bytes,
+        chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
+        disable_progress_bar=disable_progress_bar,
+        draft=None,
+    )
 
     delivery = create_and_upload_delivery(
         pushing_entity_id,
@@ -281,7 +385,71 @@ def delivery(
         dry_run,
         ctx=ctx,
         delivery_id=delivery_id,
+        publish=True,
+        is_draft=False,
     )
+
+    return (
+        ResponseDelivery.create(
+            delivery_id=delivery_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            pushing_entity_id=pushing_entity_id,
+            dry_run=dry_run,
+            operations_responses=all_responses,
+        ),
+        delivery,
+    )
+
+
+def extend_draft(
+    ctx: ServiceContext,
+    delivery_id: str,
+    operations: Sequence[Upload | Delete],
+    raise_on_upload_error: bool,
+    max_concurrent_uploads: int,
+    chunk_size_bytes: int,
+    chunk_concurrency: int,
+    dry_run: bool,
+    disable_progress_bar: bool,
+) -> tuple[ResponseDelivery, Delivery]:
+    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
+
+    draft = load_draft(ctx, delivery_id)
+    product_id = draft.product_id
+    dataset_id = draft.dataset_id
+    validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
+
+    all_operations, all_responses = _process_operations(
+        ctx=ctx,
+        pushing_entity_config=pushing_entity_config,
+        delivery_id=delivery_id,
+        product_id=product_id,
+        dataset_id=dataset_id,
+        operations=operations,
+        raise_on_upload_error=raise_on_upload_error,
+        max_concurrent_uploads=max_concurrent_uploads,
+        chunk_size_bytes=chunk_size_bytes,
+        chunk_concurrency=chunk_concurrency,
+        dry_run=dry_run,
+        disable_progress_bar=disable_progress_bar,
+        draft=draft,
+    )
+
+    delivery = create_and_upload_delivery(
+        pushing_entity_id,
+        product_id,
+        dataset_id,
+        all_operations,
+        dry_run,
+        ctx=ctx,
+        delivery_id=delivery_id,
+        publish=False,
+        is_draft=True,
+        draft_delivery=draft,
+    )
+
     return (
         ResponseDelivery.create(
             delivery_id=delivery_id,

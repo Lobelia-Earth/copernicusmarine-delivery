@@ -5,6 +5,7 @@ from random import randint
 from typing import TYPE_CHECKING, Literal
 
 from copernicusmarine_delivery.auth import fetch_keycloak_token
+from copernicusmarine_delivery.core_functions.exceptions import DraftDeliveryNotFoundError
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import Delivery, Operation, datetime_to_iso_format
@@ -48,33 +49,88 @@ def create_delivery_id(product_id: str) -> str:
     return f"{iso_timestamp_with_seconds}-{product_id}-{random_number}"
 
 
+def load_draft(
+    ctx: ServiceContext,
+    delivery_id: str,
+) -> Delivery:
+    params = {"delivery_id": delivery_id, "is_draft": "true"}
+    if ctx.on_behalf_of:
+        params["on_behalf_of"] = ctx.on_behalf_of
+    response = http_client.get(
+        f"{ctx.ingestion_service_url}/delivery",
+        headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
+        params=params,
+    )
+    response.raise_for_status()
+    drafts = [draft for draft in response.json()["deliveries"]]
+    if not drafts:
+        raise DraftDeliveryNotFoundError(
+            f"No draft delivery '{delivery_id}' found. It may be already published, "
+            "expired or belong to another pushing entity."
+        )
+    assert drafts[0]["delivery_id"] == delivery_id, (
+        "Something went wrong and the wrong draft has been returned "
+        f"(wrong draft delivery ID: {drafts[0]['delivery_id']}, "
+        f"requested draft delivery ID: {delivery_id}. Please contact user support"
+    )
+    draft = Delivery(**drafts[0])
+    return draft
+
+
 def create_and_upload_delivery(
     pushing_entity_id: str,
     product_id: str,
     dataset_id: str,
     operations: list[Operation],
     dry_run: bool,
+    delivery_id: str,
+    publish: bool,
     ctx: ServiceContext,
-    delivery_id: str | None = None,
+    is_draft: bool,
+    draft_delivery: Delivery | None = None,
 ) -> Delivery:
-    if not delivery_id:
-        delivery_id = create_delivery_id(product_id)
-    delivery = create_delivery(
-        pushing_entity_id=pushing_entity_id,
-        product_id=product_id,
-        dataset_id=dataset_id,
-        operations=operations,
-        delivery_id=delivery_id,
-    )
-    if not dry_run:
+    """
+    Build the delivery (on top of ``draft_delivery`` if continuing one) and send it:
+    with PUT /delivery if not ``publish`` (creates or overwrites the draft), else with POST /delivery (publishes it).
+    ``is_draft`` is sent in the body: True for a draft, and also when publishing a draft so the server removes it.
+    ``draft_delivery`` is not modified: the returned delivery is a copy with the new operations appended.
+    """
+    if draft_delivery:
+        delivery = draft_delivery.model_copy(deep=True)
+        delivery.operations.extend(operations)
+    else:
+        delivery = create_delivery(
+            pushing_entity_id=pushing_entity_id,
+            product_id=product_id,
+            dataset_id=dataset_id,
+            operations=operations,
+            delivery_id=delivery_id,
+        )
+    delivery.is_draft = is_draft
+
+    if dry_run:
+        return delivery
+
+    if publish:
         logger.debug(f"POSTing delivery to ingestion service at {ctx.ingestion_service_url}/delivery")
         response = http_client.post(
             f"{ctx.ingestion_service_url}/delivery",
             json=delivery.model_dump(by_alias=True),
             headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
         )
-        response.raise_for_status()
-
+    else:
+        logger.debug(f"PUTting draft delivery to ingestion service at {ctx.ingestion_service_url}/delivery")
+        response = http_client.put(
+            f"{ctx.ingestion_service_url}/delivery",
+            json=delivery.model_dump(by_alias=True),
+            headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
+        )
+    response.raise_for_status()
+    if not publish:
+        logger.info(
+            f"Delivery '{delivery_id}' saved as DRAFT, NOT published. Add more with the `extend-draft` command and passing "
+            f"`--delivery-id {delivery_id}`, publish with `publish-draft --delivery-id {delivery_id}`."
+        )
     return delivery
 
 

@@ -11,8 +11,11 @@ from copernicusmarine_delivery.core_functions.utils import local_path_to_key_suf
 from copernicusmarine_delivery.logger import logger
 from delivery_common.domain import (
     FORBIDDEN_KEY_SUFFIX_PATTERNS,
+    DeleteOperation,
+    Delivery,
     InvalidFile,
     T,
+    UploadOperation,
     raise_on_wrong_key_suffix,
 )
 
@@ -47,13 +50,8 @@ def duplicate_files(files: list[T]) -> list[T]:
 
 
 def validate_delete_files(files: list[str]) -> None:
-    invalid_files = [
-        InvalidFile(local_path=Path(file_), reason="Duplicate file path.") for file_ in duplicate_files(files)
-    ]
-    if invalid_files:
-        raise InvalidFilesError(
-            invalid_files=invalid_files,
-        )
+    """Placeholder"""
+    ...
 
 
 def validate_upload_files(files: list[str], dataset_id: str, product_id: str, anchor: str | None) -> None:
@@ -113,20 +111,62 @@ def validate_upload_files(files: list[str], dataset_id: str, product_id: str, an
                 f"Supported file extensions are: {SUPPORTED_FILE_EXTENTIONS}"
             )
             continue
-    invalid_files += [
-        InvalidFile(local_path=Path(file), reason="Duplicate file path.") for file in duplicate_files(files)
-    ]
     if invalid_files:
         raise InvalidFilesError(
             invalid_files=invalid_files,
         )
 
 
-def validate_delivery_sizes(api_limits: APILimits, to_upload_operations: list[ToUploadOperation]) -> None:
+def validate_delivery_duplicates(
+    pending_operations: list[ToUploadOperation | DeleteOperation],
+    draft: Delivery | None = None,
+) -> None:
+    """
+    Duplicates are looked for on the S3 key suffix, which is what collides, not on the local path.
+    The operations of the draft they will be appended to (if any) are taken into account.
+    Upload and delete keys are kept apart on purpose: deleting and uploading the same file in one delivery is allowed.
+    """
+    upload_keys = []
+    delete_keys = []
+    for operation in pending_operations:
+        if isinstance(operation, ToUploadOperation):
+            upload_keys.extend(local_path_to_key_suffix(file.local_path, operation.anchor) for file in operation.files)
+        elif isinstance(operation, DeleteOperation):
+            delete_keys.extend(file.key_suffix for file in operation.files)
+    if draft:
+        for draft_operation in draft.operations:
+            if isinstance(draft_operation, UploadOperation):
+                upload_keys.extend(file.key_suffix for file in draft_operation.files)
+            elif isinstance(draft_operation, DeleteOperation):
+                delete_keys.extend(file.key_suffix for file in draft_operation.files)
+
+    invalid_files = [
+        InvalidFile(local_path=Path(key), reason="Duplicate S3 key suffix.")
+        for key in duplicate_files(upload_keys) + duplicate_files(delete_keys)
+    ]
+    if invalid_files:
+        raise InvalidFilesError(invalid_files=invalid_files)
+
+
+def validate_delivery_sizes(
+    api_limits: APILimits,
+    to_upload_operations: list[ToUploadOperation],
+    draft: Delivery | None = None,
+) -> None:
+    """
+    Validate the new operations on top of the draft they will be appended to (if any).
+    The per-file limit only applies to the new files: the draft's were checked when appended.
+    """
     number_of_files_in_delivery = 0
     delivery_size_in_gb = 0.0
     files_above_file_limit = []
     api_max_size_mb = api_limits.max_file_size_gb * 1024
+
+    if draft:
+        for draft_operation in draft.operations:
+            if isinstance(draft_operation, UploadOperation):
+                number_of_files_in_delivery += len(draft_operation.files)
+                delivery_size_in_gb += draft_operation.total_size() / 1024
 
     for operation in to_upload_operations:
         for file in operation.files:

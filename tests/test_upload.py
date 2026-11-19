@@ -195,7 +195,6 @@ def test_upload_one_file_cannot_be_uploaded(monkeypatch, snapshot, glo_mercator_
         ctx=build_context(),
     )
 
-    assert response.fatal_error is None
     assert delivery is not None
     assert len(response.files_uploaded) == 1
     assert str(response.files_uploaded[0][0]).endswith("file2.txt")

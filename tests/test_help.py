@@ -6,6 +6,10 @@ from copernicusmarine_delivery.command_line_interface import cli
 COMMANDS = [
     [],
     ["delivery"],
+    ["draft"],
+    ["draft", "create"],
+    ["draft", "extend"],
+    ["draft", "publish"],
     ["upload"],
     ["delete"],
     ["status"],

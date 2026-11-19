@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from copernicusmarine_delivery.context import build_context
+from copernicusmarine_delivery.context import ServiceContext, build_context
 from copernicusmarine_delivery.core_functions.constants import (
     CHUNK_CONCURRENCY,
     DEFAULT_CHUNK_SIZE_MB,
@@ -27,7 +27,14 @@ from copernicusmarine_delivery.core_functions.domain import (
 )
 from copernicusmarine_delivery.core_functions.domain import Upload as _Upload
 from copernicusmarine_delivery.core_functions.utils import megabytes_to_bytes
+from copernicusmarine_delivery.environment_variables import (
+    COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID,
+)
 from delivery_common.domain import Delivery as DeliveryModel
+
+
+def _context(staging: bool, kwargs: dict) -> ServiceContext:
+    return build_context(staging, kwargs.get("pushing_entity_id") or COPERNICUSMARINE_SERVICE_PUSHING_ENTITY_ID)
 
 
 class Upload(_Upload):
@@ -71,7 +78,7 @@ class Upload(_Upload):
         """
 
         if not self.files:
-            return ResponseUpload(fatal_error="No files added to upload.")
+            raise ValueError("No files added to upload.")
         response, _ = _upload(
             product_id=product_id,
             dataset_id=dataset_id,
@@ -82,7 +89,7 @@ class Upload(_Upload):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            ctx=build_context(staging, kwargs.get("pushing_entity_id")),
+            ctx=_context(staging, kwargs),
             disable_progress_bar=disable_progress_bar,
         )
         return response
@@ -115,13 +122,13 @@ class Delete(_Delete):
 
         """  # noqa
         if not self.files:
-            return ResponseDelete(fatal_error="No files added to delete.")
+            raise ValueError("No files added to delete.")
         response, _ = _delete(
             product_id=product_id,
             dataset_id=dataset_id,
             files=self.files,
             dry_run=dry_run,
-            ctx=build_context(staging, kwargs.get("pushing_entity_id")),
+            ctx=_context(staging, kwargs),
         )
         return response
 
@@ -132,6 +139,8 @@ class Delivery(BaseModel):
 
     Each operation will be performed sequentially in the order they are given.
     Each operation can have multiple sources (files) to be processed.
+
+    To deliver in steps instead, see the :py:mod:`~copernicusmarine_delivery.draft` module.
 
     :param operations: A list of operations to be performed. Each operation is a tuple with the operation name as the first element and a list of sources as the second element. Available operations are 'upload' and 'delete'.
     :param max_concurrent_uploads: The maximum number of parallel threads that will be used to upload files defined in the `operations` attribute. Defaults to 5.
@@ -153,7 +162,6 @@ class Delivery(BaseModel):
         self,
         product_id: str,
         dataset_id: str,
-        anchor: str | None = None,
         raise_on_upload_error: bool = False,
         max_concurrent_uploads: int = MAX_CONCURRENT_UPLOADS,
         chunk_size_mb: int = DEFAULT_CHUNK_SIZE_MB,
@@ -179,7 +187,7 @@ class Delivery(BaseModel):
         """  # noqa
 
         if not self.operations:
-            return ResponseDelivery(fatal_error="No operations added to delivery.")
+            raise ValueError("No operations added to delivery.")
         response, _ = _delivery(
             product_id=product_id,
             dataset_id=dataset_id,
@@ -189,7 +197,7 @@ class Delivery(BaseModel):
             chunk_size_bytes=megabytes_to_bytes(chunk_size_mb),
             chunk_concurrency=chunk_concurrency,
             dry_run=dry_run,
-            ctx=build_context(staging, kwargs.get("pushing_entity_id")),
+            ctx=_context(staging, kwargs),
             disable_progress_bar=disable_progress_bar,
         )
         return response

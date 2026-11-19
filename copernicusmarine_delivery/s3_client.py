@@ -197,7 +197,7 @@ class S3Client:
                 max_concurrency=self.max_concurrency,
             )
             logger.debug(f"Uploaded file obj PutResult: {put_result}")
-        except Exception as e:
+        except Exception:
             raise
 
     def _put_with_os_error_retry(self, key: str, file: Path, chunk_size: int) -> Any:

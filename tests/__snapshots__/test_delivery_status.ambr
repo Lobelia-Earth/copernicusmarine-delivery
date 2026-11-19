@@ -49,7 +49,8 @@
     "creation_timestamp": null,
     "status": "pending",
     "status_timestamp": null,
-    "error_message": null
+    "error_message": null,
+    "is_draft": false
   }
   '''
 # ---

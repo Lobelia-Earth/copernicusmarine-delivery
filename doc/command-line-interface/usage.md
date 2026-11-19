@@ -63,6 +63,46 @@ delivery:
     anchor: resources
 ```
 
+## Delivery in steps: drafts
+
+`delivery` uploads the files and publishes the delivery in one step. The `draft` command builds a delivery in steps instead. See [draft deliveries](../draft-deliveries.md) for the workflow and examples. The options of the command line are described here.
+
+```bash
+copernicusmarine-delivery draft --help
+```
+
+### Create a draft
+
+`draft create` prints the delivery ID of the new draft. With `--output json` it is printed as `{"delivery_id": "..."}`. With `--dry-run` the draft is validated but not saved.
+
+### Extend a draft
+
+`draft extend` takes the delivery ID of the draft instead of the dataset and the product, which are taken from the draft. The operations are given in one of two ways, and are appended after the existing ones.
+
+With a YAML file (same structure as for the [delivery command](#delivery-command)), to add several operations:
+
+```bash
+copernicusmarine-delivery draft extend --delivery-id "$id" --file delivery_file.yaml
+```
+
+Or with `--operation` (`upload` or `delete`) and one or more `--source`, to add a single operation without writing a file:
+
+```bash
+copernicusmarine-delivery draft extend --delivery-id "$id" --operation upload --source some/file.nc --source some/other/file.nc
+```
+
+`--anchor` is only accepted with `--operation upload`. `--file` cannot be combined with `--operation`, `--source` or `--anchor`. One of the two ways is required.
+
+It also accepts `--dry-run`, `--save-delivery-json`, `--show-less` and `--output json` as with the delivery command, and the same upload options. The draft is not changed with `--dry-run`.
+
+### Publish a draft
+
+```bash
+copernicusmarine-delivery draft publish --delivery-id "$id"
+```
+
+With `--dry-run` the draft is validated but not published, and it can still be extended. Once published, check the delivery with the [status command](#delivery-status-command).
+
 ## Upload command
 
 Submit a delivery for one upload operation.

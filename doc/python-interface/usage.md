@@ -55,6 +55,10 @@ from copernicusmarine_delivery import delivery_status
 delivery = delivery_status(delivery_id)
 ```
 
+## Draft delivery
+
+With `submit`, the files are uploaded and the delivery is published in one step. To build a delivery in steps, use the `draft` module: `draft.create`, `draft.extend` and `draft.publish`. See [draft deliveries](../draft-deliveries.md) for the workflow and examples.
+
 ## Dry run
 
 Use `dry_run=True` to validate a delivery before submitting it. The product, the dataset, the files and the [delivery limits](../best-practices.md#delivery-limits) are checked, but nothing is uploaded and no delivery is submitted. Since no delivery is submitted, you cannot check its status afterwards.
@@ -72,7 +76,6 @@ response = delivery.submit(product_id, dataset_id, dry_run=True)
 ```python
 response = delivery.submit(product_id, dataset_id)
 
-print(response.fatal_error)  # None if nothing stopped the delivery
 for operation_response in response.operations_responses:
     print(type(operation_response).__name__)
 ```
@@ -81,6 +84,28 @@ for operation_response in response.operations_responses:
 - A delete response has `files_to_delete`.
 
 See the [API reference](api-reference.md) for all the fields.
+
+## Handle errors
+
+`submit` raises an exception if the delivery cannot be submitted, so a returned response means it was. For example:
+
+- `ValueError` if there is nothing to submit.
+- `InvalidFilesError`, `InvalidDeliveryIdsError` or `InvalidDeliverySizeError` if the validation fails.
+- `NoSuccessfulUploadsError` if no file could be uploaded.
+- `AuthenticationError` if the authentication fails.
+
+Catch the ones you want to handle:
+
+```python
+from copernicusmarine_delivery import InvalidFilesError, NoSuccessfulUploadsError
+
+try:
+    response = delivery.submit(product_id, dataset_id)
+except (InvalidFilesError, NoSuccessfulUploadsError) as error:
+    print(f"The delivery was not submitted: {error}")
+```
+
+Files that fail to upload do not stop the delivery by default. They are skipped and listed in `files_failed` of the upload responses. With `raise_on_upload_error=True`, the first error is raised instead.
 
 ## Wait for a delivery
 

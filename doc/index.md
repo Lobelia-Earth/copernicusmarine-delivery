@@ -20,6 +20,7 @@ Once data is delivered, it will be validated and published to the MDS Data Lake,
 
 quick-start
 concepts
+draft-deliveries
 credentials
 installation
 command-line-interface/index
