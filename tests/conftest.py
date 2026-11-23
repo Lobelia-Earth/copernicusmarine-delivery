@@ -281,9 +281,14 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
         if path == "/.well-known/pushing-entity-config" and request.method == "GET":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
+            params = request.url.params
+            if "product_id" not in params or "dataset_id" not in params:
+                return httpx.Response(422, json={"detail": "product_id and dataset_id are required."})
             pushing_entity = next(
                 pe for pe in _PUSHING_ENTITIES_DICT["pushing-entities"] if pe["name"] == _TOKEN_PUSHING_ENTITY_ID
             )
+            if params.get("on_behalf_of", pushing_entity["name"]) != pushing_entity["name"]:
+                return httpx.Response(400, json={"detail": "on_behalf_of does not match the pushing entity."})
             return httpx.Response(
                 200,
                 json={
@@ -295,6 +300,8 @@ def ingestion_service(s3_client, mock_keycloak, monkeypatch):
         if path == "/credentials" and request.method == "GET":
             if invalid_token_response := validate_test_token_header(request):
                 return invalid_token_response
+            if "pushing_entity_id" not in request.url.params:
+                return httpx.Response(422, json={"detail": "pushing_entity_id is required."})
             return httpx.Response(
                 200,
                 json={

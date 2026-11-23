@@ -203,19 +203,18 @@ class Delivery(BaseModel):
         return response
 
 
-def delivery_status(delivery_id: str, on_behalf_of: str | None = None, staging: bool = False) -> DeliveryModel:
+def delivery_status(delivery_id: str, staging: bool = False, **kwargs) -> DeliveryModel:
     """
     Get the status of a delivery.
 
     :param delivery_id: The ID of the delivery to check.
-    :param on_behalf_of: For internal usage only.
     :param staging: Use the staging environment instead of production.
 
     :return: DeliveryModel object representing the status of the delivery.
     """
     delivery = get_deliveries(
         delivery_id=delivery_id,
-        ctx=build_context(staging, on_behalf_of),
+        ctx=_context(staging, kwargs),
     )
     if not delivery:
         raise ValueError(f"Delivery with id {delivery_id} not found.")
@@ -223,9 +222,7 @@ def delivery_status(delivery_id: str, on_behalf_of: str | None = None, staging: 
     return delivery[0]
 
 
-def list_deliveries(
-    timeframe: TimeframeLiteral = "mo", on_behalf_of: str | None = None, staging: bool = False
-) -> list[DeliveryModel]:
+def list_deliveries(timeframe: TimeframeLiteral = "mo", staging: bool = False, **kwargs,) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
@@ -234,4 +231,4 @@ def list_deliveries(
 
     :return: A list of DeliveryModel objects sorted by delivery_id in descending order (most recent first).
     """
-    return get_deliveries(ctx=build_context(staging, on_behalf_of), timeframe=timeframe)
+    return get_deliveries(ctx=_context(staging, kwargs), timeframe=timeframe)

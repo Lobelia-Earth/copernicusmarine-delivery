@@ -80,7 +80,7 @@ def upload(
     2. Try and upload all files given. Keep track of errored files. If no successful uploads, return early.
     3. Create Delivery with successful ones (in the future there might be a flag to abort if errors). Use ETag as checksum.
     """
-    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_config = get_pushing_entity_config(ctx, product_id, dataset_id)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -156,7 +156,7 @@ def delete(
     """
     Create delivery with deletes and push it. Deletes happen in main S3; toolbox has no direct access.
     """
-    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_config = get_pushing_entity_config(ctx, product_id, dataset_id)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     logger.debug(
@@ -200,7 +200,7 @@ def create_draft(
     dataset_id: str,
     dry_run: bool,
 ) -> Delivery:
-    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_config = get_pushing_entity_config(ctx, product_id, dataset_id)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
@@ -222,10 +222,9 @@ def publish_draft(
     delivery_id: str,
     dry_run: bool,
 ) -> Delivery:
-    pushing_entity_config = get_pushing_entity_config(ctx)
-    pushing_entity_id = pushing_entity_config.pushing_entity.name
-
     draft = load_draft(ctx, delivery_id)
+    pushing_entity_config = get_pushing_entity_config(ctx, draft.product_id, draft.dataset_id)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
     validate_delivery_ids(pushing_entity_id, draft.product_id, draft.dataset_id, pushing_entity_config.pushing_entity)
 
     delivery = create_and_upload_delivery(
@@ -355,7 +354,7 @@ def delivery(
     dry_run: bool,
     disable_progress_bar: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
-    pushing_entity_config = get_pushing_entity_config(ctx)
+    pushing_entity_config = get_pushing_entity_config(ctx, product_id, dataset_id)
     pushing_entity_id = pushing_entity_config.pushing_entity.name
 
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
@@ -413,12 +412,11 @@ def extend_draft(
     dry_run: bool,
     disable_progress_bar: bool,
 ) -> tuple[ResponseDelivery, Delivery]:
-    pushing_entity_config = get_pushing_entity_config(ctx)
-    pushing_entity_id = pushing_entity_config.pushing_entity.name
-
     draft = load_draft(ctx, delivery_id)
     product_id = draft.product_id
     dataset_id = draft.dataset_id
+    pushing_entity_config = get_pushing_entity_config(ctx, product_id, dataset_id)
+    pushing_entity_id = pushing_entity_config.pushing_entity.name
     validate_delivery_ids(pushing_entity_id, product_id, dataset_id, pushing_entity_config.pushing_entity)
 
     all_operations, all_responses = _process_operations(
