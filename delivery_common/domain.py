@@ -48,6 +48,15 @@ class InvalidDeliveryIdsError(Exception):
 
 class PushingEntities(BaseModel):
     pushing_entities: list[PushingEntity] = Field(..., alias="pushing-entities")
+    _by_product_and_dataset_id: dict[tuple[str, str], PushingEntity]
+
+    def model_post_init(self, __context: Any) -> None:
+        self._by_product_and_dataset_id = {
+        (product.product_id, dataset_id): pushing_entity
+        for pushing_entity in self.pushing_entities
+        for product in pushing_entity.products
+        for dataset_id in product.datasets
+    }
 
     @classmethod
     def from_stream(cls, bytes: bytes) -> "PushingEntities":
@@ -64,6 +73,15 @@ class PushingEntities(BaseModel):
 
     def filter(self, candidates: list[str]) -> list[str]:
         return list(set(pu.name for pu in self.pushing_entities) & set(candidates))
+
+    def resolve(self, product_id: str, dataset_id: str) -> PushingEntity:
+        """Return the pushing entity that owns the (product_id, dataset_id) pair."""
+        try:
+            return self._by_product_and_dataset_id[(product_id, dataset_id)]
+        except KeyError:
+            raise InvalidDeliveryIdsError(
+                f"No pushing entity found for product_id '{product_id}' and dataset_id '{dataset_id}'."
+            )
 
 
 FORBIDDEN_KEY_SUFFIX_PATTERNS = ("../", "//", ":/")

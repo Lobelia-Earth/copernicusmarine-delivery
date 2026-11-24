@@ -13,6 +13,7 @@ from copernicusmarine_delivery.environment_variables import (
 )
 from copernicusmarine_delivery.http_client import http_client
 from copernicusmarine_delivery.logger import logger
+from delivery_common.domain import InvalidDeliveryIdsError
 
 if TYPE_CHECKING:
     import requests
@@ -94,11 +95,21 @@ def get_config(ingestion_service_url: str) -> GetConfigResponse:
     return GetConfigResponse.model_validate_json(config_response.content)
 
 
-def get_pushing_entity_config(ctx: ServiceContext) -> GetPushingEntityConfigResponse:
+def get_pushing_entity_config(ctx: ServiceContext, product_id: str, dataset_id: str) -> GetPushingEntityConfigResponse:
+    params = {"product_id": product_id, "dataset_id": dataset_id}
+    if ctx.on_behalf_of:
+        params["on_behalf_of"] = ctx.on_behalf_of
     pushing_entity_config_response = http_client.get(
         f"{ctx.ingestion_service_url}/.well-known/pushing-entity-config",
-        params={"on_behalf_of": ctx.on_behalf_of} if ctx.on_behalf_of else None,
+        params=params,
         headers={"Authorization": f"Bearer {fetch_keycloak_token(ctx)}"},
     )
+    if pushing_entity_config_response.status_code == 404:
+        try:
+            detail = pushing_entity_config_response.json()["detail"]
+        except (ValueError, KeyError):
+            pushing_entity_config_response.raise_for_status()
+        else:
+            raise InvalidDeliveryIdsError(detail)
     pushing_entity_config_response.raise_for_status()
     return GetPushingEntityConfigResponse.model_validate_json(pushing_entity_config_response.content)

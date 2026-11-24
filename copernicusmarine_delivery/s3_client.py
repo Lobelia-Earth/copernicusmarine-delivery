@@ -83,11 +83,10 @@ class OpdvS3CredentialProvider:
     def __call__(self) -> S3Credential:
         logger.debug("Getting new set of S3 Credentials from OPDV's API.")
         token = fetch_keycloak_token(self._ctx)
-        params = {"on_behalf_of": self._ctx.on_behalf_of} if self._ctx.on_behalf_of else None
         resp = http_client.get(
             f"{self._ctx.ingestion_service_url}/credentials",
             headers={"Authorization": f"Bearer {token}"},
-            params=params,
+            params={"pushing_entity_id": self._pushing_entity_id},
             timeout=30,
         )
         resp.raise_for_status()

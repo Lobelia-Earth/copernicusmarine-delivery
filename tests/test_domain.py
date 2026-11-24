@@ -1,7 +1,30 @@
 import pytest
 from pydantic import ValidationError
 
-from delivery_common.domain import DeleteFile, DeliveryFile, UploadFile
+from delivery_common.domain import (
+    DeleteFile,
+    DeliveryFile,
+    InvalidDeliveryIdsError,
+    PushingEntities,
+    UploadFile,
+)
+
+PUSHING_ENTITIES = PushingEntities.model_validate(
+    {
+        "pushing-entities": [
+            {
+                "name": "ENTITY-A",
+                "bucket": "bucket-a",
+                "products": [{"name": "product-a", "datasets": ["dataset-a1", "dataset-a2"]}],
+            },
+            {
+                "name": "ENTITY-B",
+                "bucket": "bucket-b",
+                "products": [{"name": "product-b", "datasets": ["dataset-b1"]}],
+            },
+        ]
+    }
+)
 
 VALID_KEY_SUFFIXES = [
     "file.nc",
@@ -56,6 +79,32 @@ def test_absolute_path_raises_validation_error():
 def test_delete_file_enforces_key_suffix():
     with pytest.raises(ValidationError):
         DeleteFile(key_suffix="../file.nc")
+
+
+@pytest.mark.parametrize(
+    ("product_id", "dataset_id", "expected_name"),
+    [
+        ("product-a", "dataset-a1", "ENTITY-A"),
+        ("product-a", "dataset-a2", "ENTITY-A"),
+        ("product-b", "dataset-b1", "ENTITY-B"),
+    ],
+)
+def test_resolve_returns_owning_pushing_entity(product_id, dataset_id, expected_name):
+    assert PUSHING_ENTITIES.resolve(product_id, dataset_id).name == expected_name
+
+
+@pytest.mark.parametrize(
+    ("product_id", "dataset_id"),
+    [
+        ("product-a", "dataset-b1"),
+        ("product-b", "dataset-a1"),
+        ("unknown-product", "dataset-a1"),
+        ("product-a", "unknown-dataset"),
+    ],
+)
+def test_resolve_raises_when_pair_is_not_owned(product_id, dataset_id):
+    with pytest.raises(InvalidDeliveryIdsError):
+        PUSHING_ENTITIES.resolve(product_id, dataset_id)
 
 
 def test_upload_file_enforces_key_suffix():
