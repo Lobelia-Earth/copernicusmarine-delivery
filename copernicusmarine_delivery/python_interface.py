@@ -222,7 +222,7 @@ def delivery_status(delivery_id: str, staging: bool = False, **kwargs) -> Delive
     return delivery[0]
 
 
-def list_deliveries(timeframe: TimeframeLiteral = "mo", staging: bool = False, **kwargs,) -> list[DeliveryModel]:
+def list_deliveries(timeframe: TimeframeLiteral = "mo", staging: bool = False, **kwargs) -> list[DeliveryModel]:
     """
     List all deliveries for a given pushing entity.
 
