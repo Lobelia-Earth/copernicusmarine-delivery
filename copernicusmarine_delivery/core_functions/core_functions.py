@@ -45,20 +45,19 @@ from delivery_common.validation import validate_delivery_ids
 
 
 def get_local_path_s3_keys_mapping(
-    list_of_files: list[str],
+    files: list[FileToUpload],
     delivery_id: str,
     product_id: str,
     dataset_id: str,
-    anchor: str | None,
 ) -> dict[Path, str]:
     return {
-        Path(file_path): NEW_DATA_BUCKET_PATH.format(
+        Path(file.local_path): NEW_DATA_BUCKET_PATH.format(
             delivery_id=delivery_id,
             product_id=product_id,
             dataset_id=dataset_id,
-            file_name=local_path_to_key_suffix(file_path, anchor),
+            file_name=file.key_suffix,
         )
-        for file_path in list_of_files
+        for file in files
     }
 
 
@@ -112,7 +111,6 @@ def upload(
         delivery_id=delivery_id,
         product_id=product_id,
         dataset_id=dataset_id,
-        anchor=anchor,
         to_upload_operation=to_upload_operation,
         raise_on_error=raise_on_upload_error,
         chunk_size=chunk_size_bytes,
@@ -320,7 +318,6 @@ def _process_operations(
                     delivery_id=delivery_id,
                     product_id=product_id,
                     dataset_id=dataset_id,
-                    anchor=operation.anchor,
                     to_upload_operation=operation,
                     raise_on_error=raise_on_upload_error,
                     chunk_size=chunk_size_bytes,
@@ -467,16 +464,17 @@ def create_and_validate_to_upload_operation(
     product_id: str,
     anchor: str | None,
 ) -> ToUploadOperation:
+    # TODO `FileToUpload` could have src/dest (if no src is given, then src == dest).
     validate_upload_files(files, dataset_id, product_id, anchor)
     return ToUploadOperation(
         files=[
             FileToUpload(
                 local_path=file,
+                key_suffix=local_path_to_key_suffix(file, anchor),
                 file_size_mb=os.path.getsize(file) / (1024 * 1024),
             )
             for file in files
         ],
-        anchor=anchor,
     )
 
 
@@ -485,7 +483,6 @@ def _put_files_to_ingestion_system(
     delivery_id: str,
     product_id: str,
     dataset_id: str,
-    anchor: str | None,
     to_upload_operation: ToUploadOperation,
     raise_on_error: bool,
     chunk_size: int,
@@ -494,11 +491,10 @@ def _put_files_to_ingestion_system(
     disable_progress_bar: bool,
 ) -> tuple[PutFilesResult, UploadOperation]:
     local_path_s3_keys_mapping = get_local_path_s3_keys_mapping(
-        [file.local_path for file in to_upload_operation.files],
+        to_upload_operation.files,
         delivery_id,
         product_id,
         dataset_id,
-        anchor,
     )
     put_files_result = s3_client.upload_multiple_files(
         local_path_s3_keys_mapping,

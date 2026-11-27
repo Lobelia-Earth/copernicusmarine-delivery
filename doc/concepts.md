@@ -140,6 +140,38 @@ anchor:         dataset1
 s3 mds suffixes: 2024/a.nc  and  2025/b.nc
 ```
 
+### Using symbolic links
+
+Soft symbolic links are also accepted, in case your local folder structure can't match the delivery one, not even with the `anchor`. Create a folder of links with the layout you want and upload from it. The S3 MDS suffix is computed from the **path of the link**, not from the path of the file it points to.
+
+```bash
+# real file, wherever it lives
+ls /internal/exports/run_42/file_01.nc
+
+# links with the layout you want
+mkdir -p /data/cmems/my_dataset/2024
+ln -s /internal/exports/run_42/file_01.nc /data/cmems/my_dataset/2024/file_01.nc
+```
+
+```yaml
+delivery:
+  - operation: upload
+    anchor: my_dataset
+    files:
+      - /data/cmems/my_dataset/2024/file_01.nc
+```
+
+```text
+link path:      /data/cmems/my_dataset/2024/file_01.nc
+anchor:         my_dataset
+S3 MDS suffix:  2024/file_01.nc    (nothing of /internal/exports/run_42 is leaked)
+```
+
+Notes:
+
+- Pass the **link** path, not its target. Do not resolve the path (e.g. `Path.resolve()`, `os.path.realpath`) beforehand: that would give back the target path.
+- A broken link (missing target) is rejected as a file that does not exist.
+
 ### Delivery file (YAML)
 
 The `delivery` command takes a YAML file describing the operations to run, in order.

@@ -130,7 +130,7 @@ def validate_delivery_duplicates(
     delete_keys = []
     for operation in pending_operations:
         if isinstance(operation, ToUploadOperation):
-            upload_keys.extend(local_path_to_key_suffix(file.local_path, operation.anchor) for file in operation.files)
+            upload_keys.extend(file.key_suffix for file in operation.files)
         elif isinstance(operation, DeleteOperation):
             delete_keys.extend(file.key_suffix for file in operation.files)
     if draft:
