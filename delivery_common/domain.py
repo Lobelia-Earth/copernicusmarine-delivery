@@ -52,11 +52,11 @@ class PushingEntities(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         self._by_product_and_dataset_id = {
-        (product.product_id, dataset_id): pushing_entity
-        for pushing_entity in self.pushing_entities
-        for product in pushing_entity.products
-        for dataset_id in product.datasets
-    }
+            (product.product_id, dataset_id): pushing_entity
+            for pushing_entity in self.pushing_entities
+            for product in pushing_entity.products
+            for dataset_id in product.datasets
+        }
 
     @classmethod
     def from_stream(cls, bytes: bytes) -> "PushingEntities":

@@ -303,6 +303,6 @@ def test_size_limits_count_the_draft_files():
     )
     validate_delivery_sizes(limits, [], draft)  # at the limit: fine
 
-    one_more = ToUploadOperation(files=[FileToUpload(file_size_mb=1, local_path="x.txt")], anchor=None)
+    one_more = ToUploadOperation(files=[FileToUpload(file_size_mb=1, local_path="x.txt", key_suffix="x.txt")])
     with pytest.raises(InvalidDeliverySizeError):
         validate_delivery_sizes(limits, [one_more], draft)

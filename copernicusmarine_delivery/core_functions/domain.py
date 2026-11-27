@@ -24,10 +24,11 @@ def get_s3_key_suffix(s3_path: S3Path) -> S3KeySuffix:
 
 class FileToUpload(BaseModel):
     """Pre-upload file: checksum not known yet, only available once the upload completes.
-    file_path is a local path, not S3 related yet."""
+    `local_path` is where the file is read from, `key_suffix` is where it will be in S3 MDS (without product/dataset)."""
 
     file_size_mb: float
     local_path: str
+    key_suffix: str
 
 
 class ToUploadOperation(BaseModel):
@@ -35,7 +36,6 @@ class ToUploadOperation(BaseModel):
 
     operation: OperationNames = Field(default=OperationNames.upload)
     files: list[FileToUpload] = Field(default_factory=list)
-    anchor: str | None
 
 
 class S3File(BaseModel):

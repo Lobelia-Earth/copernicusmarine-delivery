@@ -84,7 +84,12 @@ MORE_DUPLICATED_FILES = ["file2.txt"] + [f"file1.txt" for i in range(10)]
 
 
 def _to_upload_operation(files: list[str], anchor: str | None = None) -> ToUploadOperation:
-    return ToUploadOperation(files=[FileToUpload(local_path=file, file_size_mb=1) for file in files], anchor=anchor)
+    return ToUploadOperation(
+        files=[
+            FileToUpload(local_path=file, key_suffix=local_path_to_key_suffix(file, anchor), file_size_mb=1)
+            for file in files
+        ]
+    )
 
 
 def _delete_operation(files: list[str]) -> DeleteOperation:
@@ -178,9 +183,9 @@ _LIMITS = APILimits(max_number_of_files_per_delivery=3, max_delivery_size_gb=1, 
 def _operation(list_of_file_sizes_mb: list[int]) -> ToUploadOperation:
     return ToUploadOperation(
         files=[
-            FileToUpload(file_size_mb=size, local_path=f"file{i}.nc") for i, size in enumerate(list_of_file_sizes_mb)
+            FileToUpload(file_size_mb=size, local_path=f"file{i}.nc", key_suffix=f"file{i}.nc")
+            for i, size in enumerate(list_of_file_sizes_mb)
         ],
-        anchor=None,
     )
 
 
